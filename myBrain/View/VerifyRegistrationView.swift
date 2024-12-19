@@ -5,14 +5,14 @@ struct VerifyRegistrationView: View {
     @State private var code = ""
     @State private var errorMessage: String?
     let email: String
-
+    @Environment(\.modelContext) private var modelContext
     var body: some View {
         Form {
             TextField("Verification Code", text: $code)
                 .keyboardType(.numberPad)
 
             Button("Verify") {
-                authVM.verifyRegistration(email: email, code: code) { result in
+                authVM.verifyRegistration(email: email, code: code,context: modelContext) { result in
                     switch result {
                     case .success:
                         // On success, navigate to main content

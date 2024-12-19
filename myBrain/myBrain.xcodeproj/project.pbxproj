@@ -18,6 +18,7 @@
 		684427122D13D89D002E9BC6 /* VerifyRegistrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427112D13D89D002E9BC6 /* VerifyRegistrationView.swift */; };
 		684427142D13D8B6002E9BC6 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427132D13D8B6002E9BC6 /* LoginView.swift */; };
 		684427162D13D8CC002E9BC6 /* VerifyLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427152D13D8CC002E9BC6 /* VerifyLoginView.swift */; };
+		684427182D13E17B002E9BC6 /* AuthData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427172D13E17B002E9BC6 /* AuthData.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -34,6 +35,7 @@
 		684427112D13D89D002E9BC6 /* VerifyRegistrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerifyRegistrationView.swift; sourceTree = "<group>"; };
 		684427132D13D8B6002E9BC6 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		684427152D13D8CC002E9BC6 /* VerifyLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerifyLoginView.swift; sourceTree = "<group>"; };
+		684427172D13E17B002E9BC6 /* AuthData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthData.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -102,6 +104,7 @@
 			isa = PBXGroup;
 			children = (
 				6844270D2D13D862002E9BC6 /* AuthViewModel.swift */,
+				684427172D13E17B002E9BC6 /* AuthData.swift */,
 			);
 			path = ViewModel;
 			sourceTree = "<group>";
@@ -187,6 +190,7 @@
 				684427102D13D886002E9BC6 /* RegisterView.swift in Sources */,
 				684427042D13D580002E9BC6 /* ContentView.swift in Sources */,
 				684427122D13D89D002E9BC6 /* VerifyRegistrationView.swift in Sources */,
+				684427182D13E17B002E9BC6 /* AuthData.swift in Sources */,
 				684427142D13D8B6002E9BC6 /* LoginView.swift in Sources */,
 				684427052D13D580002E9BC6 /* Item.swift in Sources */,
 			);
