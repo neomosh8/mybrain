@@ -1,43 +1,63 @@
 import UIKit
+import WebKit
 
 class ShareViewController: UIViewController {
-    private let animationView = UIImageView()
+    private let webView = WKWebView()
     private let progressView = UIProgressView(progressViewStyle: .default)
     private var progressTimer: Timer?
+    private var gifURL: URL?
 
     override func viewDidLoad() {
         super.viewDidLoad()
+
+        // Attempt to present as a card with round corners
+        modalPresentationStyle = .formSheet
+        preferredContentSize = CGSize(width: 320, height: 400)
         
-        view.backgroundColor = UIColor.systemBackground
+        // Rounded corners and custom background
+        view.layer.cornerRadius = 20.0
+        view.clipsToBounds = true
+        view.backgroundColor = UIColor(red: 0.0235, green: 0.1137, blue: 0.1216, alpha: 1.0) // #061d1f
         
         setupUI()
+        // Store the URL now, load in viewDidAppear so user sees background instantly
+        gifURL = Bundle.main.url(forResource: "myAnimation", withExtension: "gif")
+
+        // Start retrieving the URL to process after UI is set
         retrieveURLAndProcess()
     }
-    
-    private func setupUI() {
-        // Setup animation images
-        let animationImages = (1...30).compactMap { UIImage(named: "frame\($0)") }
-        animationView.animationImages = animationImages
-        animationView.animationDuration = 1.5
-        animationView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(animationView)
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
         
+        // Load the GIF after the view appears, so user sees the background and layout first
+        if let gifURL = gifURL {
+            webView.loadFileURL(gifURL, allowingReadAccessTo: gifURL)
+        }
+    }
+
+    private func setupUI() {
+        webView.isOpaque = false
+        webView.backgroundColor = .clear
+        webView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(webView)
+
         progressView.translatesAutoresizingMaskIntoConstraints = false
         progressView.progress = 0.0
         view.addSubview(progressView)
 
         NSLayoutConstraint.activate([
-            animationView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            animationView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            animationView.widthAnchor.constraint(equalToConstant: 100),
-            animationView.heightAnchor.constraint(equalToConstant: 100),
-            
+            webView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            webView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            webView.widthAnchor.constraint(equalToConstant: 150),
+            webView.heightAnchor.constraint(equalToConstant: 150),
+
             progressView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             progressView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            progressView.topAnchor.constraint(equalTo: animationView.bottomAnchor, constant: 20)
+            progressView.topAnchor.constraint(equalTo: webView.bottomAnchor, constant: 20)
         ])
     }
-    
+
     private func retrieveURLAndProcess() {
         guard let extensionItems = extensionContext?.inputItems as? [NSExtensionItem] else {
             dismissAfterDelay()
@@ -52,7 +72,7 @@ class ShareViewController: UIViewController {
                             DispatchQueue.main.async {
                                 guard let self = self else { return }
                                 if let url = urlItem as? URL {
-                                    self.startLoadingAnimation()
+                                    self.startProgressAnimation()
                                     self.createThought(with: url)
                                 } else {
                                     // If no URL, just finish
@@ -70,8 +90,7 @@ class ShareViewController: UIViewController {
         dismissAfterDelay()
     }
     
-    private func startLoadingAnimation() {
-        animationView.startAnimating()
+    private func startProgressAnimation() {
         // Simulate progress increment until request completes
         progressTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] timer in
             guard let self = self else { return }
@@ -82,8 +101,7 @@ class ShareViewController: UIViewController {
         }
     }
 
-    private func stopLoadingAnimation() {
-        animationView.stopAnimating()
+    private func stopProgressAnimation() {
         progressTimer?.invalidate()
         progressTimer = nil
     }
@@ -119,7 +137,7 @@ class ShareViewController: UIViewController {
 
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
             DispatchQueue.main.async {
-                self.stopLoadingAnimation()
+                self.stopProgressAnimation()
                 
                 if let error = error {
                     print("Error creating thought:", error)
@@ -143,7 +161,7 @@ class ShareViewController: UIViewController {
     }
 
     func loadTokenFromAppGroup() -> String? {
-        let appGroupID = "group.tech.neocore.MyBrain" // Adjust to your app group
+        let appGroupID = "group.tech.neocore.MyBrain" // Update to your actual App Group
         guard let defaults = UserDefaults(suiteName: appGroupID) else { return nil }
         return defaults.string(forKey: "accessToken")
     }
