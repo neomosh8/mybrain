@@ -135,14 +135,27 @@ class AuthViewModel: ObservableObject {
 
         URLSession.shared.dataTask(with: req) { data, response, error in
             DispatchQueue.main.async {
-                if let error = error { return completion(.failure(error)) }
-                guard let data = data else { return completion(.failure(NSError(domain: "", code: -1, userInfo: nil))) }
+                if let error = error {
+                    return completion(.failure(error))
+                }
+                guard let data = data else {
+                    return completion(.failure(NSError(domain: "", code: -1, userInfo: nil)))
+                }
 
                 if let resp = try? JSONDecoder().decode(TokenResponse.self, from: data) {
                     self.accessToken = resp.access
+                    print("AccessToken obtained: \(self.accessToken ?? "nil")")
+
                     self.refreshToken = resp.refresh
                     self.isAuthenticated = true
+
+                    // Save tokens to SwiftData
                     self.saveToSwiftData(context: context)
+                    print("Token saved to SharedDataManager")
+
+                    // Also save the access token to SharedDataManager for the share extension
+                    SharedDataManager.saveToken(self.accessToken)
+
                     completion(.success(()))
                 } else if let errResp = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
                     completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: errResp.detail])))
@@ -152,12 +165,45 @@ class AuthViewModel: ObservableObject {
             }
         }.resume()
     }
-
-    // Example logout function
     func logout(context: ModelContext) {
         self.accessToken = nil
         self.refreshToken = nil
         self.isAuthenticated = false
-        saveToSwiftData(context: context)
+        self.saveToSwiftData(context: context)
+    }
+
+    func logoutFromServer(context: ModelContext, completion: @escaping (Result<Void, Error>) -> Void) {
+        guard let refreshToken = self.refreshToken else {
+            // No refresh token means we can just treat as logged out locally
+            self.logout(context: context)
+            return completion(.success(()))
+        }
+
+        var req = request(for: "/api/v1/profiles/logout/", method: "POST")
+        let body: [String: Any] = [
+            "refresh": refreshToken,
+            "unique_device_id": "unique_device_id_123"
+        ]
+        req.httpBody = try? JSONSerialization.data(withJSONObject: body, options: [])
+
+        URLSession.shared.dataTask(with: req) { data, response, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    return completion(.failure(error))
+                }
+                guard let data = data else {
+                    return completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey : "No data"])))
+                }
+
+                if let httpResponse = response as? HTTPURLResponse {
+                    print("Logout Status Code:", httpResponse.statusCode)
+                }
+
+                // Even if logout fails on server side, we can still clear local tokens
+                // Ideally, you handle errors more gracefully.
+                self.logout(context: context)
+                completion(.success(()))
+            }
+        }.resume()
     }
 }
