@@ -85,6 +85,10 @@ class WebSocketViewModel: ObservableObject {
                     handleThoughtsList(dataPayload)
                 case "chapter_response":
                     handleChapterResponse(dataPayload)
+                case "feedback_response":
+                                // Just ignore or handle quietly
+                                // No error, no print needed
+                                break
                 default:
                     print("Unhandled message type: \(type)")
                 }
@@ -151,7 +155,7 @@ class WebSocketViewModel: ObservableObject {
         do {
             let jsonData = try JSONSerialization.data(withJSONObject: message, options: [])
             if let jsonString = String(data: jsonData, encoding: .utf8) {
-                print("Sending message: \(jsonString)")
+//                print("Sending message: \(jsonString)")
                 webSocketTask?.send(.string(jsonString)) { error in
                     if let error = error {
                         print("Failed to send message: \(error)")

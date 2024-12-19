@@ -1,28 +1,29 @@
 import SwiftUI
 import Combine
 
+struct Paragraph {
+    let chapterNumber: Int
+    let content: String
+}
+
 struct ThoughtDetailView: View {
     let thought: Thought
     @ObservedObject var socketViewModel: WebSocketViewModel
 
-    @State private var paragraphs: [String] = []
+    @State private var paragraphs: [Paragraph] = []
     @State private var displayedParagraphsCount = 0
     @State private var scrollProxy: ScrollViewProxy?
 
-    // State for adjustable word display speed
     @State private var wordInterval: Double = 0.15
-
-    // State for slider position (floating)
     @State private var sliderPosition: CGPoint = CGPoint(x: 100, y: 200) // initial position
 
     var body: some View {
         ZStack {
-            if displayedParagraphsCount == 0 {
+            if paragraphs.isEmpty {
                 // No chapters loaded yet, show a loading indicator
                 ProgressView("Loading First Chapter...")
                     .tint(.white)
                     .foregroundColor(.white)
-                    .font(.headline)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(Color.black.ignoresSafeArea())
             } else {
@@ -32,19 +33,21 @@ struct ThoughtDetailView: View {
                         LazyVStack(spacing: 40) {
                             ForEach(0..<displayedParagraphsCount, id: \.self) { index in
                                 AnimatedParagraphView(
-                                    paragraph: paragraphs[index],
+                                    paragraph: paragraphs[index].content,
                                     backgroundColor: Color.blue.opacity(0.2),
                                     wordInterval: wordInterval,
                                     chapterIndex: index,
+                                    thoughtId: thought.id,
+                                    chapterNumber: paragraphs[index].chapterNumber,
+                                    socketViewModel: socketViewModel,
                                     onHalfway: {
                                         // For subsequent chapters (index > 0), request next chapter at halfway
-                                        if index > 0 {
+                                        if index >= 0 {
                                             requestNextChapter()
                                         }
                                     },
                                     onFinished: {
-                                        // OnFinished no longer triggers next chapter
-                                        // because we request it at halfway instead.
+                                        // OnFinished no longer triggers next chapter because we do it at halfway.
                                     }
                                 )
                                 .id(index)
@@ -58,7 +61,6 @@ struct ThoughtDetailView: View {
                     }
                 }
 
-                // Floating movable slider container
                 sliderContainer
                     .position(sliderPosition)
                     .gesture(
@@ -77,12 +79,10 @@ struct ThoughtDetailView: View {
         }
         .onReceive(socketViewModel.$chapterData) { chapterData in
             guard let chapterData = chapterData else { return }
-            // Append the received chapter content to paragraphs
-            paragraphs.append(chapterData.content)
-            // Increase displayedParagraphsCount to show the new paragraph
-            withAnimation {
-                displayedParagraphsCount = paragraphs.count
-            }
+            // Append the received chapter content along with its chapterNumber
+            paragraphs.append(Paragraph(chapterNumber: chapterData.chapterNumber, content: chapterData.content))
+            // Show the new paragraph
+            displayedParagraphsCount = paragraphs.count
         }
     }
 

@@ -5,6 +5,9 @@ struct AnimatedParagraphView: View {
     let backgroundColor: Color
     var wordInterval: Double
     let chapterIndex: Int
+    let thoughtId: Int
+    let chapterNumber: Int
+    let socketViewModel: WebSocketViewModel
     let onHalfway: () -> Void
     let onFinished: () -> Void
 
@@ -51,8 +54,10 @@ struct AnimatedParagraphView: View {
         .background(backgroundColor)
         .cornerRadius(8)
         .onAppear {
+            print("[AnimatedParagraphView] onAppear - measuring words...")
             DispatchQueue.main.async {
                 measureWords(paragraph: paragraph, font: customFont, lineSpacing: lineSpacingValue, width: containerWidth) { frames in
+                    print("[AnimatedParagraphView] Word frames measured: \(frames.count) frames.")
                     self.wordFrames = frames
                     self.readyToAnimate = true
                     self.startAnimation()
@@ -60,9 +65,8 @@ struct AnimatedParagraphView: View {
             }
         }
         .onChange(of: wordInterval) { newValue in
-            // If words are still being revealed and we have a scheduled next word,
-            // cancel and reschedule with the updated interval.
             if shownWordsCount < words.count {
+                print("[AnimatedParagraphView] Word interval changed to \(newValue). Rescheduling next word.")
                 scheduledTask?.cancel()
                 scheduleNextWord()
             }
@@ -70,19 +74,24 @@ struct AnimatedParagraphView: View {
     }
 
     private func startAnimation() {
+        print("[AnimatedParagraphView] startAnimation called.")
         if words.isEmpty {
+            print("[AnimatedParagraphView] Paragraph is empty, calling onFinished.")
             onFinished()
             return
         }
         withAnimation {
             shownWordsCount = 1
         }
+        let firstWord = words[0]
+        print("[AnimatedParagraphView] Showing first word: '\(firstWord)'")
+        sendFeedbackForWord(firstWord)
         scheduleNextWord()
     }
 
     private func scheduleNextWord() {
         guard shownWordsCount < words.count else {
-            // All words revealed for this paragraph, trigger onFinished
+            print("[AnimatedParagraphView] All words shown, calling onFinished.")
             onFinished()
             return
         }
@@ -90,28 +99,47 @@ struct AnimatedParagraphView: View {
         let task = DispatchWorkItem {
             if shownWordsCount < words.count {
                 withAnimation {
-                    shownWordsCount += 1
+                    self.shownWordsCount += 1
+                }
+                let revealedWord = self.words[self.shownWordsCount - 1]
+                print("[AnimatedParagraphView] Revealed word #\(self.shownWordsCount): '\(revealedWord)'")
+
+                self.sendFeedbackForWord(revealedWord)
+
+                // Halfway logic
+                let halfwayPoint = (self.words.count + 1) / 2
+                if  self.shownWordsCount == halfwayPoint {
+                    print("[AnimatedParagraphView] Reached halfway point at word #\(self.shownWordsCount), calling onHalfway.")
+                    self.onHalfway()
                 }
 
-                // Check if we've reached the halfway point for subsequent chapters
-                let halfwayPoint = words.count / 2
-                if chapterIndex > 0 && shownWordsCount == halfwayPoint {
-                    // At halfway for subsequent chapters, request the next chapter
-                    onHalfway()
-                }
-
-                // Schedule next again
-                scheduleNextWord()
+                // Schedule next word
+                self.scheduleNextWord()
             } else {
-                // No more words to show
-                onFinished()
+                print("[AnimatedParagraphView] No more words to show, calling onFinished.")
+                self.onFinished()
             }
         }
-        scheduledTask = task
-        DispatchQueue.main.asyncAfter(deadline: .now() + wordInterval, execute: task)
+
+        self.scheduledTask = task
+        let deadline = DispatchTime.now() + self.wordInterval
+        print("[AnimatedParagraphView] Scheduling next word in \(wordInterval) seconds.")
+        DispatchQueue.main.asyncAfter(deadline: deadline, execute: task)
+    }
+
+    private func sendFeedbackForWord(_ word: String) {
+//        print("[AnimatedParagraphView] Sending feedback for word: \(word) (thought_id: \(thoughtId), chapter_number: \(chapterNumber))")
+        let feedbackData: [String: Any] = [
+            "thought_id": thoughtId,
+            "chapter_number": chapterNumber,
+            "word": word,
+            "value": 0.8
+        ]
+        socketViewModel.sendMessage(action: "feedback", data: feedbackData)
     }
 
     private func measureWords(paragraph: String, font: UIFont, lineSpacing: CGFloat, width: CGFloat, completion: @escaping ([CGRect]) -> Void) {
+        print("[AnimatedParagraphView] measureWords called for paragraph with \(paragraph.components(separatedBy: " ").count) words.")
         let wordsArray = paragraph.components(separatedBy: " ")
 
         let textStorage = NSTextStorage(string: paragraph)
@@ -122,15 +150,12 @@ struct AnimatedParagraphView: View {
         textStorage.addLayoutManager(layoutManager)
         layoutManager.addTextContainer(textContainer)
 
-        // Set font
         textStorage.addAttribute(.font, value: font, range: NSRange(location: 0, length: paragraph.utf16.count))
 
-        // Set line spacing
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.lineSpacing = lineSpacing
         textStorage.addAttribute(.paragraphStyle, value: paragraphStyle, range: NSRange(location: 0, length: paragraph.utf16.count))
 
-        // Force layout
         layoutManager.glyphRange(for: textContainer)
 
         var frames: [CGRect] = []
@@ -148,6 +173,7 @@ struct AnimatedParagraphView: View {
             }
         }
 
+        print("[AnimatedParagraphView] measureWords completed.")
         completion(frames)
     }
 
