@@ -6,7 +6,6 @@ struct ThoughtsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @StateObject private var viewModel: ThoughtsViewModel
-    // Add the WebSocketViewModel here
     @StateObject private var socketViewModel: WebSocketViewModel
 
     private let columns = [
@@ -16,9 +15,6 @@ struct ThoughtsView: View {
 
     init(accessToken: String) {
         _viewModel = StateObject(wrappedValue: ThoughtsViewModel(accessToken: accessToken))
-        // Initialize socketViewModel with the given token and your server's host
-        // For demonstration, we assume the baseUrl "brain.sorenapp.ir"
-        // Adjust to match the actual host you use for the ws connection
         _socketViewModel = StateObject(wrappedValue: WebSocketViewModel(baseUrl: "brain.sorenapp.ir", token: accessToken))
     }
 
@@ -37,7 +33,12 @@ struct ThoughtsView: View {
             }
         }
         .onAppear {
+            // Fetch local thoughts data
             viewModel.fetchThoughts()
+            
+            // After thoughts are fetched, send a "list_thoughts" action to the server
+            // This will trigger the printing of the received thoughts in the console
+            socketViewModel.sendMessage(action: "list_thoughts", data: [:])
         }
         .onChange(of: socketViewModel.welcomeMessage) { newMessage in
             if let message = newMessage {
@@ -126,13 +127,12 @@ struct ThoughtCard: View {
             bottomGradient
             titleText
         }
-        .frame(height: 200) // Fixed height ensures a stable card size
+        .frame(height: 200)
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .shadow(color: .black.opacity(0.5), radius: 4, x: 0, y: 2)
         .overlay(overlayIfProcessing)
     }
     
-    /// Loads and displays the thought's cover image, if available
     private var backgroundImage: some View {
         AsyncImage(url: URL(string: baseUrl + (thought.cover ?? ""))) { phase in
             switch phase {
@@ -144,9 +144,9 @@ struct ThoughtCard: View {
             case .success(let image):
                 image
                     .resizable()
-                    .scaledToFill()          // Fill the entire frame
+                    .scaledToFill()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .clipped()               // Ensure no overflow
+                    .clipped()
             case .failure:
                 Image(systemName: "photo")
                     .resizable()
@@ -160,7 +160,6 @@ struct ThoughtCard: View {
         }
     }
     
-    /// Adds a subtle gradient at the bottom to enhance text readability
     private var bottomGradient: some View {
         LinearGradient(
             gradient: Gradient(colors: [.clear, Color.black.opacity(0.7)]),
@@ -169,7 +168,6 @@ struct ThoughtCard: View {
         )
     }
     
-    /// Displays the thought’s name at the bottom of the card
     private var titleText: some View {
         VStack {
             Spacer()
@@ -180,7 +178,6 @@ struct ThoughtCard: View {
         }
     }
     
-    /// If the thought is still processing, show a translucent overlay with a progress indicator
     @ViewBuilder
     private var overlayIfProcessing: some View {
         if thought.status == "processing" {

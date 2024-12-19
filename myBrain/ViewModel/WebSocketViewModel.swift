@@ -67,9 +67,10 @@ class WebSocketViewModel: ObservableObject {
     /// Handles incoming messages by parsing the JSON and acting on the 'connection_response' event.
     private func handleIncomingMessage(_ text: String) {
         guard let data = text.data(using: .utf8) else { return }
-
+        print(text)
         do {
-            if let jsonObject = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
+            if let jsonObject = try JSONSerialization.jsonObject(with: data, options: [])
+                as? [String: Any],
                let type = jsonObject["type"] as? String, type == "connection_response" {
 
                 let status = jsonObject["status"] as? String
@@ -96,6 +97,8 @@ class WebSocketViewModel: ObservableObject {
     ///     "data": { /* action-specific payload */ }
     /// }
     func sendMessage(action: String, data: [String: Any]) {
+        print("Sending message: \(action) with data: \(data)")
+
         let message: [String: Any] = [
             "action": action,
             "data": data
