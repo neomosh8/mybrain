@@ -44,7 +44,6 @@ class ThoughtsViewModel: ObservableObject {
 
                 // Print the raw response before decoding
                 if let responseString = String(data: data, encoding: .utf8) {
-                    print("Raw Response:", responseString)
                 } else {
                     print("Failed to convert response data to string.")
                 }
