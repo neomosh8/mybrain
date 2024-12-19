@@ -26,6 +26,7 @@
 		684427382D13F22E002E9BC6 /*  SharedDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427372D13F22E002E9BC6 /*  SharedDataManager.swift */; };
 		684427392D13F22E002E9BC6 /*  SharedDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427372D13F22E002E9BC6 /*  SharedDataManager.swift */; };
 		684427612D14B96B002E9BC6 /* WebSocketViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427602D14B96B002E9BC6 /* WebSocketViewModel.swift */; };
+		684427632D14BF76002E9BC6 /* ThoughtDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427622D14BF76002E9BC6 /* ThoughtDetailView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -74,6 +75,7 @@
 		684427332D13F189002E9BC6 /* myBrain.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = myBrain.entitlements; path = myBrain/myBrain.entitlements; sourceTree = "<group>"; };
 		684427372D13F22E002E9BC6 /*  SharedDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = " SharedDataManager.swift"; sourceTree = "<group>"; };
 		684427602D14B96B002E9BC6 /* WebSocketViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSocketViewModel.swift; sourceTree = "<group>"; };
+		684427622D14BF76002E9BC6 /* ThoughtDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtDetailView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -168,6 +170,7 @@
 				684427132D13D8B6002E9BC6 /* LoginView.swift */,
 				684427152D13D8CC002E9BC6 /* VerifyLoginView.swift */,
 				6844271D2D13E629002E9BC6 /* ThoughtsView.swift */,
+				684427622D14BF76002E9BC6 /* ThoughtDetailView.swift */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -295,6 +298,7 @@
 				6844271E2D13E629002E9BC6 /* ThoughtsView.swift in Sources */,
 				6844270E2D13D862002E9BC6 /* AuthViewModel.swift in Sources */,
 				684427032D13D580002E9BC6 /* myBrainApp.swift in Sources */,
+				684427632D14BF76002E9BC6 /* ThoughtDetailView.swift in Sources */,
 				684427612D14B96B002E9BC6 /* WebSocketViewModel.swift in Sources */,
 				684427382D13F22E002E9BC6 /*  SharedDataManager.swift in Sources */,
 				684427162D13D8CC002E9BC6 /* VerifyLoginView.swift in Sources */,

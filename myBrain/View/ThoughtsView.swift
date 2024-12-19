@@ -8,6 +8,8 @@ struct ThoughtsView: View {
     @StateObject private var viewModel: ThoughtsViewModel
     @StateObject private var socketViewModel: WebSocketViewModel
 
+    @State private var showConnectedBanner = false
+
     private let columns = [
         GridItem(.flexible()),
         GridItem(.flexible())
@@ -31,18 +33,41 @@ struct ThoughtsView: View {
                     thoughtsGrid
                 }
             }
+
+            // Overlay a "Connected" banner if showConnectedBanner is true
+            if showConnectedBanner {
+                VStack {
+                    Text("Connected")
+                        .font(.callout)
+                        .bold()
+                        .foregroundColor(.white)
+                        .padding()
+                        .background(Color.green)
+                        .cornerRadius(8)
+                        .padding(.top, 16)
+
+                    Spacer()
+                }
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .animation(.easeInOut, value: showConnectedBanner)
+            }
         }
         .onAppear {
-            // Fetch local thoughts data
             viewModel.fetchThoughts()
-            
-            // After thoughts are fetched, send a "list_thoughts" action to the server
-            // This will trigger the printing of the received thoughts in the console
             socketViewModel.sendMessage(action: "list_thoughts", data: [:])
         }
         .onChange(of: socketViewModel.welcomeMessage) { newMessage in
             if let message = newMessage {
                 print("Received welcome message from WS: \(message)")
+                
+                // Show the connected banner once welcome message is received
+                showConnectedBanner = true
+                // Hide the banner after 2 seconds
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    withAnimation {
+                        showConnectedBanner = false
+                    }
+                }
             }
         }
         .navigationTitle("Thoughts")
@@ -55,11 +80,7 @@ struct ThoughtsView: View {
         .toolbarBackground(Color.black, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
     }
-}
 
-// MARK: - Subviews and Toolbar Items
-
-extension ThoughtsView {
     private var loadingView: some View {
         ProgressView("Loading Thoughts...")
             .tint(.white)
@@ -76,7 +97,9 @@ extension ThoughtsView {
         ScrollView {
             LazyVGrid(columns: columns, spacing: 10) {
                 ForEach(viewModel.thoughts) { thought in
-                    ThoughtCard(thought: thought)
+                    NavigationLink(destination: ThoughtDetailView(thought: thought, socketViewModel: socketViewModel)) {
+                        ThoughtCard(thought: thought)
+                    }
                 }
             }
             .padding()
@@ -105,8 +128,6 @@ extension ThoughtsView {
         authVM.logoutFromServer(context: modelContext) { result in
             switch result {
             case .success:
-                // Once logged out, isAuthenticated = false in AuthViewModel
-                // ContentView should react by showing login screen again
                 break
             case .failure(let error):
                 print("Failed to logout:", error)

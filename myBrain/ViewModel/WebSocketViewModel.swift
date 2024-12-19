@@ -2,13 +2,12 @@ import Foundation
 import Combine
 
 class WebSocketViewModel: ObservableObject {
-    @Published var welcomeMessage: String?  // Published property to hold the welcome message
+    @Published var welcomeMessage: String?
+    @Published var chapterData: ChapterData? // New published property for chapter data
 
     private var webSocketTask: URLSessionWebSocketTask?
     private let baseUrl: String
     private let token: String
-
-    // If you need to store cancellables for Combine-based streams, you can use this:
     private var cancellables = Set<AnyCancellable>()
 
     init(baseUrl: String, token: String) {
@@ -17,7 +16,6 @@ class WebSocketViewModel: ObservableObject {
         connect()
     }
 
-    /// Establishes the WebSocket connection using the provided baseUrl and token.
     private func connect() {
         guard let url = URL(string: "ws://\(baseUrl)/thoughts/") else {
             print("Invalid URL.")
@@ -32,11 +30,9 @@ class WebSocketViewModel: ObservableObject {
         webSocketTask = session.webSocketTask(with: request)
         webSocketTask?.resume()
 
-        // Start listening for messages.
         receiveMessage()
     }
 
-    /// Begins receiving messages from the WebSocket.
     private func receiveMessage() {
         webSocketTask?.receive { [weak self] result in
             guard let self = self else { return }
@@ -59,31 +55,38 @@ class WebSocketViewModel: ObservableObject {
                 }
             }
 
-            // Continuously listen for next messages
             self.receiveMessage()
         }
     }
 
-    /// Handles incoming messages by parsing the JSON and acting on the 'connection_response' event.
     private func handleIncomingMessage(_ text: String) {
         guard let data = text.data(using: .utf8) else { return }
-        print(text)
+
         do {
-            if let jsonObject = try JSONSerialization.jsonObject(with: data, options: [])
-                as? [String: Any],
-               let type = jsonObject["type"] as? String, type == "connection_response" {
-
+            if let jsonObject = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
                 let status = jsonObject["status"] as? String
-                let message = jsonObject["message"] as? String
-
-                if status == "success", let welcome = message {
-                    // On successful connection, print and store the welcome message
-                    print("Welcome message: \(welcome)")
-                    DispatchQueue.main.async {
-                        self.welcomeMessage = welcome
-                    }
-                } else if status == "error", let errorMsg = message {
+                if status == "error" {
+                    let errorMsg = jsonObject["message"] as? String ?? "Unknown error"
                     print("Connection error: \(errorMsg)")
+                    return
+                }
+
+                guard let type = jsonObject["type"] as? String else {
+                    print("No type field found in message.")
+                    return
+                }
+
+                let dataPayload = jsonObject["data"] as? [String: Any]
+
+                switch type {
+                case "connection_response":
+                    handleConnectionResponse(jsonObject)
+                case "thoughts_list":
+                    handleThoughtsList(dataPayload)
+                case "chapter_response":
+                    handleChapterResponse(dataPayload)
+                default:
+                    print("Unhandled message type: \(type)")
                 }
             }
         } catch {
@@ -91,14 +94,55 @@ class WebSocketViewModel: ObservableObject {
         }
     }
 
-    /// Sends a message using the predefined format:
-    /// {
-    ///     "action": "<action_name>",
-    ///     "data": { /* action-specific payload */ }
-    /// }
-    func sendMessage(action: String, data: [String: Any]) {
-        print("Sending message: \(action) with data: \(data)")
+    private func handleConnectionResponse(_ jsonObject: [String: Any]) {
+        let status = jsonObject["status"] as? String
+        let message = jsonObject["message"] as? String
 
+        if status == "success", let welcome = message {
+            print("Welcome message: \(welcome)")
+            DispatchQueue.main.async {
+                self.welcomeMessage = welcome
+            }
+        } else {
+            let fallbackMsg = message ?? "No message"
+            print("Received connection_response with unknown status. Message: \(fallbackMsg)")
+        }
+    }
+
+    private func handleThoughtsList(_ dataPayload: [String: Any]?) {
+        guard let dataPayload = dataPayload,
+              let thoughts = dataPayload["thoughts"] as? [[String: Any]] else {
+            print("No thoughts data found.")
+            return
+        }
+
+        print("Received \(thoughts.count) thoughts:")
+//        for thought in thoughts {
+//            if let id = thought["id"], let name = thought["name"] {
+//                print("Thought ID: \(id), Name: \(name)")
+//            }
+//        }
+    }
+
+    private func handleChapterResponse(_ dataPayload: [String: Any]?) {
+        guard let dataPayload = dataPayload else {
+            print("No chapter data found.")
+            return
+        }
+
+        // Extract chapter info
+        let chapterNumber = dataPayload["chapter_number"] as? Int ?? 0
+        let title = dataPayload["title"] as? String ?? "No title"
+        let content = dataPayload["content"] as? String ?? "No content"
+        let status = dataPayload["status"] as? String ?? "unknown"
+
+        let chapter = ChapterData(chapterNumber: chapterNumber, title: title, content: content, status: status)
+        DispatchQueue.main.async {
+            self.chapterData = chapter
+        }
+    }
+
+    func sendMessage(action: String, data: [String: Any]) {
         let message: [String: Any] = [
             "action": action,
             "data": data
@@ -107,6 +151,7 @@ class WebSocketViewModel: ObservableObject {
         do {
             let jsonData = try JSONSerialization.data(withJSONObject: message, options: [])
             if let jsonString = String(data: jsonData, encoding: .utf8) {
+                print("Sending message: \(jsonString)")
                 webSocketTask?.send(.string(jsonString)) { error in
                     if let error = error {
                         print("Failed to send message: \(error)")
@@ -118,8 +163,15 @@ class WebSocketViewModel: ObservableObject {
         }
     }
 
-    /// Closes the WebSocket connection gracefully.
     func disconnect() {
         webSocketTask?.cancel(with: .goingAway, reason: nil)
     }
+}
+
+// Simple model to store chapter data
+struct ChapterData {
+    let chapterNumber: Int
+    let title: String
+    let content: String
+    let status: String
 }
