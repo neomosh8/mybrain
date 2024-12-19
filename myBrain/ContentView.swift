@@ -1,17 +1,18 @@
 import SwiftUI
-import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @StateObject var authVM = AuthViewModel()
-
+    @EnvironmentObject var authVM: AuthViewModel
+    
     var body: some View {
-        // After initializing authVM, load tokens from SwiftData:
-        // This will restore login state if tokens exist
         Group {
             if authVM.isAuthenticated {
-                Text("Welcome to myBrain!")
+                // Show main content or ThoughtsView
+                NavigationStack {
+                    ThoughtsView(accessToken: authVM.accessToken ?? "")
+                }
             } else {
+                // Show login/register flow
                 NavigationStack {
                     VStack {
                         NavigationLink("Register", destination: RegisterView().environmentObject(authVM))
@@ -22,6 +23,7 @@ struct ContentView: View {
             }
         }
         .onAppear {
+            // Load tokens from SwiftData when the view appears
             authVM.loadFromSwiftData(context: modelContext)
         }
     }

@@ -3,10 +3,14 @@ import SwiftData
 
 @main
 struct myBrainApp: App {
+    @StateObject var authVM = AuthViewModel()
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(authVM)
+                .modelContainer(for: [AuthData.self]) // Ensure AuthData is included
         }
-        .modelContainer(for: [AuthData.self]) // Ensure AuthData is included in the model container
     }
 }
+

@@ -19,6 +19,9 @@
 		684427142D13D8B6002E9BC6 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427132D13D8B6002E9BC6 /* LoginView.swift */; };
 		684427162D13D8CC002E9BC6 /* VerifyLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427152D13D8CC002E9BC6 /* VerifyLoginView.swift */; };
 		684427182D13E17B002E9BC6 /* AuthData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427172D13E17B002E9BC6 /* AuthData.swift */; };
+		6844271A2D13E572002E9BC6 /* Thought.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427192D13E572002E9BC6 /* Thought.swift */; };
+		6844271C2D13E5B6002E9BC6 /* ThoughtsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6844271B2D13E5B6002E9BC6 /* ThoughtsViewModel.swift */; };
+		6844271E2D13E629002E9BC6 /* ThoughtsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6844271D2D13E629002E9BC6 /* ThoughtsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -36,6 +39,9 @@
 		684427132D13D8B6002E9BC6 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		684427152D13D8CC002E9BC6 /* VerifyLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerifyLoginView.swift; sourceTree = "<group>"; };
 		684427172D13E17B002E9BC6 /* AuthData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthData.swift; sourceTree = "<group>"; };
+		684427192D13E572002E9BC6 /* Thought.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Thought.swift; sourceTree = "<group>"; };
+		6844271B2D13E5B6002E9BC6 /* ThoughtsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtsViewModel.swift; sourceTree = "<group>"; };
+		6844271D2D13E629002E9BC6 /* ThoughtsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -85,6 +91,7 @@
 			isa = PBXGroup;
 			children = (
 				6844270B2D13D802002E9BC6 /* AuthModels.swift */,
+				684427192D13E572002E9BC6 /* Thought.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -96,6 +103,7 @@
 				684427112D13D89D002E9BC6 /* VerifyRegistrationView.swift */,
 				684427132D13D8B6002E9BC6 /* LoginView.swift */,
 				684427152D13D8CC002E9BC6 /* VerifyLoginView.swift */,
+				6844271D2D13E629002E9BC6 /* ThoughtsView.swift */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -105,6 +113,7 @@
 			children = (
 				6844270D2D13D862002E9BC6 /* AuthViewModel.swift */,
 				684427172D13E17B002E9BC6 /* AuthData.swift */,
+				6844271B2D13E5B6002E9BC6 /* ThoughtsViewModel.swift */,
 			);
 			path = ViewModel;
 			sourceTree = "<group>";
@@ -183,13 +192,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6844271E2D13E629002E9BC6 /* ThoughtsView.swift in Sources */,
 				6844270E2D13D862002E9BC6 /* AuthViewModel.swift in Sources */,
 				684427032D13D580002E9BC6 /* myBrainApp.swift in Sources */,
 				684427162D13D8CC002E9BC6 /* VerifyLoginView.swift in Sources */,
 				6844270C2D13D802002E9BC6 /* AuthModels.swift in Sources */,
 				684427102D13D886002E9BC6 /* RegisterView.swift in Sources */,
+				6844271A2D13E572002E9BC6 /* Thought.swift in Sources */,
 				684427042D13D580002E9BC6 /* ContentView.swift in Sources */,
 				684427122D13D89D002E9BC6 /* VerifyRegistrationView.swift in Sources */,
+				6844271C2D13E5B6002E9BC6 /* ThoughtsViewModel.swift in Sources */,
 				684427182D13E17B002E9BC6 /* AuthData.swift in Sources */,
 				684427142D13D8B6002E9BC6 /* LoginView.swift in Sources */,
 				684427052D13D580002E9BC6 /* Item.swift in Sources */,
