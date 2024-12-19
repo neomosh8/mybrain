@@ -6,63 +6,38 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXContainerItemProxy section */
-		684426DB2D13CF05002E9BC6 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 684426C02D13CF03002E9BC6 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 684426C72D13CF03002E9BC6;
-			remoteInfo = myBrain;
-		};
-		684426E52D13CF05002E9BC6 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 684426C02D13CF03002E9BC6 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 684426C72D13CF03002E9BC6;
-			remoteInfo = myBrain;
-		};
-/* End PBXContainerItemProxy section */
+/* Begin PBXBuildFile section */
+		684427012D13D580002E9BC6 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 684426FF2D13D580002E9BC6 /* Preview Assets.xcassets */; };
+		684427022D13D580002E9BC6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 684426FB2D13D580002E9BC6 /* Assets.xcassets */; };
+		684427032D13D580002E9BC6 /* myBrainApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684426FE2D13D580002E9BC6 /* myBrainApp.swift */; };
+		684427042D13D580002E9BC6 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684426FC2D13D580002E9BC6 /* ContentView.swift */; };
+		684427052D13D580002E9BC6 /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684426FD2D13D580002E9BC6 /* Item.swift */; };
+		6844270C2D13D802002E9BC6 /* AuthModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6844270B2D13D802002E9BC6 /* AuthModels.swift */; };
+		6844270E2D13D862002E9BC6 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6844270D2D13D862002E9BC6 /* AuthViewModel.swift */; };
+		684427102D13D886002E9BC6 /* RegisterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6844270F2D13D886002E9BC6 /* RegisterView.swift */; };
+		684427122D13D89D002E9BC6 /* VerifyRegistrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427112D13D89D002E9BC6 /* VerifyRegistrationView.swift */; };
+		684427142D13D8B6002E9BC6 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427132D13D8B6002E9BC6 /* LoginView.swift */; };
+		684427162D13D8CC002E9BC6 /* VerifyLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427152D13D8CC002E9BC6 /* VerifyLoginView.swift */; };
+/* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		684426C82D13CF03002E9BC6 /* myBrain.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = myBrain.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		684426DA2D13CF05002E9BC6 /* myBrainTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = myBrainTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		684426E42D13CF05002E9BC6 /* myBrainUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = myBrainUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		684426FB2D13D580002E9BC6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		684426FC2D13D580002E9BC6 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		684426FD2D13D580002E9BC6 /* Item.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Item.swift; sourceTree = "<group>"; };
+		684426FE2D13D580002E9BC6 /* myBrainApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = myBrainApp.swift; sourceTree = "<group>"; };
+		684426FF2D13D580002E9BC6 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		684427062D13D585002E9BC6 /* myBrain-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "myBrain-Bridging-Header.h"; sourceTree = "<group>"; };
+		6844270B2D13D802002E9BC6 /* AuthModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthModels.swift; sourceTree = "<group>"; };
+		6844270D2D13D862002E9BC6 /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
+		6844270F2D13D886002E9BC6 /* RegisterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegisterView.swift; sourceTree = "<group>"; };
+		684427112D13D89D002E9BC6 /* VerifyRegistrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerifyRegistrationView.swift; sourceTree = "<group>"; };
+		684427132D13D8B6002E9BC6 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		684427152D13D8CC002E9BC6 /* VerifyLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerifyLoginView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
-
-/* Begin PBXFileSystemSynchronizedRootGroup section */
-		684426CA2D13CF03002E9BC6 /* myBrain */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = myBrain;
-			sourceTree = "<group>";
-		};
-		684426DD2D13CF05002E9BC6 /* myBrainTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = myBrainTests;
-			sourceTree = "<group>";
-		};
-		684426E72D13CF05002E9BC6 /* myBrainUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = myBrainUITests;
-			sourceTree = "<group>";
-		};
-/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		684426C52D13CF03002E9BC6 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		684426D72D13CF05002E9BC6 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		684426E12D13CF05002E9BC6 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -75,10 +50,16 @@
 		684426BF2D13CF03002E9BC6 = {
 			isa = PBXGroup;
 			children = (
-				684426CA2D13CF03002E9BC6 /* myBrain */,
-				684426DD2D13CF05002E9BC6 /* myBrainTests */,
-				684426E72D13CF05002E9BC6 /* myBrainUITests */,
+				684427092D13D793002E9BC6 /* ViewModel */,
+				684427082D13D784002E9BC6 /* View */,
+				684427072D13D761002E9BC6 /* Model */,
 				684426C92D13CF03002E9BC6 /* Products */,
+				684426FB2D13D580002E9BC6 /* Assets.xcassets */,
+				684426FC2D13D580002E9BC6 /* ContentView.swift */,
+				684426FD2D13D580002E9BC6 /* Item.swift */,
+				684426FE2D13D580002E9BC6 /* myBrainApp.swift */,
+				684427002D13D580002E9BC6 /* Preview Content */,
+				684427062D13D585002E9BC6 /* myBrain-Bridging-Header.h */,
 			);
 			sourceTree = "<group>";
 		};
@@ -86,10 +67,43 @@
 			isa = PBXGroup;
 			children = (
 				684426C82D13CF03002E9BC6 /* myBrain.app */,
-				684426DA2D13CF05002E9BC6 /* myBrainTests.xctest */,
-				684426E42D13CF05002E9BC6 /* myBrainUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		684427002D13D580002E9BC6 /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				684426FF2D13D580002E9BC6 /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		684427072D13D761002E9BC6 /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				6844270B2D13D802002E9BC6 /* AuthModels.swift */,
+			);
+			path = Model;
+			sourceTree = "<group>";
+		};
+		684427082D13D784002E9BC6 /* View */ = {
+			isa = PBXGroup;
+			children = (
+				6844270F2D13D886002E9BC6 /* RegisterView.swift */,
+				684427112D13D89D002E9BC6 /* VerifyRegistrationView.swift */,
+				684427132D13D8B6002E9BC6 /* LoginView.swift */,
+				684427152D13D8CC002E9BC6 /* VerifyLoginView.swift */,
+			);
+			path = View;
+			sourceTree = "<group>";
+		};
+		684427092D13D793002E9BC6 /* ViewModel */ = {
+			isa = PBXGroup;
+			children = (
+				6844270D2D13D862002E9BC6 /* AuthViewModel.swift */,
+			);
+			path = ViewModel;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -107,61 +121,12 @@
 			);
 			dependencies = (
 			);
-			fileSystemSynchronizedGroups = (
-				684426CA2D13CF03002E9BC6 /* myBrain */,
-			);
 			name = myBrain;
 			packageProductDependencies = (
 			);
 			productName = myBrain;
 			productReference = 684426C82D13CF03002E9BC6 /* myBrain.app */;
 			productType = "com.apple.product-type.application";
-		};
-		684426D92D13CF05002E9BC6 /* myBrainTests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 684426F12D13CF05002E9BC6 /* Build configuration list for PBXNativeTarget "myBrainTests" */;
-			buildPhases = (
-				684426D62D13CF05002E9BC6 /* Sources */,
-				684426D72D13CF05002E9BC6 /* Frameworks */,
-				684426D82D13CF05002E9BC6 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				684426DC2D13CF05002E9BC6 /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				684426DD2D13CF05002E9BC6 /* myBrainTests */,
-			);
-			name = myBrainTests;
-			packageProductDependencies = (
-			);
-			productName = myBrainTests;
-			productReference = 684426DA2D13CF05002E9BC6 /* myBrainTests.xctest */;
-			productType = "com.apple.product-type.bundle.unit-test";
-		};
-		684426E32D13CF05002E9BC6 /* myBrainUITests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 684426F42D13CF05002E9BC6 /* Build configuration list for PBXNativeTarget "myBrainUITests" */;
-			buildPhases = (
-				684426E02D13CF05002E9BC6 /* Sources */,
-				684426E12D13CF05002E9BC6 /* Frameworks */,
-				684426E22D13CF05002E9BC6 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				684426E62D13CF05002E9BC6 /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				684426E72D13CF05002E9BC6 /* myBrainUITests */,
-			);
-			name = myBrainUITests;
-			packageProductDependencies = (
-			);
-			productName = myBrainUITests;
-			productReference = 684426E42D13CF05002E9BC6 /* myBrainUITests.xctest */;
-			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
 
@@ -175,14 +140,7 @@
 				TargetAttributes = {
 					684426C72D13CF03002E9BC6 = {
 						CreatedOnToolsVersion = 16.2;
-					};
-					684426D92D13CF05002E9BC6 = {
-						CreatedOnToolsVersion = 16.2;
-						TestTargetID = 684426C72D13CF03002E9BC6;
-					};
-					684426E32D13CF05002E9BC6 = {
-						CreatedOnToolsVersion = 16.2;
-						TestTargetID = 684426C72D13CF03002E9BC6;
+						LastSwiftMigration = 1620;
 					};
 				};
 			};
@@ -201,8 +159,6 @@
 			projectRoot = "";
 			targets = (
 				684426C72D13CF03002E9BC6 /* myBrain */,
-				684426D92D13CF05002E9BC6 /* myBrainTests */,
-				684426E32D13CF05002E9BC6 /* myBrainUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -212,20 +168,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		684426D82D13CF05002E9BC6 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		684426E22D13CF05002E9BC6 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
+				684427012D13D580002E9BC6 /* Preview Assets.xcassets in Resources */,
+				684427022D13D580002E9BC6 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -236,37 +180,19 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		684426D62D13CF05002E9BC6 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		684426E02D13CF05002E9BC6 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
+				6844270E2D13D862002E9BC6 /* AuthViewModel.swift in Sources */,
+				684427032D13D580002E9BC6 /* myBrainApp.swift in Sources */,
+				684427162D13D8CC002E9BC6 /* VerifyLoginView.swift in Sources */,
+				6844270C2D13D802002E9BC6 /* AuthModels.swift in Sources */,
+				684427102D13D886002E9BC6 /* RegisterView.swift in Sources */,
+				684427042D13D580002E9BC6 /* ContentView.swift in Sources */,
+				684427122D13D89D002E9BC6 /* VerifyRegistrationView.swift in Sources */,
+				684427142D13D8B6002E9BC6 /* LoginView.swift in Sources */,
+				684427052D13D580002E9BC6 /* Item.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXTargetDependency section */
-		684426DC2D13CF05002E9BC6 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 684426C72D13CF03002E9BC6 /* myBrain */;
-			targetProxy = 684426DB2D13CF05002E9BC6 /* PBXContainerItemProxy */;
-		};
-		684426E62D13CF05002E9BC6 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 684426C72D13CF03002E9BC6 /* myBrain */;
-			targetProxy = 684426E52D13CF05002E9BC6 /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		684426EC2D13CF05002E9BC6 /* Debug */ = {
@@ -393,9 +319,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"myBrain/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"Preview Content\"";
 				DEVELOPMENT_TEAM = MS7857L94F;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -412,6 +339,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = neocore.myBrain;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "myBrain-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -422,9 +351,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"myBrain/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"Preview Content\"";
 				DEVELOPMENT_TEAM = MS7857L94F;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -441,80 +371,9 @@
 				PRODUCT_BUNDLE_IDENTIFIER = neocore.myBrain;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "myBrain-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
-		684426F22D13CF05002E9BC6 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = MS7857L94F;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = neocore.myBrainTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/myBrain.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/myBrain";
-			};
-			name = Debug;
-		};
-		684426F32D13CF05002E9BC6 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = MS7857L94F;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = neocore.myBrainTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/myBrain.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/myBrain";
-			};
-			name = Release;
-		};
-		684426F52D13CF05002E9BC6 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = MS7857L94F;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = neocore.myBrainUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = myBrain;
-			};
-			name = Debug;
-		};
-		684426F62D13CF05002E9BC6 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = MS7857L94F;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = neocore.myBrainUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = myBrain;
 			};
 			name = Release;
 		};
@@ -535,24 +394,6 @@
 			buildConfigurations = (
 				684426EF2D13CF05002E9BC6 /* Debug */,
 				684426F02D13CF05002E9BC6 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		684426F12D13CF05002E9BC6 /* Build configuration list for PBXNativeTarget "myBrainTests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				684426F22D13CF05002E9BC6 /* Debug */,
-				684426F32D13CF05002E9BC6 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		684426F42D13CF05002E9BC6 /* Build configuration list for PBXNativeTarget "myBrainUITests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				684426F52D13CF05002E9BC6 /* Debug */,
-				684426F62D13CF05002E9BC6 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
