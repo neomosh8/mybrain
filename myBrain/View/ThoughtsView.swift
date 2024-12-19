@@ -6,6 +6,8 @@ struct ThoughtsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @StateObject private var viewModel: ThoughtsViewModel
+    // Add the WebSocketViewModel here
+    @StateObject private var socketViewModel: WebSocketViewModel
 
     private let columns = [
         GridItem(.flexible()),
@@ -14,6 +16,10 @@ struct ThoughtsView: View {
 
     init(accessToken: String) {
         _viewModel = StateObject(wrappedValue: ThoughtsViewModel(accessToken: accessToken))
+        // Initialize socketViewModel with the given token and your server's host
+        // For demonstration, we assume the baseUrl "brain.sorenapp.ir"
+        // Adjust to match the actual host you use for the ws connection
+        _socketViewModel = StateObject(wrappedValue: WebSocketViewModel(baseUrl: "brain.sorenapp.ir", token: accessToken))
     }
 
     var body: some View {
@@ -30,7 +36,14 @@ struct ThoughtsView: View {
                 }
             }
         }
-        .onAppear(perform: viewModel.fetchThoughts)
+        .onAppear {
+            viewModel.fetchThoughts()
+        }
+        .onChange(of: socketViewModel.welcomeMessage) { newMessage in
+            if let message = newMessage {
+                print("Received welcome message from WS: \(message)")
+            }
+        }
         .navigationTitle("Thoughts")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
@@ -100,6 +113,7 @@ extension ThoughtsView {
         }
     }
 }
+
 // MARK: - ThoughtCard
 
 struct ThoughtCard: View {

@@ -25,6 +25,7 @@
 		6844272D2D13F09C002E9BC6 /* myBrainShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 684427232D13F09C002E9BC6 /* myBrainShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		684427382D13F22E002E9BC6 /*  SharedDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427372D13F22E002E9BC6 /*  SharedDataManager.swift */; };
 		684427392D13F22E002E9BC6 /*  SharedDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427372D13F22E002E9BC6 /*  SharedDataManager.swift */; };
+		684427612D14B96B002E9BC6 /* WebSocketViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427602D14B96B002E9BC6 /* WebSocketViewModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -72,6 +73,7 @@
 		684427232D13F09C002E9BC6 /* myBrainShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = myBrainShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		684427332D13F189002E9BC6 /* myBrain.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = myBrain.entitlements; path = myBrain/myBrain.entitlements; sourceTree = "<group>"; };
 		684427372D13F22E002E9BC6 /*  SharedDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = " SharedDataManager.swift"; sourceTree = "<group>"; };
+		684427602D14B96B002E9BC6 /* WebSocketViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSocketViewModel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -176,6 +178,7 @@
 				6844270D2D13D862002E9BC6 /* AuthViewModel.swift */,
 				684427172D13E17B002E9BC6 /* AuthData.swift */,
 				6844271B2D13E5B6002E9BC6 /* ThoughtsViewModel.swift */,
+				684427602D14B96B002E9BC6 /* WebSocketViewModel.swift */,
 			);
 			path = ViewModel;
 			sourceTree = "<group>";
@@ -292,6 +295,7 @@
 				6844271E2D13E629002E9BC6 /* ThoughtsView.swift in Sources */,
 				6844270E2D13D862002E9BC6 /* AuthViewModel.swift in Sources */,
 				684427032D13D580002E9BC6 /* myBrainApp.swift in Sources */,
+				684427612D14B96B002E9BC6 /* WebSocketViewModel.swift in Sources */,
 				684427382D13F22E002E9BC6 /*  SharedDataManager.swift in Sources */,
 				684427162D13D8CC002E9BC6 /* VerifyLoginView.swift in Sources */,
 				6844270C2D13D802002E9BC6 /* AuthModels.swift in Sources */,
