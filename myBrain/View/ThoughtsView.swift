@@ -7,12 +7,14 @@ struct ThoughtsView: View {
     @Environment(\.modelContext) private var modelContext
     @StateObject private var viewModel: ThoughtsViewModel
     @StateObject private var socketViewModel: WebSocketViewModel
+    @Environment(\.scenePhase) private var scenePhase
     
     @State private var showConnectedBanner = false
     @State private var processingThoughtIDs = Set<Int>()
     @State private var lastSocketMessage: String?
     @State private var selectedThought: Thought?
     @State private var isRefreshing = false
+    @State private var lastScenePhase: ScenePhase = .active
 
 
     private let columns = [
@@ -112,6 +114,12 @@ struct ThoughtsView: View {
               let string = String(data: data, encoding: .utf8) {
                lastSocketMessage = string
            }
+        }
+        .onChange(of: scenePhase){ newPhase in
+            if newPhase == .active && lastScenePhase != .active {
+                refreshData()
+            }
+            lastScenePhase = newPhase
         }
         .navigationTitle("Thoughts")
         .navigationBarTitleDisplayMode(.inline)
