@@ -3,7 +3,9 @@ import Combine
 
 class WebSocketViewModel: ObservableObject {
     @Published var welcomeMessage: String?
-    @Published var chapterData: ChapterData? // New published property for chapter data
+    @Published var chapterData: ChapterData?
+    @Published var incomingMessage: [String: Any]? // New published property for generic JSON messages
+
 
     private var webSocketTask: URLSessionWebSocketTask?
     private let baseUrl: String
@@ -84,6 +86,11 @@ class WebSocketViewModel: ObservableObject {
                 }
 
                 let dataPayload = jsonObject["data"] as? [String: Any]
+                
+                // Publish the entire JSON message for other views to use
+                DispatchQueue.main.async {
+                    self.incomingMessage = jsonObject
+                }
 
                 switch type {
                 case "connection_response":
@@ -96,8 +103,13 @@ class WebSocketViewModel: ObservableObject {
                     // Just ignore or handle quietly
                     // No error, no print needed
                     break
+               case "thought_update":
+                    // Just ignore , since we already publish it to incomingMessage
+                    break
                 default:
-                    print("Unhandled message type: \(type)")
+                   print("Unhandled message type: \(type)")
+                   break;
+
                 }
             }
         } catch {
@@ -180,7 +192,7 @@ class WebSocketViewModel: ObservableObject {
 
 
 // Simple model to store chapter data
-struct ChapterData {
+struct ChapterData: Equatable { // Conform to Equatable
     let chapterNumber: Int
     let title: String
     let content: String
