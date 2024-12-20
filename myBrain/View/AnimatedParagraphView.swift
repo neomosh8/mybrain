@@ -15,7 +15,12 @@ struct AnimatedParagraphView: View {
     @State private var wordFrames: [CGRect] = []
     @State private var readyToAnimate = false
     @State private var scheduledTask: DispatchWorkItem?
-
+    
+    @State private var animationFinished = false // This state variable will help controlling start animation
+    
+    @Binding var currentChapterIndex: Int? // Add this binding
+    
+    
     let customFont = UIFont(name: "Helvetica", size: 20) ?? UIFont.systemFont(ofSize: 20)
     let lineSpacingValue: CGFloat = 10
 
@@ -60,7 +65,12 @@ struct AnimatedParagraphView: View {
                     print("[AnimatedParagraphView] Word frames measured: \(frames.count) frames.")
                     self.wordFrames = frames
                     self.readyToAnimate = true
-                    self.startAnimation()
+                   
+                    //start animation only if its the current chapter
+                    if currentChapterIndex == chapterIndex {
+                        self.startAnimation()
+                    }
+                   
                 }
             }
         }
@@ -71,11 +81,19 @@ struct AnimatedParagraphView: View {
                 scheduleNextWord()
             }
         }
+        .onChange(of: currentChapterIndex) { newCurrentChapterIndex in
+            if newCurrentChapterIndex == chapterIndex && animationFinished == false {
+                print("[AnimatedParagraphView] Current chapter index changed to \(newCurrentChapterIndex) and animation for this chapter should be started.")
+                startAnimation()
+            }
+        }
+        
         .onDisappear {
             // Cancel any scheduled animations
             scheduledTask?.cancel()
             shownWordsCount = 0
-            print("[AnimatedParagraphView] onDisappear - scheduled task cancelled and word count reset")
+             animationFinished = false
+            print("[AnimatedParagraphView] onDisappear - scheduled task cancelled and word count reset and animationFinished reset")
         }
     }
 
@@ -98,6 +116,7 @@ struct AnimatedParagraphView: View {
     private func scheduleNextWord() {
         guard shownWordsCount < words.count else {
             print("[AnimatedParagraphView] All words shown, calling onFinished.")
+            animationFinished = true
             onFinished()
             return
         }
@@ -123,7 +142,8 @@ struct AnimatedParagraphView: View {
                 self.scheduleNextWord()
             } else {
                 print("[AnimatedParagraphView] No more words to show, calling onFinished.")
-                self.onFinished()
+                 animationFinished = true
+                onFinished()
             }
         }
 
