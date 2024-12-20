@@ -18,8 +18,8 @@ struct ThoughtsView: View {
 
 
     private let columns = [
-        GridItem(.flexible()),
-        GridItem(.flexible())
+        GridItem(.flexible(),spacing: 16),
+        GridItem(.flexible(),spacing: 16)
     ]
 
     init(accessToken: String) {
@@ -149,7 +149,7 @@ struct ThoughtsView: View {
 
     private var thoughtsGrid: some View {
            ScrollView {
-               LazyVGrid(columns: columns, spacing: 10) {
+               LazyVGrid(columns: columns, spacing: 16) {
                    ForEach(viewModel.thoughts) { thought in
                         let isClickable = thought.status == "processed"
                        Button {
@@ -163,7 +163,7 @@ struct ThoughtsView: View {
                         .opacity(isClickable ? 1 : 0.7)
                    }
                }
-               .padding()
+               .padding(16)
            }
            .refreshable {
             refreshData()
@@ -287,20 +287,20 @@ struct ThoughtCard: View {
     let id: Int
     private let baseUrl = "https://brain.sorenapp.ir"
     
-    var body: some View {
-        ZStack {
-            backgroundImage
-            bottomGradient
-            titleText
-            if isProcessing{
-                overlayIfProcessing
-            }
-        }
-        .frame(height: 200)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .shadow(color: .black.opacity(0.5), radius: 4, x: 0, y: 2)
-        .id(id)
-    }
+     var body: some View {
+         ZStack {
+             backgroundImage
+             bottomGradient
+             titleText
+             if isProcessing{
+                 overlayIfProcessing
+             }
+         }
+         .aspectRatio(1/1, contentMode: .fill)
+         .clipShape(RoundedRectangle(cornerRadius: 10))
+         .shadow(color: .black.opacity(0.5), radius: 4, x: 0, y: 2)
+         .id(id)
+     }
     
     private var backgroundImage: some View {
         AsyncImage(url: URL(string: baseUrl + (thought.cover ?? ""))) { phase in
