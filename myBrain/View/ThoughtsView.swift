@@ -15,6 +15,7 @@ struct ThoughtsView: View {
     @State private var selectedThought: Thought?
     @State private var isRefreshing = false
     @State private var lastScenePhase: ScenePhase = .active
+    @State private var mode: Mode = .eye // Initial mode
 
 
     private let columns = [
@@ -125,13 +126,17 @@ struct ThoughtsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
         .toolbar {
-            leadingToolbarItem
+            modeToolbarItem
             trailingToolbarItem
         }
         .toolbarBackground(Color.black, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .navigationDestination(item: $selectedThought) { thought in
-            ThoughtDetailView(thought: thought, socketViewModel: socketViewModel)
+            if mode == .eye {
+                 ThoughtDetailView(thought: thought, socketViewModel: socketViewModel)
+            } else {
+               StreamThoughtView(thought: thought, socketViewModel: socketViewModel)
+            }
         }
     }
 
@@ -180,12 +185,9 @@ struct ThoughtsView: View {
           viewModel.fetchThoughts()
     }
 
-    private var leadingToolbarItem: some ToolbarContent {
+    private var modeToolbarItem: some ToolbarContent {
         ToolbarItem(placement: .navigationBarLeading) {
-            Button(action: { dismiss() }) {
-                Image(systemName: "chevron.left")
-                    .foregroundColor(.white)
-            }
+            ModeSwitch(mode: $mode)
         }
     }
 
@@ -355,4 +357,38 @@ struct ThoughtCard: View {
                     .tint(.white)
             }
         }
+}
+
+// MARK: - ModeSwitch (New)
+
+enum Mode {
+    case eye, ear
+}
+
+
+struct ModeSwitch: View {
+    @Binding var mode: Mode
+
+    var body: some View {
+        HStack(spacing: 0) {
+            Button(action: { mode = .ear }) {
+                Image(systemName: "ear")
+                    .foregroundColor(mode == .ear ? .white : .gray)
+                    .padding(8)
+                    .background(mode == .ear ? Color.gray : .clear)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    
+            }
+            Button(action: { mode = .eye }) {
+                Image(systemName: "eye")
+                    .foregroundColor(mode == .eye ? .white : .gray)
+                    .padding(8)
+                    .background(mode == .eye ? Color.gray : .clear)
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            }
+        }
+        .background(Color.black.opacity(0.8))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .padding(4)
+    }
 }
