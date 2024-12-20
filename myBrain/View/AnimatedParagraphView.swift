@@ -71,6 +71,12 @@ struct AnimatedParagraphView: View {
                 scheduleNextWord()
             }
         }
+        .onDisappear {
+            // Cancel any scheduled animations
+            scheduledTask?.cancel()
+            shownWordsCount = 0
+            print("[AnimatedParagraphView] onDisappear - scheduled task cancelled and word count reset")
+        }
     }
 
     private func startAnimation() {

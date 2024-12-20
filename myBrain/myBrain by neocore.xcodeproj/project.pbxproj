@@ -22,7 +22,7 @@
 		6844271A2D13E572002E9BC6 /* Thought.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427192D13E572002E9BC6 /* Thought.swift */; };
 		6844271C2D13E5B6002E9BC6 /* ThoughtsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6844271B2D13E5B6002E9BC6 /* ThoughtsViewModel.swift */; };
 		6844271E2D13E629002E9BC6 /* ThoughtsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6844271D2D13E629002E9BC6 /* ThoughtsView.swift */; };
-		6844272D2D13F09C002E9BC6 /* myBrainShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 684427232D13F09C002E9BC6 /* myBrainShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		6844272D2D13F09C002E9BC6 /* myBrain by neocoreShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 684427232D13F09C002E9BC6 /* myBrain by neocoreShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		684427382D13F22E002E9BC6 /*  SharedDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427372D13F22E002E9BC6 /*  SharedDataManager.swift */; };
 		684427392D13F22E002E9BC6 /*  SharedDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427372D13F22E002E9BC6 /*  SharedDataManager.swift */; };
 		684427612D14B96B002E9BC6 /* WebSocketViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427602D14B96B002E9BC6 /* WebSocketViewModel.swift */; };
@@ -47,7 +47,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				6844272D2D13F09C002E9BC6 /* myBrainShare.appex in Embed Foundation Extensions */,
+				6844272D2D13F09C002E9BC6 /* myBrain by neocoreShare.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -55,7 +55,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		684426C82D13CF03002E9BC6 /* myBrain.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = myBrain.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		684426C82D13CF03002E9BC6 /* myBrain by neocore.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "myBrain by neocore.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		684426FB2D13D580002E9BC6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		684426FC2D13D580002E9BC6 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		684426FD2D13D580002E9BC6 /* Item.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Item.swift; sourceTree = "<group>"; };
@@ -72,7 +72,7 @@
 		684427192D13E572002E9BC6 /* Thought.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Thought.swift; sourceTree = "<group>"; };
 		6844271B2D13E5B6002E9BC6 /* ThoughtsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtsViewModel.swift; sourceTree = "<group>"; };
 		6844271D2D13E629002E9BC6 /* ThoughtsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtsView.swift; sourceTree = "<group>"; };
-		684427232D13F09C002E9BC6 /* myBrainShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = myBrainShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		684427232D13F09C002E9BC6 /* myBrain by neocoreShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "myBrain by neocoreShare.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		684427332D13F189002E9BC6 /* myBrain.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = myBrain.entitlements; path = myBrain/myBrain.entitlements; sourceTree = "<group>"; };
 		684427372D13F22E002E9BC6 /*  SharedDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = " SharedDataManager.swift"; sourceTree = "<group>"; };
 		684427602D14B96B002E9BC6 /* WebSocketViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSocketViewModel.swift; sourceTree = "<group>"; };
@@ -81,12 +81,12 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		6844272E2D13F09C002E9BC6 /* Exceptions for "myBrainShare" folder in "myBrainShare" target */ = {
+		6844272E2D13F09C002E9BC6 /* Exceptions for "myBrainShare" folder in "myBrain by neocoreShare" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = 684427222D13F09C002E9BC6 /* myBrainShare */;
+			target = 684427222D13F09C002E9BC6 /* myBrain by neocoreShare */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -94,7 +94,7 @@
 		684427242D13F09C002E9BC6 /* myBrainShare */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				6844272E2D13F09C002E9BC6 /* Exceptions for "myBrainShare" folder in "myBrainShare" target */,
+				6844272E2D13F09C002E9BC6 /* Exceptions for "myBrainShare" folder in "myBrain by neocoreShare" target */,
 			);
 			path = myBrainShare;
 			sourceTree = "<group>";
@@ -140,8 +140,8 @@
 		684426C92D13CF03002E9BC6 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				684426C82D13CF03002E9BC6 /* myBrain.app */,
-				684427232D13F09C002E9BC6 /* myBrainShare.appex */,
+				684426C82D13CF03002E9BC6 /* myBrain by neocore.app */,
+				684427232D13F09C002E9BC6 /* myBrain by neocoreShare.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -192,9 +192,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		684426C72D13CF03002E9BC6 /* myBrain */ = {
+		684426C72D13CF03002E9BC6 /* myBrain by neocore */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 684426EE2D13CF05002E9BC6 /* Build configuration list for PBXNativeTarget "myBrain" */;
+			buildConfigurationList = 684426EE2D13CF05002E9BC6 /* Build configuration list for PBXNativeTarget "myBrain by neocore" */;
 			buildPhases = (
 				684426C42D13CF03002E9BC6 /* Sources */,
 				684426C52D13CF03002E9BC6 /* Frameworks */,
@@ -206,16 +206,16 @@
 			dependencies = (
 				6844272C2D13F09C002E9BC6 /* PBXTargetDependency */,
 			);
-			name = myBrain;
+			name = "myBrain by neocore";
 			packageProductDependencies = (
 			);
 			productName = myBrain;
-			productReference = 684426C82D13CF03002E9BC6 /* myBrain.app */;
+			productReference = 684426C82D13CF03002E9BC6 /* myBrain by neocore.app */;
 			productType = "com.apple.product-type.application";
 		};
-		684427222D13F09C002E9BC6 /* myBrainShare */ = {
+		684427222D13F09C002E9BC6 /* myBrain by neocoreShare */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 6844272F2D13F09C002E9BC6 /* Build configuration list for PBXNativeTarget "myBrainShare" */;
+			buildConfigurationList = 6844272F2D13F09C002E9BC6 /* Build configuration list for PBXNativeTarget "myBrain by neocoreShare" */;
 			buildPhases = (
 				6844271F2D13F09C002E9BC6 /* Sources */,
 				684427202D13F09C002E9BC6 /* Frameworks */,
@@ -228,11 +228,11 @@
 			fileSystemSynchronizedGroups = (
 				684427242D13F09C002E9BC6 /* myBrainShare */,
 			);
-			name = myBrainShare;
+			name = "myBrain by neocoreShare";
 			packageProductDependencies = (
 			);
 			productName = myBrainShare;
-			productReference = 684427232D13F09C002E9BC6 /* myBrainShare.appex */;
+			productReference = 684427232D13F09C002E9BC6 /* myBrain by neocoreShare.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
@@ -254,7 +254,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 684426C32D13CF03002E9BC6 /* Build configuration list for PBXProject "myBrain" */;
+			buildConfigurationList = 684426C32D13CF03002E9BC6 /* Build configuration list for PBXProject "myBrain by neocore" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -268,8 +268,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				684426C72D13CF03002E9BC6 /* myBrain */,
-				684427222D13F09C002E9BC6 /* myBrainShare */,
+				684426C72D13CF03002E9BC6 /* myBrain by neocore */,
+				684427222D13F09C002E9BC6 /* myBrain by neocoreShare */,
 			);
 		};
 /* End PBXProject section */
@@ -331,7 +331,7 @@
 /* Begin PBXTargetDependency section */
 		6844272C2D13F09C002E9BC6 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 684427222D13F09C002E9BC6 /* myBrainShare */;
+			target = 684427222D13F09C002E9BC6 /* myBrain by neocoreShare */;
 			targetProxy = 6844272B2D13F09C002E9BC6 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -474,6 +474,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -507,6 +508,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -532,6 +534,7 @@
 				INFOPLIST_FILE = myBrainShare/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = myBrainShare;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -558,6 +561,7 @@
 				INFOPLIST_FILE = myBrainShare/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = myBrainShare;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -576,7 +580,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		684426C32D13CF03002E9BC6 /* Build configuration list for PBXProject "myBrain" */ = {
+		684426C32D13CF03002E9BC6 /* Build configuration list for PBXProject "myBrain by neocore" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				684426EC2D13CF05002E9BC6 /* Debug */,
@@ -585,7 +589,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		684426EE2D13CF05002E9BC6 /* Build configuration list for PBXNativeTarget "myBrain" */ = {
+		684426EE2D13CF05002E9BC6 /* Build configuration list for PBXNativeTarget "myBrain by neocore" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				684426EF2D13CF05002E9BC6 /* Debug */,
@@ -594,7 +598,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		6844272F2D13F09C002E9BC6 /* Build configuration list for PBXNativeTarget "myBrainShare" */ = {
+		6844272F2D13F09C002E9BC6 /* Build configuration list for PBXNativeTarget "myBrain by neocoreShare" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				684427302D13F09C002E9BC6 /* Debug */,

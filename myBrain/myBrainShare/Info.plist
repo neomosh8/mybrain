@@ -7,7 +7,19 @@
         <key>NSExtensionAttributes</key>
         <dict>
             <key>NSExtensionActivationRule</key>
-            <string>TRUEPREDICATE</string>
+            <dict>
+                <!-- Indicates support for text items -->
+                <key>NSExtensionActivationSupportsText</key>
+                <true/>
+                
+                <!-- Indicates support for a single web URL -->
+                <key>NSExtensionActivationSupportsWebURLWithMaxCount</key>
+                <integer>1</integer>
+                
+                <!-- Indicates support for a single image -->
+                <key>NSExtensionActivationSupportsImageWithMaxCount</key>
+                <integer>1</integer>
+            </dict>
         </dict>
         <key>NSExtensionPointIdentifier</key>
         <string>com.apple.share-services</string>

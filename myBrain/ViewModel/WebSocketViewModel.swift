@@ -16,6 +16,12 @@ class WebSocketViewModel: ObservableObject {
         connect()
     }
 
+    func clearChapterData() {
+        DispatchQueue.main.async {
+            self.chapterData = nil
+        }
+    }
+
     private func connect() {
         guard let url = URL(string: "ws://\(baseUrl)/thoughts/") else {
             print("Invalid URL.")
@@ -59,6 +65,7 @@ class WebSocketViewModel: ObservableObject {
         }
     }
 
+
     private func handleIncomingMessage(_ text: String) {
         guard let data = text.data(using: .utf8) else { return }
 
@@ -86,9 +93,9 @@ class WebSocketViewModel: ObservableObject {
                 case "chapter_response":
                     handleChapterResponse(dataPayload)
                 case "feedback_response":
-                                // Just ignore or handle quietly
-                                // No error, no print needed
-                                break
+                    // Just ignore or handle quietly
+                    // No error, no print needed
+                    break
                 default:
                     print("Unhandled message type: \(type)")
                 }
@@ -166,11 +173,11 @@ class WebSocketViewModel: ObservableObject {
             print("Failed to encode message: \(error)")
         }
     }
-
-    func disconnect() {
-        webSocketTask?.cancel(with: .goingAway, reason: nil)
-    }
+    
+    // No disconnect function needed here
+    // The socket will remain open
 }
+
 
 // Simple model to store chapter data
 struct ChapterData {

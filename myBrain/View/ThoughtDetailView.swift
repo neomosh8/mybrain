@@ -19,7 +19,7 @@ struct ThoughtDetailView: View {
 
     var body: some View {
         ZStack {
-            if paragraphs.isEmpty {
+            if displayedParagraphsCount == 0 { // Changed condition here
                 // No chapters loaded yet, show a loading indicator
                 ProgressView("Loading First Chapter...")
                     .tint(.white)
@@ -76,6 +76,14 @@ struct ThoughtDetailView: View {
         .onAppear {
             // Request the first chapter immediately
             requestNextChapter()
+        }
+        .onDisappear {
+            // Cancel ongoing processes
+           
+            socketViewModel.clearChapterData()
+            paragraphs = [] //reset paragraphs
+            displayedParagraphsCount = 0 //reset the counter too
+
         }
         .onReceive(socketViewModel.$chapterData) { chapterData in
             guard let chapterData = chapterData else { return }
