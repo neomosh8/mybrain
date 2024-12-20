@@ -13,6 +13,8 @@ struct ThoughtDetailView: View {
     @State private var paragraphs: [Paragraph] = []
     @State private var displayedParagraphsCount = 0
     @State private var scrollProxy: ScrollViewProxy?
+    
+    @State private var currentChapterIndex: Int? // new state
 
     @State private var wordInterval: Double = 0.15
     @State private var sliderPosition: CGPoint = CGPoint(x: 100, y: 200) // initial position
@@ -48,7 +50,13 @@ struct ThoughtDetailView: View {
                                     },
                                     onFinished: {
                                         // OnFinished no longer triggers next chapter because we do it at halfway.
-                                    }
+                                        
+                                        if displayedParagraphsCount > index + 1 {
+                                            currentChapterIndex = index + 1
+                                        }
+                                        
+                                    },
+                                    currentChapterIndex: $currentChapterIndex // Pass the binding here!
                                 )
                                 .id(index)
                             }
@@ -83,6 +91,7 @@ struct ThoughtDetailView: View {
             socketViewModel.clearChapterData()
             paragraphs = [] //reset paragraphs
             displayedParagraphsCount = 0 //reset the counter too
+            currentChapterIndex = nil //reset chapter index too
 
         }
         .onReceive(socketViewModel.$chapterData) { chapterData in
@@ -91,6 +100,10 @@ struct ThoughtDetailView: View {
             paragraphs.append(Paragraph(chapterNumber: chapterData.chapterNumber, content: chapterData.content))
             // Show the new paragraph
             displayedParagraphsCount = paragraphs.count
+            
+            if displayedParagraphsCount == 1 {
+                currentChapterIndex = 0
+            }
         }
     }
 
