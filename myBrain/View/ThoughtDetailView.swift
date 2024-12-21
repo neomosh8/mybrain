@@ -16,7 +16,7 @@ struct ThoughtDetailView: View {
     
     @State private var currentChapterIndex: Int? // new state
 
-    @State private var wordInterval: Double = 0.15
+    @State private var wordInterval: Double = 0.1
     @State private var sliderPosition: CGPoint = CGPoint(x: 100, y: 200) // initial position
 
     var body: some View {
@@ -32,7 +32,7 @@ struct ThoughtDetailView: View {
                 // Once we have at least one chapter to display
                 ScrollView {
                     ScrollViewReader { proxy in
-                        LazyVStack(spacing: 40) {
+                        LazyVStack(spacing: 1) {
                             ForEach(0..<displayedParagraphsCount, id: \.self) { index in
                                 AnimatedParagraphView(
                                     paragraph: paragraphs[index].content,
@@ -61,7 +61,7 @@ struct ThoughtDetailView: View {
                                 .id(index)
                             }
                         }
-                        .padding(.vertical)
+                        .padding(.vertical,5)
                         .padding(.horizontal, 16)
                         .onAppear {
                             self.scrollProxy = proxy
@@ -120,7 +120,7 @@ struct ThoughtDetailView: View {
                     .font(.caption)
                     .offset(y: -5)
 
-                Slider(value: $wordInterval, in: 0.05...0.5)
+                Slider(value: $wordInterval, in: 0.01...0.5)
                     .frame(height: 120)
                     .rotationEffect(.degrees(-90))
                     .scaleEffect(x:0.5,y: 0.5)
