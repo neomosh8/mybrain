@@ -14,61 +14,64 @@ struct ThoughtDetailView: View {
     @State private var displayedParagraphsCount = 0
     @State private var scrollProxy: ScrollViewProxy?
     
-    @State private var currentChapterIndex: Int? // new state
+    @State private var currentChapterIndex: Int?
 
-    @State private var wordInterval: Double = 0.1
-    @State private var sliderPosition: CGPoint = CGPoint(x: 100, y: 200) // initial position
+    @State private var wordInterval: Double = 0.15
+    @State private var sliderPosition: CGPoint = CGPoint(x: 100, y: 200)
 
     var body: some View {
         ZStack {
-            if displayedParagraphsCount == 0 { // Changed condition here
-                // No chapters loaded yet, show a loading indicator
+            // E-ink background throughout:
+            Color("EInkBackground")
+                .ignoresSafeArea()
+
+            if displayedParagraphsCount == 0 {
                 ProgressView("Loading First Chapter...")
-                    .tint(.white)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color.black.ignoresSafeArea())
+                    .tint(.gray)         // Tortoise/hare color
+                    .foregroundColor(.black)
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(.ultraThinMaterial)
+                    )
             } else {
-                // Once we have at least one chapter to display
                 ScrollView {
                     ScrollViewReader { proxy in
                         LazyVStack(spacing: 1) {
                             ForEach(0..<displayedParagraphsCount, id: \.self) { index in
+                                // Use a softer background in each paragraph
                                 AnimatedParagraphView(
                                     paragraph: paragraphs[index].content,
-                                    backgroundColor: Color.blue.opacity(0.2),
+                                    backgroundColor: Color("ParagraphBackground"),
                                     wordInterval: wordInterval,
                                     chapterIndex: index,
                                     thoughtId: thought.id,
                                     chapterNumber: paragraphs[index].chapterNumber,
                                     socketViewModel: socketViewModel,
                                     onHalfway: {
-                                        // For subsequent chapters (index > 0), request next chapter at halfway
+                                        // Request next chapter at halfway
                                         if index >= 0 {
                                             requestNextChapter()
                                         }
                                     },
                                     onFinished: {
-                                        // OnFinished no longer triggers next chapter because we do it at halfway.
-                                        
+                                        // OnFinished no longer triggers next chapter
                                         if displayedParagraphsCount > index + 1 {
                                             currentChapterIndex = index + 1
                                         }
-                                        
                                     },
-                                    currentChapterIndex: $currentChapterIndex // Pass the binding here!
+                                    currentChapterIndex: $currentChapterIndex
                                 )
                                 .id(index)
                             }
                         }
-                        .padding(.vertical,5)
+                        .padding(.vertical, 5)
                         .padding(.horizontal, 16)
                         .onAppear {
                             self.scrollProxy = proxy
                         }
                     }
                 }
-
                 sliderContainer
                     .position(sliderPosition)
                     .gesture(
@@ -82,25 +85,21 @@ struct ThoughtDetailView: View {
         .navigationTitle("Thought Details")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            // Request the first chapter immediately
+            // Request the first chapter
             requestNextChapter()
         }
         .onDisappear {
             // Cancel ongoing processes
-           
             socketViewModel.clearChapterData()
-            paragraphs = [] //reset paragraphs
-            displayedParagraphsCount = 0 //reset the counter too
-            currentChapterIndex = nil //reset chapter index too
-
+            paragraphs = []
+            displayedParagraphsCount = 0
+            currentChapterIndex = nil
         }
         .onReceive(socketViewModel.$chapterData) { chapterData in
             guard let chapterData = chapterData else { return }
-            // Append the received chapter content along with its chapterNumber
             paragraphs.append(Paragraph(chapterNumber: chapterData.chapterNumber, content: chapterData.content))
-            // Show the new paragraph
             displayedParagraphsCount = paragraphs.count
-            
+
             if displayedParagraphsCount == 1 {
                 currentChapterIndex = 0
             }
@@ -120,10 +119,10 @@ struct ThoughtDetailView: View {
                     .font(.caption)
                     .offset(y: -5)
 
-                Slider(value: $wordInterval, in: 0.01...0.5)
+                Slider(value: $wordInterval, in: 0.05...0.5)
                     .frame(height: 120)
                     .rotationEffect(.degrees(-90))
-                    .scaleEffect(x:0.5,y: 0.5)
+                    .scaleEffect(x: 0.5, y: 0.5)
                     .clipped()
 
                 Image(systemName: "hare")

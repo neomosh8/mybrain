@@ -1,9 +1,9 @@
 import SwiftUI
-import NaturalLanguage // <-- Import NaturalLanguage for NLTagger
+import NaturalLanguage
 
 struct AnimatedParagraphView: View {
     // MARK: - Input
-    let paragraph: String  // The raw HTML
+    let paragraph: String
     let backgroundColor: Color
     var wordInterval: Double
     let chapterIndex: Int
@@ -29,29 +29,34 @@ struct AnimatedParagraphView: View {
         let containerWidth = UIScreen.main.bounds.width - 32
 
         ZStack(alignment: .topLeading) {
-            // 1) Optionally, invisible text just to anchor SwiftUI layout
+            // 1) Invisible text for layout
             Text(fullAttributedString?.string ?? "")
-                .font(.body)
+                // Make sure the “invisible” text uses same font metrics
+                .font(.system(size: 18, weight: .regular))
                 .foregroundColor(.clear)
                 .frame(width: containerWidth, alignment: .leading)
                 .lineLimit(nil)
 
-            // 2) Show each word as an attributed substring at its bounding rect
+            // 2) Show each word as an attributed substring
             if readyToAnimate {
                 ForEach(wordInfo.indices, id: \.self) { index in
                     let (range, rect) = wordInfo[index]
                     
                     if let subAttr = fullAttributedString?.attributedSubstring(from: range) {
-                        // Convert NSAttributedString -> SwiftUI AttributedString (iOS 15+)
+                        // Convert NSAttributedString -> SwiftUI AttributedString
                         if let swiftUIAttrString = try? AttributedString(subAttr, including: \.uiKit) {
                             Text(swiftUIAttrString)
+                                .font(.system(size: 18, weight: .regular))
+                                .foregroundColor(.black)
                                 .position(x: rect.midX, y: rect.midY)
                                 .opacity(index < shownWordsCount ? 1 : 0)
                                 .offset(y: index < shownWordsCount ? 0 : 10)
                                 .animation(.easeOut(duration: 0.25), value: shownWordsCount)
                         } else {
-                            // Fallback plain text if conversion fails
+                            // Fallback plain text
                             Text(subAttr.string)
+                                .font(.system(size: 18, weight: .regular))
+                                .foregroundColor(.black)
                                 .position(x: rect.midX, y: rect.midY)
                                 .opacity(index < shownWordsCount ? 1 : 0)
                                 .offset(y: index < shownWordsCount ? 0 : 10)
@@ -63,8 +68,7 @@ struct AnimatedParagraphView: View {
         }
         .padding()
         .background(backgroundColor)
-        .cornerRadius(8)
-        // MARK: - Lifecycle
+        .cornerRadius(6)
         .onAppear {
             loadHTMLAndMeasure(containerWidth: containerWidth)
         }
@@ -75,6 +79,7 @@ struct AnimatedParagraphView: View {
             }
         }
         .onChange(of: currentChapterIndex) { newIndex in
+            // Begin animation only if we are the currently visible chapter
             if newIndex == chapterIndex && !animationFinished {
                 startAnimation()
             }
@@ -101,28 +106,26 @@ extension AnimatedParagraphView {
         if let attrStr = try? NSAttributedString(data: data, options: options, documentAttributes: nil) {
             parsedAttrString = attrStr
         } else {
-            // fallback if HTML parsing fails
             parsedAttrString = NSAttributedString(string: paragraph)
         }
 
         self.fullAttributedString = parsedAttrString
 
-        // 2) Measure words (robust approach via NLTagger)
+        // 2) Measure words
         measureWords(attrStr: parsedAttrString, width: containerWidth) { info in
             self.wordInfo = info
             self.readyToAnimate = true
-            // Start animation if this is the currently active chapter
+            
+            // Start animation if this is the active chapter
             if currentChapterIndex == chapterIndex {
                 self.startAnimation()
             }
         }
     }
 
-    /// Builds an array of `(range: NSRange, rect: CGRect)` for each word in `attrStr`.
     private func measureWords(attrStr: NSAttributedString,
                               width: CGFloat,
                               completion: @escaping ([(range: NSRange, rect: CGRect)]) -> Void) {
-        // A) Setup text system
         let textStorage = NSTextStorage(attributedString: attrStr)
         let layoutManager = NSLayoutManager()
         let textContainer = NSTextContainer(size: CGSize(width: width, height: .greatestFiniteMagnitude))
@@ -136,7 +139,7 @@ extension AnimatedParagraphView {
         let fullString = attrStr.string
         let allWordRanges = self.tokenRanges(for: fullString)
 
-        var result: [(NSRange, CGRect)] = []
+        var result: [(range: NSRange, rect: CGRect)] = []
         for range in allWordRanges {
             if let rect = boundingRect(for: range, layoutManager: layoutManager, textContainer: textContainer) {
                 result.append((range, rect))
@@ -148,7 +151,6 @@ extension AnimatedParagraphView {
         completion(result)
     }
 
-    /// Returns bounding rect for a given range if valid, or nil if the range is out of glyph bounds.
     private func boundingRect(for range: NSRange,
                               layoutManager: NSLayoutManager,
                               textContainer: NSTextContainer) -> CGRect? {
@@ -168,7 +170,6 @@ extension AnimatedParagraphView {
         withAnimation {
             shownWordsCount = 1
         }
-        // Send feedback on first word
         sendFeedbackForWord(at: 0)
         scheduleNextWord()
     }
@@ -218,25 +219,19 @@ extension AnimatedParagraphView {
 
 // MARK: - NLTagger Utility
 extension AnimatedParagraphView {
-    /// Find the NSRanges for each `.word` token in a string using `NLTagger`.
     private func tokenRanges(for string: String) -> [NSRange] {
         var results: [NSRange] = []
         let nsString = string as NSString
 
-        // Create and configure tagger
         let tagger = NLTagger(tagSchemes: [.lexicalClass])
         tagger.string = string
 
-        // Limit to the full string range
         let fullRange = string.startIndex..<string.endIndex
 
-        // Enumerate word tokens
         tagger.enumerateTags(in: fullRange, unit: .word, scheme: .lexicalClass) { tag, tokenRange in
-            // Convert Swift range -> NSRange
             let start = tokenRange.lowerBound
             let end   = tokenRange.upperBound
             let nsRange = NSRange(start..<end, in: string)
-            // skip empty
             if nsRange.length > 0 {
                 results.append(nsRange)
             }
