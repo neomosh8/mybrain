@@ -17,10 +17,9 @@ struct ThoughtsView: View {
     @State private var lastScenePhase: ScenePhase = .active
     @State private var mode: Mode = .eye // Initial mode
 
-
     private let columns = [
-        GridItem(.flexible(),spacing: 16),
-        GridItem(.flexible(),spacing: 16)
+        GridItem(.flexible(), spacing: 32),
+        GridItem(.flexible(), spacing: 32)
     ]
 
     init(accessToken: String) {
@@ -30,8 +29,15 @@ struct ThoughtsView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
-
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(hex: "e5effc"), // see "Color(hex:)" note below
+                    Color(hex: "e7f0fd")
+                ]),
+                startPoint: .topLeading,    // diagonal start
+                endPoint: .bottomTrailing   // diagonal end
+            )
+            .ignoresSafeArea()
             Group {
                 if viewModel.isLoading {
                     loadingView
@@ -42,8 +48,8 @@ struct ThoughtsView: View {
                 }
             }
             
-            if isRefreshing{
-                 VStack {
+            if isRefreshing {
+                VStack {
                     Text("Refreshing...")
                         .font(.callout)
                         .bold()
@@ -53,7 +59,8 @@ struct ThoughtsView: View {
                         .cornerRadius(8)
                         .padding(.top, 16)
                     Spacer()
-                }.transition(.move(edge: .top).combined(with: .opacity))
+                }
+                .transition(.move(edge: .top).combined(with: .opacity))
             }
 
             // Overlay a "Connected" banner if showConnectedBanner is true
@@ -67,7 +74,7 @@ struct ThoughtsView: View {
                         .background(Color.green)
                         .cornerRadius(8)
                         .padding(.top, 16)
-
+                    
                     Spacer()
                 }
                 .transition(.move(edge: .top).combined(with: .opacity))
@@ -83,7 +90,6 @@ struct ThoughtsView: View {
                 
                 // Show the connected banner once welcome message is received
                 showConnectedBanner = true
-                // Hide the banner after 2 seconds
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                     withAnimation {
                         showConnectedBanner = false
@@ -92,13 +98,13 @@ struct ThoughtsView: View {
             }
         }
         .onChange(of: socketViewModel.chapterData) { newChapterData in
-            if let chapterData = newChapterData{
+            if let chapterData = newChapterData {
                 print("new chapter data: \(chapterData)")
             }
         }
         .onChange(of: lastSocketMessage) { newMessage in
-             if let message = newMessage{
-                 if let data = message.data(using: .utf8) {
+            if let message = newMessage {
+                if let data = message.data(using: .utf8) {
                     do {
                         if let jsonObject = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
                             handleSocketMessage(message: jsonObject)
@@ -106,17 +112,17 @@ struct ThoughtsView: View {
                     } catch {
                         print("Failed to decode incoming message: \(error)")
                     }
-                 }
-             }
+                }
+            }
         }
         .onReceive(socketViewModel.$incomingMessage) { message in
-           if let message = message,
-              let data = try? JSONSerialization.data(withJSONObject: message),
-              let string = String(data: data, encoding: .utf8) {
-               lastSocketMessage = string
-           }
+            if let message = message,
+               let data = try? JSONSerialization.data(withJSONObject: message),
+               let string = String(data: data, encoding: .utf8) {
+                lastSocketMessage = string
+            }
         }
-        .onChange(of: scenePhase){ newPhase in
+        .onChange(of: scenePhase) { newPhase in
             if newPhase == .active && lastScenePhase != .active {
                 refreshData()
             }
@@ -133,64 +139,71 @@ struct ThoughtsView: View {
         .toolbarColorScheme(.dark, for: .navigationBar)
         .navigationDestination(item: $selectedThought) { thought in
             if mode == .eye {
-                 ThoughtDetailView(thought: thought, socketViewModel: socketViewModel)
+                ThoughtDetailView(thought: thought, socketViewModel: socketViewModel)
             } else {
-               StreamThoughtView(thought: thought, socketViewModel: socketViewModel)
+                StreamThoughtView(thought: thought, socketViewModel: socketViewModel)
             }
         }
     }
-
+    
+    // MARK: - Loading View
     private var loadingView: some View {
         ProgressView("Loading Thoughts...")
             .tint(.white)
     }
-
+    
+    // MARK: - Error View
     private func errorView(message: String) -> some View {
         Text("Error: \(message)")
             .foregroundColor(.red)
             .multilineTextAlignment(.center)
             .padding()
     }
-
-    private var thoughtsGrid: some View {
-           ScrollView {
-               LazyVGrid(columns: columns, spacing: 16) {
-                   ForEach(viewModel.thoughts) { thought in
-                        let isClickable = thought.status == "processed"
-                       Button {
-                           if isClickable {
-                               selectedThought = thought
-                           }
-                       } label: {
-                            ThoughtCard(thought: thought, isProcessing: processingThoughtIDs.contains(thought.id), id: thought.id)
-                        }
-                        .disabled(!isClickable)
-                        .opacity(isClickable ? 1 : 0.7)
-                   }
-               }
-               .padding(16)
-           }
-           .refreshable {
-            refreshData()
-           }
-       }
     
+    // MARK: - Thoughts Grid
+    private var thoughtsGrid: some View {
+        ScrollView {
+            LazyVGrid(columns: columns, spacing: 16) {
+                ForEach(viewModel.thoughts) { thought in
+                    let isClickable = (thought.status == "processed")
+                    Button {
+                        if isClickable {
+                            selectedThought = thought
+                        }
+                    } label: {
+                        // Call your new ThoughtCard (no isProcessing or id param)
+                        ThoughtCard(thought: thought)
+                    }
+                    .disabled(!isClickable)
+                    .opacity(isClickable ? 1 : 0.7)
+                }
+            }
+            .padding(32)
+        }
+        .refreshable {
+            refreshData()
+        }
+    }
+    
+    // MARK: - Refresh
     func refreshData() {
         isRefreshing = true
         fetchThoughts()
         socketViewModel.sendMessage(action: "list_thoughts", data: [:])
     }
     
+    // MARK: - Fetch
     func fetchThoughts() {
-          viewModel.fetchThoughts()
+        viewModel.fetchThoughts()
     }
-
+    
+    // MARK: - Toolbar
     private var modeToolbarItem: some ToolbarContent {
         ToolbarItem(placement: .navigationBarLeading) {
             ModeSwitch(mode: $mode)
         }
     }
-
+    
     private var trailingToolbarItem: some ToolbarContent {
         ToolbarItem(placement: .navigationBarTrailing) {
             Button(action: logoutAction) {
@@ -199,7 +212,7 @@ struct ThoughtsView: View {
             }
         }
     }
-
+    
     private func logoutAction() {
         authVM.logoutFromServer(context: modelContext) { result in
             switch result {
@@ -211,6 +224,7 @@ struct ThoughtsView: View {
         }
     }
     
+    // MARK: - Handle Socket Messages
     private func handleSocketMessage(message: [String: Any]) {
         guard let type = message["type"] as? String else {
             print("Could not get type from socket message")
@@ -219,7 +233,7 @@ struct ThoughtsView: View {
 
         if type == "thought_update" {
             handleThoughtUpdate(message: message)
-        } else if type == "thoughts_list"{
+        } else if type == "thoughts_list" {
             handleThoughtsList(message: message)
         }
         
@@ -237,26 +251,30 @@ struct ThoughtsView: View {
 
         // Update the thought status in your viewModel.thoughts
         if let index = viewModel.thoughts.firstIndex(where: { $0.id == id }) {
-             var updatedThought = viewModel.thoughts[index]
-             updatedThought.status = status
-             var tempThoughts = viewModel.thoughts
-             tempThoughts[index] = updatedThought
+            var updatedThought = viewModel.thoughts[index]
+            updatedThought.status = status
+            
+            var tempThoughts = viewModel.thoughts
+            tempThoughts[index] = updatedThought
             viewModel.thoughts = tempThoughts
 
             // Update processingThoughtIDs set
-             if status == "processing" || status == "pending" || status == "extracted" || status == "enriched"{
+            if status == "processing"
+                || status == "pending"
+                || status == "extracted"
+                || status == "enriched" {
                 processingThoughtIDs.insert(id)
-             } else {
+            } else {
                 processingThoughtIDs.remove(id)
-             }
+            }
         }
     }
     
     private func handleThoughtsList(message: [String: Any]) {
         guard let data = message["data"] as? [String: Any],
-             let thoughtsData = data["thoughts"] as? [[String: Any]] else {
-                print("Invalid data format in thoughts_list message")
-                return
+              let thoughtsData = data["thoughts"] as? [[String: Any]] else {
+            print("Invalid data format in thoughts_list message")
+            return
         }
         
         var tempThoughts: [Thought] = []
@@ -269,11 +287,21 @@ struct ThoughtsView: View {
                let status = thoughtData["status"] as? String,
                let created_at = thoughtData["created_at"] as? String,
                let updated_at = thoughtData["updated_at"] as? String {
-                let thought = Thought(id: id, name: name, description: description, content_type: content_type, cover: cover, status: status, created_at: created_at, updated_at: updated_at)
+                
+                let thought = Thought(
+                    id: id,
+                    name: name,
+                    description: description,
+                    content_type: content_type,
+                    cover: cover,
+                    status: status,
+                    created_at: created_at,
+                    updated_at: updated_at
+                )
                 tempThoughts.append(thought)
             }
         }
-
+        
         DispatchQueue.main.async {
             self.viewModel.thoughts = tempThoughts
             self.isRefreshing = false
@@ -281,90 +309,12 @@ struct ThoughtsView: View {
     }
 }
 
-// MARK: - ThoughtCard
 
-struct ThoughtCard: View {
-    let thought: Thought
-    let isProcessing: Bool
-    let id: Int
-    private let baseUrl = "https://brain.sorenapp.ir"
-    
-     var body: some View {
-         ZStack {
-             backgroundImage
-             bottomGradient
-             titleText
-             if isProcessing{
-                 overlayIfProcessing
-             }
-         }
-         .aspectRatio(1/1, contentMode: .fill)
-         .clipShape(RoundedRectangle(cornerRadius: 10))
-         .shadow(color: .black.opacity(0.5), radius: 4, x: 0, y: 2)
-         .id(id)
-     }
-    
-    private var backgroundImage: some View {
-        AsyncImage(url: URL(string: baseUrl + (thought.cover ?? ""))) { phase in
-            switch phase {
-            case .empty:
-                ProgressView()
-                    .tint(.white)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color.gray.opacity(0.2))
-            case .success(let image):
-                image
-                    .resizable()
-                    .scaledToFill()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .clipped()
-            case .failure:
-                Image(systemName: "photo")
-                    .resizable()
-                    .scaledToFit()
-                    .foregroundColor(.gray)
-                    .padding()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            @unknown default:
-                EmptyView()
-            }
-        }
-    }
-    
-    private var bottomGradient: some View {
-        LinearGradient(
-            gradient: Gradient(colors: [.clear, Color.black.opacity(0.7)]),
-            startPoint: .center,
-            endPoint: .bottom
-        )
-    }
-    
-    private var titleText: some View {
-        VStack {
-            Spacer()
-            Text(thought.name)
-                .font(.headline)
-                .foregroundColor(.white)
-                .padding([.horizontal, .bottom], 8)
-        }
-    }
-    
-    private var overlayIfProcessing: some View {
-        ZStack {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.black.opacity(0.4))
-                ProgressView()
-                    .tint(.white)
-            }
-        }
-}
-
-// MARK: - ModeSwitch (New)
+// MARK: - ModeSwitch
 
 enum Mode {
     case eye, ear
 }
-
 
 struct ModeSwitch: View {
     @Binding var mode: Mode
@@ -390,5 +340,39 @@ struct ModeSwitch: View {
         .background(Color.black.opacity(0.8))
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .padding(4)
+    }
+}
+extension Color {
+    init(hex: String) {
+        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        
+        let a, r, g, b: UInt64
+        switch hex.count {
+        case 3: // RGB (12-bit)
+            (a, r, g, b) = (255, (int >> 8) * 17,
+                                  (int >> 4 & 0xF) * 17,
+                                  (int & 0xF) * 17)
+        case 6: // RGB (24-bit)
+            (a, r, g, b) = (255, int >> 16,
+                                  int >> 8 & 0xFF,
+                                  int & 0xFF)
+        case 8: // ARGB (32-bit)
+            (a, r, g, b) = (int >> 24,
+                                  int >> 16 & 0xFF,
+                                  int >> 8 & 0xFF,
+                                  int & 0xFF)
+        default:
+            (a, r, g, b) = (255, 0, 0, 0)
+        }
+        
+        self.init(
+            .sRGB,
+            red: Double(r) / 255,
+            green: Double(g) / 255,
+            blue: Double(b) / 255,
+            opacity: Double(a) / 255
+        )
     }
 }
