@@ -119,7 +119,7 @@ struct ThoughtDetailView: View {
                     .font(.caption)
                     .offset(y: -5)
 
-                Slider(value: $wordInterval, in: 0.05...0.5)
+                Slider(value: $wordInterval, in: 0.01...0.25)
                     .frame(height: 120)
                     .rotationEffect(.degrees(-90))
                     .scaleEffect(x: 0.5, y: 0.5)

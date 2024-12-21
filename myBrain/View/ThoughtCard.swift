@@ -47,7 +47,7 @@ struct ThoughtCard: View {
                 // Title
                 Text(thought.name)
                     .font(.system(.title3).bold())
-                    .foregroundColor(.white)
+                    .foregroundColor(.black)
                     .multilineTextAlignment(.leading)
                     .lineLimit(nil)
                     .fixedSize(horizontal: false, vertical: true)
