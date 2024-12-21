@@ -3,18 +3,16 @@ import SwiftUI
 struct ThoughtCard: View {
     let thought: Thought
     
-    /// If `thought.cover` is a relative path, prepend your domain.
-    /// If `thought.cover` is already a full URL, just use `URL(string: thought.cover!)`.
+    /// If 'cover' is a relative path, prepend your domain here.
+    /// If it's a full URL already, remove `baseUrl +`.
     private let baseUrl = "https://brain.sorenapp.ir"
     
     var body: some View {
         ZStack {
-            // Glassy background
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(.ultraThinMaterial)
                 .shadow(radius: 2)
-
-            // Card Content
+            
             VStack(alignment: .leading, spacing: 8) {
                 // Top image
                 ZStack {
@@ -43,45 +41,57 @@ struct ThoughtCard: View {
                         }
                     }
                 }
-                .frame(height: 180) // top image height
+                .frame(height: 180)
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 
-                // Title (wraps to new line)
+                // Title
                 Text(thought.name)
-                    .font(.system(.title3, design: .default).bold())
-                    .foregroundColor(.black)
-                    .lineLimit(nil)         // allow unlimited lines
-                    .multilineTextAlignment(.leading) // wrap lines to the right
-
-                    .fixedSize(horizontal: false, vertical: true) // let text grow vertically
+                    .font(.system(.title3).bold())
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(nil)
+                    .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, 8)
                 
-                // Date
+                // "Created at" date
                 Text(relativeDateString(for: thought.created_at))
-                    .font(.system(.footnote))
+                    .font(.footnote)
                     .foregroundColor(.gray)
+                    .multilineTextAlignment(.leading)
                     .padding(.horizontal, 8)
                     .padding(.bottom, 8)
             }
         }
-        // Card sizing & corner shape
-        .frame(width: 220) // only fix the width, let height expand
+        .frame(width: 220) // let height expand
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
-            // optional white border
+            // Overlay spinner if status != "processed"
+            Group {
+                if thought.status != "processed" {
+                    ZStack {
+                        // Translucent layer
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color.black.opacity(0.3))
+                        // Spinner
+                        ProgressView("Loading...")
+                            .tint(.white)
+                    }
+                }
+            }
+        )
+        .overlay(
+            // Optional white border
             RoundedRectangle(cornerRadius: 16)
                 .stroke(Color.white, lineWidth: 1)
         )
     }
 }
-// MARK: - Date Helpers
 
-/// Convert the server date string into a friendly label: "Today", "Yesterday", or "MMM d"
+// MARK: - Date Helpers
 func relativeDateString(for serverDateString: String) -> String {
     guard let date = parseISO8601Date(serverDateString) else {
-        return serverDateString // fallback if parse fails
+        return serverDateString
     }
-    
     let calendar = Calendar.current
     if calendar.isDateInToday(date) {
         return "Today"
@@ -94,7 +104,6 @@ func relativeDateString(for serverDateString: String) -> String {
     }
 }
 
-/// Parse ISO8601 date strings like "2024-12-19T06:50:31.594633Z"
 func parseISO8601Date(_ isoString: String) -> Date? {
     let formatter = ISO8601DateFormatter()
     formatter.formatOptions.insert(.withFractionalSeconds)
