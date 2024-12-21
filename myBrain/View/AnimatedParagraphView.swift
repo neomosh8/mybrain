@@ -1,7 +1,9 @@
 import SwiftUI
+import NaturalLanguage // <-- Import NaturalLanguage for NLTagger
 
 struct AnimatedParagraphView: View {
-    let paragraph: String
+    // MARK: - Input
+    let paragraph: String  // The raw HTML
     let backgroundColor: Color
     var wordInterval: Double
     let chapterIndex: Int
@@ -10,203 +12,236 @@ struct AnimatedParagraphView: View {
     let socketViewModel: WebSocketViewModel
     let onHalfway: () -> Void
     let onFinished: () -> Void
+    
+    @Binding var currentChapterIndex: Int?
 
+    // MARK: - State
     @State private var shownWordsCount = 0
-    @State private var wordFrames: [CGRect] = []
+    @State private var wordInfo: [(range: NSRange, rect: CGRect)] = []
+    @State private var fullAttributedString: NSAttributedString?
+    
     @State private var readyToAnimate = false
     @State private var scheduledTask: DispatchWorkItem?
-    
-    @State private var animationFinished = false // This state variable will help controlling start animation
-    
-    @Binding var currentChapterIndex: Int? // Add this binding
-    
-    
-    let customFont = UIFont(name: "Helvetica", size: 20) ?? UIFont.systemFont(ofSize: 20)
-    let lineSpacingValue: CGFloat = 10
+    @State private var animationFinished = false
 
-    var words: [String] {
-        paragraph.components(separatedBy: " ")
-    }
-
+    // MARK: - Body
     var body: some View {
         let containerWidth = UIScreen.main.bounds.width - 32
 
         ZStack(alignment: .topLeading) {
-            // Invisible text to define layout
-            Text(paragraph)
-                .font(.custom("Helvetica", size: 20))
-                .lineSpacing(lineSpacingValue)
+            // 1) Optionally, invisible text just to anchor SwiftUI layout
+            Text(fullAttributedString?.string ?? "")
+                .font(.body)
                 .foregroundColor(.clear)
-                .lineLimit(nil)
-                .fixedSize(horizontal: false, vertical: true)
                 .frame(width: containerWidth, alignment: .leading)
+                .lineLimit(nil)
 
-            // Overlay each word when ready
+            // 2) Show each word as an attributed substring at its bounding rect
             if readyToAnimate {
-                ForEach(Array(words.enumerated()), id: \.offset) { (index, word) in
-                    let frame = wordFrames.indices.contains(index) ? wordFrames[index] : .zero
-                    Text(word + (index < words.count - 1 ? " " : ""))
-                        .font(.custom("Helvetica", size: 20))
-                        .lineSpacing(lineSpacingValue)
-                        .position(x: frame.midX, y: frame.midY)
-                        .opacity(index < shownWordsCount ? 1 : 0)
-                        .offset(y: index < shownWordsCount ? 0 : 10)
-                        .animation(.easeOut(duration: 0.25), value: shownWordsCount)
+                ForEach(wordInfo.indices, id: \.self) { index in
+                    let (range, rect) = wordInfo[index]
+                    
+                    if let subAttr = fullAttributedString?.attributedSubstring(from: range) {
+                        // Convert NSAttributedString -> SwiftUI AttributedString (iOS 15+)
+                        if let swiftUIAttrString = try? AttributedString(subAttr, including: \.uiKit) {
+                            Text(swiftUIAttrString)
+                                .position(x: rect.midX, y: rect.midY)
+                                .opacity(index < shownWordsCount ? 1 : 0)
+                                .offset(y: index < shownWordsCount ? 0 : 10)
+                                .animation(.easeOut(duration: 0.25), value: shownWordsCount)
+                        } else {
+                            // Fallback plain text if conversion fails
+                            Text(subAttr.string)
+                                .position(x: rect.midX, y: rect.midY)
+                                .opacity(index < shownWordsCount ? 1 : 0)
+                                .offset(y: index < shownWordsCount ? 0 : 10)
+                                .animation(.easeOut(duration: 0.25), value: shownWordsCount)
+                        }
+                    }
                 }
             }
         }
         .padding()
         .background(backgroundColor)
         .cornerRadius(8)
+        // MARK: - Lifecycle
         .onAppear {
-            print("[AnimatedParagraphView] onAppear - measuring words...")
-            DispatchQueue.main.async {
-                measureWords(paragraph: paragraph, font: customFont, lineSpacing: lineSpacingValue, width: containerWidth) { frames in
-                    print("[AnimatedParagraphView] Word frames measured: \(frames.count) frames.")
-                    self.wordFrames = frames
-                    self.readyToAnimate = true
-                   
-                    //start animation only if its the current chapter
-                    if currentChapterIndex == chapterIndex {
-                        self.startAnimation()
-                    }
-                   
-                }
-            }
+            loadHTMLAndMeasure(containerWidth: containerWidth)
         }
-        .onChange(of: wordInterval) { newValue in
-            if shownWordsCount < words.count {
-                print("[AnimatedParagraphView] Word interval changed to \(newValue). Rescheduling next word.")
+        .onChange(of: wordInterval) { _ in
+            if shownWordsCount < wordInfo.count {
                 scheduledTask?.cancel()
                 scheduleNextWord()
             }
         }
-        .onChange(of: currentChapterIndex) { newCurrentChapterIndex in
-            if newCurrentChapterIndex == chapterIndex && animationFinished == false {
-                print("[AnimatedParagraphView] Current chapter index changed to \(newCurrentChapterIndex) and animation for this chapter should be started.")
+        .onChange(of: currentChapterIndex) { newIndex in
+            if newIndex == chapterIndex && !animationFinished {
                 startAnimation()
             }
         }
-        
         .onDisappear {
-            // Cancel any scheduled animations
             scheduledTask?.cancel()
             shownWordsCount = 0
-             animationFinished = false
-            print("[AnimatedParagraphView] onDisappear - scheduled task cancelled and word count reset and animationFinished reset")
+            animationFinished = false
         }
     }
+}
 
-    private func startAnimation() {
-        print("[AnimatedParagraphView] startAnimation called.")
-        if words.isEmpty {
-            print("[AnimatedParagraphView] Paragraph is empty, calling onFinished.")
-            onFinished()
-            return
-        }
-        withAnimation {
-            shownWordsCount = 1
-        }
-        let firstWord = words[0]
-        print("[AnimatedParagraphView] Showing first word: '\(firstWord)'")
-        sendFeedbackForWord(firstWord)
-        scheduleNextWord()
-    }
+// MARK: - Main Logic
+extension AnimatedParagraphView {
+    private func loadHTMLAndMeasure(containerWidth: CGFloat) {
+        // 1) Parse HTML -> NSAttributedString
+        guard let data = paragraph.data(using: .utf8) else { return }
+        let options: [NSAttributedString.DocumentReadingOptionKey: Any] = [
+            .documentType: NSAttributedString.DocumentType.html,
+            .characterEncoding: String.Encoding.utf8.rawValue
+        ]
 
-    private func scheduleNextWord() {
-        guard shownWordsCount < words.count else {
-            print("[AnimatedParagraphView] All words shown, calling onFinished.")
-            animationFinished = true
-            onFinished()
-            return
+        let parsedAttrString: NSAttributedString
+        if let attrStr = try? NSAttributedString(data: data, options: options, documentAttributes: nil) {
+            parsedAttrString = attrStr
+        } else {
+            // fallback if HTML parsing fails
+            parsedAttrString = NSAttributedString(string: paragraph)
         }
 
-        let task = DispatchWorkItem {
-            if shownWordsCount < words.count {
-                withAnimation {
-                    self.shownWordsCount += 1
-                }
-                let revealedWord = self.words[self.shownWordsCount - 1]
-                print("[AnimatedParagraphView] Revealed word #\(self.shownWordsCount): '\(revealedWord)'")
+        self.fullAttributedString = parsedAttrString
 
-                self.sendFeedbackForWord(revealedWord)
-
-                // Halfway logic
-                let halfwayPoint = (self.words.count + 1) / 2
-                if  self.shownWordsCount == halfwayPoint {
-                    print("[AnimatedParagraphView] Reached halfway point at word #\(self.shownWordsCount), calling onHalfway.")
-                    self.onHalfway()
-                }
-
-                // Schedule next word
-                self.scheduleNextWord()
-            } else {
-                print("[AnimatedParagraphView] No more words to show, calling onFinished.")
-                 animationFinished = true
-                onFinished()
+        // 2) Measure words (robust approach via NLTagger)
+        measureWords(attrStr: parsedAttrString, width: containerWidth) { info in
+            self.wordInfo = info
+            self.readyToAnimate = true
+            // Start animation if this is the currently active chapter
+            if currentChapterIndex == chapterIndex {
+                self.startAnimation()
             }
         }
-
-        self.scheduledTask = task
-        let deadline = DispatchTime.now() + self.wordInterval
-        print("[AnimatedParagraphView] Scheduling next word in \(wordInterval) seconds.")
-        DispatchQueue.main.asyncAfter(deadline: deadline, execute: task)
     }
 
-    private func sendFeedbackForWord(_ word: String) {
-//        print("[AnimatedParagraphView] Sending feedback for word: \(word) (thought_id: \(thoughtId), chapter_number: \(chapterNumber))")
-        let feedbackData: [String: Any] = [
-            "thought_id": thoughtId,
-            "chapter_number": chapterNumber,
-            "word": word,
-            "value": 0.8
-        ]
-        socketViewModel.sendMessage(action: "feedback", data: feedbackData)
-    }
-
-    private func measureWords(paragraph: String, font: UIFont, lineSpacing: CGFloat, width: CGFloat, completion: @escaping ([CGRect]) -> Void) {
-        print("[AnimatedParagraphView] measureWords called for paragraph with \(paragraph.components(separatedBy: " ").count) words.")
-        let wordsArray = paragraph.components(separatedBy: " ")
-
-        let textStorage = NSTextStorage(string: paragraph)
+    /// Builds an array of `(range: NSRange, rect: CGRect)` for each word in `attrStr`.
+    private func measureWords(attrStr: NSAttributedString,
+                              width: CGFloat,
+                              completion: @escaping ([(range: NSRange, rect: CGRect)]) -> Void) {
+        // A) Setup text system
+        let textStorage = NSTextStorage(attributedString: attrStr)
         let layoutManager = NSLayoutManager()
         let textContainer = NSTextContainer(size: CGSize(width: width, height: .greatestFiniteMagnitude))
         textContainer.lineFragmentPadding = 0
 
         textStorage.addLayoutManager(layoutManager)
         layoutManager.addTextContainer(textContainer)
+        _ = layoutManager.glyphRange(for: textContainer)
 
-        textStorage.addAttribute(.font, value: font, range: NSRange(location: 0, length: paragraph.utf16.count))
+        // B) Enumerate words using NaturalLanguage
+        let fullString = attrStr.string
+        let allWordRanges = self.tokenRanges(for: fullString)
 
-        let paragraphStyle = NSMutableParagraphStyle()
-        paragraphStyle.lineSpacing = lineSpacing
-        textStorage.addAttribute(.paragraphStyle, value: paragraphStyle, range: NSRange(location: 0, length: paragraph.utf16.count))
-
-        layoutManager.glyphRange(for: textContainer)
-
-        var frames: [CGRect] = []
-        var currentLocation = 0
-
-        for (i, word) in wordsArray.enumerated() {
-            let wordWithSpace = (i < wordsArray.count - 1) ? word + " " : word
-            let wordRange = NSRange(location: currentLocation, length: wordWithSpace.utf16.count)
-            currentLocation += wordWithSpace.utf16.count
-
-            if let rect = boundingRect(for: wordRange, layoutManager: layoutManager, textContainer: textContainer) {
-                frames.append(rect)
+        var result: [(NSRange, CGRect)] = []
+        for range in allWordRanges {
+            if let rect = boundingRect(for: range, layoutManager: layoutManager, textContainer: textContainer) {
+                result.append((range, rect))
             } else {
-                frames.append(.zero)
+                result.append((range, .zero))
             }
         }
 
-        print("[AnimatedParagraphView] measureWords completed.")
-        completion(frames)
+        completion(result)
     }
 
-    private func boundingRect(for range: NSRange, layoutManager: NSLayoutManager, textContainer: NSTextContainer) -> CGRect? {
+    /// Returns bounding rect for a given range if valid, or nil if the range is out of glyph bounds.
+    private func boundingRect(for range: NSRange,
+                              layoutManager: NSLayoutManager,
+                              textContainer: NSTextContainer) -> CGRect? {
         var glyphRange = NSRange()
+        guard range.location != NSNotFound && range.length > 0 else { return nil }
+        
         layoutManager.characterRange(forGlyphRange: range, actualGlyphRange: &glyphRange)
         let boundingRect = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
         return boundingRect.isEmpty ? nil : boundingRect
+    }
+
+    private func startAnimation() {
+        guard wordInfo.count > 0 else {
+            onFinished()
+            return
+        }
+        withAnimation {
+            shownWordsCount = 1
+        }
+        // Send feedback on first word
+        sendFeedbackForWord(at: 0)
+        scheduleNextWord()
+    }
+
+    private func scheduleNextWord() {
+        guard shownWordsCount < wordInfo.count else {
+            animationFinished = true
+            onFinished()
+            return
+        }
+        let task = DispatchWorkItem {
+            if shownWordsCount < wordInfo.count {
+                withAnimation {
+                    shownWordsCount += 1
+                }
+                self.sendFeedbackForWord(at: shownWordsCount - 1)
+
+                let halfwayPoint = (wordInfo.count + 1) / 2
+                if shownWordsCount == halfwayPoint {
+                    self.onHalfway()
+                }
+                self.scheduleNextWord()
+            } else {
+                self.animationFinished = true
+                self.onFinished()
+            }
+        }
+        self.scheduledTask = task
+        DispatchQueue.main.asyncAfter(deadline: .now() + wordInterval, execute: task)
+    }
+
+    private func sendFeedbackForWord(at index: Int) {
+        guard index >= 0 && index < wordInfo.count else { return }
+        let range = wordInfo[index].range
+        if let subAttr = fullAttributedString?.attributedSubstring(from: range) {
+            let plainWord = subAttr.string.trimmingCharacters(in: .whitespacesAndNewlines)
+            let feedbackData: [String: Any] = [
+                "thought_id": thoughtId,
+                "chapter_number": chapterNumber,
+                "word": plainWord,
+                "value": 0.8
+            ]
+            socketViewModel.sendMessage(action: "feedback", data: feedbackData)
+        }
+    }
+}
+
+// MARK: - NLTagger Utility
+extension AnimatedParagraphView {
+    /// Find the NSRanges for each `.word` token in a string using `NLTagger`.
+    private func tokenRanges(for string: String) -> [NSRange] {
+        var results: [NSRange] = []
+        let nsString = string as NSString
+
+        // Create and configure tagger
+        let tagger = NLTagger(tagSchemes: [.lexicalClass])
+        tagger.string = string
+
+        // Limit to the full string range
+        let fullRange = string.startIndex..<string.endIndex
+
+        // Enumerate word tokens
+        tagger.enumerateTags(in: fullRange, unit: .word, scheme: .lexicalClass) { tag, tokenRange in
+            // Convert Swift range -> NSRange
+            let start = tokenRange.lowerBound
+            let end   = tokenRange.upperBound
+            let nsRange = NSRange(start..<end, in: string)
+            // skip empty
+            if nsRange.length > 0 {
+                results.append(nsRange)
+            }
+            return true
+        }
+        return results
     }
 }
