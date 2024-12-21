@@ -30,6 +30,7 @@
 		684427652D14C41A002E9BC6 /* AnimatedParagraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427642D14C41A002E9BC6 /* AnimatedParagraphView.swift */; };
 		686EED312D1523B60056ACDE /* StreamThoughtView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 686EED302D1523B60056ACDE /* StreamThoughtView.swift */; };
 		68ACE9B12D176D5A003BCC83 /* ThoughtCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68ACE9B02D176D5A003BCC83 /* ThoughtCard.swift */; };
+		68ACE9B32D178155003BCC83 /* ChapterCompletionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68ACE9B22D178155003BCC83 /* ChapterCompletionView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -82,6 +83,7 @@
 		684427642D14C41A002E9BC6 /* AnimatedParagraphView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedParagraphView.swift; sourceTree = "<group>"; };
 		686EED302D1523B60056ACDE /* StreamThoughtView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamThoughtView.swift; sourceTree = "<group>"; };
 		68ACE9B02D176D5A003BCC83 /* ThoughtCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtCard.swift; sourceTree = "<group>"; };
+		68ACE9B22D178155003BCC83 /* ChapterCompletionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChapterCompletionView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -180,6 +182,7 @@
 				684427642D14C41A002E9BC6 /* AnimatedParagraphView.swift */,
 				686EED302D1523B60056ACDE /* StreamThoughtView.swift */,
 				68ACE9B02D176D5A003BCC83 /* ThoughtCard.swift */,
+				68ACE9B22D178155003BCC83 /* ChapterCompletionView.swift */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -310,6 +313,7 @@
 				684427032D13D580002E9BC6 /* myBrainApp.swift in Sources */,
 				684427632D14BF76002E9BC6 /* ThoughtDetailView.swift in Sources */,
 				684427612D14B96B002E9BC6 /* WebSocketViewModel.swift in Sources */,
+				68ACE9B32D178155003BCC83 /* ChapterCompletionView.swift in Sources */,
 				684427382D13F22E002E9BC6 /*  SharedDataManager.swift in Sources */,
 				684427652D14C41A002E9BC6 /* AnimatedParagraphView.swift in Sources */,
 				684427162D13D8CC002E9BC6 /* VerifyLoginView.swift in Sources */,

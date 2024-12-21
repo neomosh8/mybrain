@@ -158,12 +158,21 @@ class WebSocketViewModel: ObservableObject {
         let title = dataPayload["title"] as? String ?? "No title"
         let content = dataPayload["content"] as? String ?? "No content"
         let status = dataPayload["status"] as? String ?? "unknown"
+        let complete = dataPayload["complete"] as? Bool ?? false  // <-- parse
 
-        let chapter = ChapterData(chapterNumber: chapterNumber, title: title, content: content, status: status)
+        let chapter = ChapterData(
+            chapterNumber: chapterNumber,
+            title: title,
+            content: content,
+            status: status,
+            complete: complete  // <-- store
+        )
+
         DispatchQueue.main.async {
             self.chapterData = chapter
         }
     }
+
 
     func sendMessage(action: String, data: [String: Any]) {
         let message: [String: Any] = [
@@ -192,9 +201,10 @@ class WebSocketViewModel: ObservableObject {
 
 
 // Simple model to store chapter data
-struct ChapterData: Equatable { // Conform to Equatable
+struct ChapterData: Equatable {
     let chapterNumber: Int
     let title: String
     let content: String
     let status: String
+    let complete: Bool  // <-- ADD THIS
 }
