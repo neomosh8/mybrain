@@ -206,11 +206,12 @@ extension AnimatedParagraphView {
         let range = wordInfo[index].range
         if let subAttr = fullAttributedString?.attributedSubstring(from: range) {
             let plainWord = subAttr.string.trimmingCharacters(in: .whitespacesAndNewlines)
+            let randomValue = Double.random(in: 1...100)
             let feedbackData: [String: Any] = [
                 "thought_id": thoughtId,
                 "chapter_number": chapterNumber,
                 "word": plainWord,
-                "value": 0.8
+                "value": randomValue
             ]
             socketViewModel.sendMessage(action: "feedback", data: feedbackData)
         }
