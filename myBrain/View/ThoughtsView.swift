@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import Combine
 
 struct ThoughtsView: View {
     @EnvironmentObject var authVM: AuthViewModel
@@ -16,11 +17,55 @@ struct ThoughtsView: View {
     @State private var isRefreshing = false
     @State private var lastScenePhase: ScenePhase = .active
     @State private var mode: Mode = .eye // Initial mode
+    @State private var batteryLevel: Int?
+    @State private var showPerformanceView = false
+    @StateObject private var performanceVM = PerformanceViewModel()
+    
+    // New property for timer
+    private var batteryLevelTimer: Timer.TimerPublisher = Timer.publish(every: 6, on: .main, in: .common) // 600 seconds = 10 minutes
+    
+    @State private var cancellable: AnyCancellable?
+
 
     private let columns = [
         GridItem(.flexible(), spacing: 32),
         GridItem(.flexible(), spacing: 32)
     ]
+    
+    private var batteryIconName: String {
+        guard let batteryLevel = batteryLevel else {
+            return "battery.0"
+        }
+        
+        switch batteryLevel {
+        case 76...100:
+            return "battery.100"
+        case 51...75:
+            return "battery.75"
+        case 26...50:
+            return "battery.50"
+        case 1...25:
+            return "battery.25"
+        case 0:
+            return "battery.0"
+        default:
+            return "battery.0"
+        }
+    }
+    
+    private var batteryColor: Color {
+        guard let level = batteryLevel else {
+            return .gray // Or some default color
+        }
+        
+        if level > 75 {
+            return .green
+        } else if level > 40 {
+           return .yellow
+        } else {
+            return .red
+        }
+    }
 
     init(accessToken: String) {
         _viewModel = StateObject(wrappedValue: ThoughtsViewModel(accessToken: accessToken))
@@ -83,6 +128,11 @@ struct ThoughtsView: View {
         }
         .onAppear {
             refreshData()
+            fetchBatteryLevel()
+            startBatteryLevelTimer()
+        }
+        .onDisappear {
+            stopBatteryLevelTimer()
         }
         .onChange(of: socketViewModel.welcomeMessage) { newMessage in
             if let message = newMessage {
@@ -134,6 +184,7 @@ struct ThoughtsView: View {
         .toolbar {
             modeToolbarItem
             trailingToolbarItem
+            batteryToolbarItem
         }
         .toolbarBackground(Color.black, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
@@ -143,6 +194,9 @@ struct ThoughtsView: View {
             } else {
                 StreamThoughtView(thought: thought, socketViewModel: socketViewModel)
             }
+        }
+        .navigationDestination(isPresented: $showPerformanceView) {
+            PerformanceView(viewModel: performanceVM)
         }
     }
     
@@ -200,7 +254,24 @@ struct ThoughtsView: View {
     // MARK: - Toolbar
     private var modeToolbarItem: some ToolbarContent {
         ToolbarItem(placement: .navigationBarLeading) {
-            ModeSwitch(mode: $mode)
+            HStack {
+                ModeSwitch(mode: $mode)
+            }
+        }
+    }
+    
+    private var batteryToolbarItem: some ToolbarContent {
+         ToolbarItem(placement: .navigationBarLeading) {
+             Button(action: {
+                 showPerformanceView = true
+             }) {
+                Image(systemName: batteryIconName)
+                   .foregroundColor(.white)
+                   .padding(8)
+                   .background(batteryColor)
+                   .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .padding(.horizontal, 4)
         }
     }
     
@@ -307,9 +378,38 @@ struct ThoughtsView: View {
             self.isRefreshing = false
         }
     }
+    
+    private func fetchBatteryLevel() {
+            performanceVM.fetchBatteryLevel()
+                .sink(receiveCompletion: { completion in
+                    switch completion {
+                    case .finished:
+                        break
+                    case .failure(let error):
+                        print("Failed to fetch battery level: \(error)")
+                    }
+                }, receiveValue: { level in
+                    self.batteryLevel = level
+                })
+                .store(in: &performanceVM.cancellables)
+    }
+    
+    
+    // MARK: - Battery level timer
+    
+    private func startBatteryLevelTimer() {
+        cancellable = batteryLevelTimer
+            .autoconnect()
+            .sink { _ in
+                fetchBatteryLevel()
+            }
+    }
+    
+    private func stopBatteryLevelTimer() {
+        cancellable?.cancel()
+        cancellable = nil
+    }
 }
-
-
 // MARK: - ModeSwitch
 
 enum Mode {
