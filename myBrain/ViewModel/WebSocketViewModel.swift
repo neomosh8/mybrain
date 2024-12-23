@@ -6,11 +6,14 @@ class WebSocketViewModel: ObservableObject {
     @Published var chapterData: ChapterData?
     @Published var incomingMessage: [String: Any]? // New published property for generic JSON messages
 
-
+    // Make these internal so other modules within the app target can access it.
+    let baseUrl: String //Make internal
+    var cancellables = Set<AnyCancellable>() // Make internal
+   
+    
     private var webSocketTask: URLSessionWebSocketTask?
-    private let baseUrl: String
+   
     private let token: String
-    private var cancellables = Set<AnyCancellable>()
 
     init(baseUrl: String, token: String) {
         self.baseUrl = baseUrl
