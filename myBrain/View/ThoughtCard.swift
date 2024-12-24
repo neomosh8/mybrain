@@ -27,7 +27,6 @@ struct ThoughtCard: View {
                             image
                                 .resizable()
                                 .scaledToFill()
-                                .frame(maxWidth: .infinity)
                                 .clipped()
                         case .failure:
                             Image(systemName: "photo")
@@ -41,9 +40,9 @@ struct ThoughtCard: View {
                         }
                     }
                 }
-                .frame(height: 180)
+                .frame(width: 180, height: 180) // Force portrait dimensions
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                
+
                 // Title
                 Text(thought.name)
                     .font(.system(.title3).bold())
@@ -51,7 +50,7 @@ struct ThoughtCard: View {
                     .multilineTextAlignment(.leading)
                     .lineLimit(nil)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 8)
+                    .padding(.horizontal, 4)
                 
                 // "Created at" date
                 Text(relativeDateString(for: thought.created_at))
@@ -62,7 +61,7 @@ struct ThoughtCard: View {
                     .padding(.bottom, 8)
             }
         }
-        .frame(width: 220) // let height expand
+        .frame(width: 180) // let height expand
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             // Overlay spinner if status != "processed"

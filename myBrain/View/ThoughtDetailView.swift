@@ -31,7 +31,8 @@ struct ThoughtDetailView: View {
             if hasCompletedAllChapters {
                 // Once we confirm the final animation has finished,
                 // show the completion screen
-                ChapterCompletionView(thoughtId: thought.id)
+                ChapterCompletionView(socketViewModel: socketViewModel,
+                                      thoughtId: thought.id)
 
             } else {
                 // Show progress if no paragraphs yet

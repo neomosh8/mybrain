@@ -22,14 +22,19 @@ struct ThoughtsView: View {
     @StateObject private var performanceVM = PerformanceViewModel()
     
     // New property for timer
-    private var batteryLevelTimer: Timer.TimerPublisher = Timer.publish(every: 6, on: .main, in: .common) // 600 seconds = 10 minutes
+    private var batteryLevelTimer: Timer.TimerPublisher = Timer.publish(every: 6, on: .main, in: .common) // 6 seconds
     
     @State private var cancellable: AnyCancellable?
+    
+    // Animation properties for background gradient
+   @State private var gradientStart = UnitPoint(x: 0, y: 0)
+   @State private var gradientEnd = UnitPoint(x: 1, y: 1)
+    @State private var isAnimating = false
 
 
     private let columns = [
-        GridItem(.flexible(), spacing: 32),
-        GridItem(.flexible(), spacing: 32)
+        GridItem(.flexible(), spacing: 30),
+        GridItem(.flexible(), spacing: 30)
     ]
     
     private var batteryIconName: String {
@@ -74,15 +79,9 @@ struct ThoughtsView: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color(hex: "e5effc"), // see "Color(hex:)" note below
-                    Color(hex: "e7f0fd")
-                ]),
-                startPoint: .topLeading,    // diagonal start
-                endPoint: .bottomTrailing   // diagonal end
-            )
-            .ignoresSafeArea()
+            // Animated Gradient Background
+            animatedGradientBackground()
+            
             Group {
                 if viewModel.isLoading {
                     loadingView
@@ -130,9 +129,12 @@ struct ThoughtsView: View {
             refreshData()
             fetchBatteryLevel()
             startBatteryLevelTimer()
+            startAnimatingGradient()
+            
         }
         .onDisappear {
             stopBatteryLevelTimer()
+           stopAnimatingGradient()
         }
         .onChange(of: socketViewModel.welcomeMessage) { newMessage in
             if let message = newMessage {
@@ -200,6 +202,47 @@ struct ThoughtsView: View {
         }
     }
     
+    // MARK: - Animated Gradient Background
+    private func animatedGradientBackground() -> some View {
+        LinearGradient(
+            gradient: Gradient(colors: [
+                Color(hex: "#EEF0F2"), // Bright Gray
+                Color(hex: "#65AFFF")  // Slightly Dark White
+            ]),
+            startPoint: gradientStart,
+            endPoint: gradientEnd
+        )
+        .ignoresSafeArea()
+        .onAppear {
+            startAnimatingGradient()
+        }
+        .onChange(of: scenePhase) { newPhase in
+            if newPhase == .active {
+                startAnimatingGradient()
+            } else {
+                stopAnimatingGradient()
+            }
+        }
+    }
+    
+    private func startAnimatingGradient() {
+        guard !isAnimating else { return }
+        isAnimating = true
+        withAnimation(.linear(duration: 4).repeatForever(autoreverses: true)) {
+            // Move 30%
+            gradientStart = UnitPoint(x: 0.5, y: 0.5)
+            gradientEnd = UnitPoint(x: 1.5, y: 1.6)
+
+        }
+    }
+    
+    private func stopAnimatingGradient() {
+        isAnimating = false
+        withAnimation {
+            gradientStart = UnitPoint(x: 0, y: 0)
+            gradientEnd = UnitPoint(x: 1, y: 1)
+        }
+    }
     // MARK: - Loading View
     private var loadingView: some View {
         ProgressView("Loading Thoughts...")
@@ -217,7 +260,7 @@ struct ThoughtsView: View {
     // MARK: - Thoughts Grid
     private var thoughtsGrid: some View {
         ScrollView {
-            LazyVGrid(columns: columns, spacing: 16) {
+            LazyVGrid(columns: columns, spacing: 32) {
                 ForEach(viewModel.thoughts) { thought in
                     let isClickable = (thought.status == "processed")
                     Button {
@@ -225,14 +268,16 @@ struct ThoughtsView: View {
                             selectedThought = thought
                         }
                     } label: {
-                        // Call your new ThoughtCard (no isProcessing or id param)
                         ThoughtCard(thought: thought)
+                           .padding(.vertical, 4)
+                           .padding(.horizontal, 8)
                     }
                     .disabled(!isClickable)
                     .opacity(isClickable ? 1 : 0.7)
                 }
             }
-            .padding(32)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 32)
         }
         .refreshable {
             refreshData()
@@ -410,6 +455,7 @@ struct ThoughtsView: View {
         cancellable = nil
     }
 }
+
 // MARK: - ModeSwitch
 
 enum Mode {
@@ -442,6 +488,7 @@ struct ModeSwitch: View {
         .padding(4)
     }
 }
+
 extension Color {
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
