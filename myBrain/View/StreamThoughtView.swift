@@ -28,8 +28,11 @@ struct StreamThoughtView: View {
     /// Time in seconds after which we request the next chapter.
     @State private var nextChapterTime: Double? = nil
 
+    /// Accumulated time to keep track of total duration played.
+    @State private var totalElapsedTime: Double = 0.0
+    
     /// Buffer factor so we can request the next chapter slightly before the current one ends.
-    private let buffer: Double = 0.20
+    private let buffer: Double = 0.40
     
     var body: some View {
         ZStack {
@@ -246,6 +249,8 @@ struct StreamThoughtView: View {
         showRestartOptions = false
         resetCompleted = true
         fetchStreamingLinks()
+        totalElapsedTime = 0.0 // Reset total elapsed time when restarting the stream
+        nextChapterTime = nil // Reset next chapter time
     }
     
     // MARK: - 3. Fetch Streaming
@@ -409,10 +414,21 @@ struct StreamThoughtView: View {
         let generationTime = data["generation_time"] as? Double ?? 0.0
         print("handleNextChapterResponse => chapterNumber=\(chapterNumber), audioDuration=\(audioDuration), generationTime=\(generationTime)")
         
-        // Set nextChapterTime so checkPlaybackProgress eventually calls requestNextChapter
-        let rawTime = audioDuration - generationTime
-        nextChapterTime = rawTime * (1 - 0.2) // e.g. 80% of the playable segment
-        print("Setting nextChapterTime => \(String(describing: nextChapterTime))")
+        // calculate the actual play duration of this segment
+        let playableDuration = audioDuration - generationTime
+        let timeToRequestNextChapter = playableDuration * (1 - buffer) // e.g. 80% of the playable segment
+    
+        if nextChapterTime == nil {
+            // This is the first chapter. set it to the proper buffered time of it.
+            nextChapterTime = timeToRequestNextChapter
+            print("handleNextChapterResponse => first chapter => nextChapterTime = \(String(describing: nextChapterTime))")
+        } else {
+            // if a nextChapterTime exists, we add the last playable duration so it is cummulative
+            nextChapterTime! += timeToRequestNextChapter // Add to total time
+           print("handleNextChapterResponse => next chapter, nextChapterTime = \(String(describing: nextChapterTime))")
+         }
+        
+        nextChapterRequested = false // reset this flag for next chapter
 
         // DO NOT call refetchPlaylistAndPlay. We let the single AVPlayer keep going.
     }
@@ -486,4 +502,3 @@ struct StreamThoughtView: View {
         var text: String
     }
 }
- 
