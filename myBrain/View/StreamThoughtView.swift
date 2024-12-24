@@ -36,18 +36,16 @@ struct StreamThoughtView: View {
     
     var body: some View {
         ZStack {
-            Color.gray.ignoresSafeArea()
+            // If you truly want no background color at all, use Color.clear.
+            // Or remove this entirely if you just want the default background.
+            Color.clear.ignoresSafeArea()
             
             VStack {
                 if isFetchingLinks {
                     ProgressView("Fetching Streaming Links...")
                 } else if let player = player {
-                    if thought.content_type == "audio" {
-                        audioPlayerControls
-                    } else {
-                        VideoPlayer(player: player)
-                            .frame(minHeight: 200)
-                    }
+                    // Show audio controls only (removes black VideoPlayer)
+                    audioPlayerControls
                 } else if let error = playerError {
                     Text("Player Error: \(error.localizedDescription)")
                         .foregroundColor(.red)
@@ -101,7 +99,7 @@ struct StreamThoughtView: View {
             }) {
                 Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
                     .font(.system(size: 40))
-                    .foregroundColor(.white)
+                    .foregroundColor(.blue)
             }
         }
     }
@@ -423,16 +421,15 @@ struct StreamThoughtView: View {
             nextChapterTime = timeToRequestNextChapter
             print("handleNextChapterResponse => first chapter => nextChapterTime = \(String(describing: nextChapterTime))")
         } else {
-            // if a nextChapterTime exists, we add the last playable duration so it is cummulative
+            // if a nextChapterTime exists, we add the last playable duration so it is cumulative
             nextChapterTime! += timeToRequestNextChapter // Add to total time
-           print("handleNextChapterResponse => next chapter, nextChapterTime = \(String(describing: nextChapterTime))")
-         }
+            print("handleNextChapterResponse => next chapter, nextChapterTime = \(String(describing: nextChapterTime))")
+        }
         
         nextChapterRequested = false // reset this flag for next chapter
 
         // DO NOT call refetchPlaylistAndPlay. We let the single AVPlayer keep going.
     }
-
     
     /// Force re-init the same .m3u8, always seeking to .zero
     func refetchPlaylistAndPlay() {
