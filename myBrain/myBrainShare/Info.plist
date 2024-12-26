@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" 
+   "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
     <key>NSExtension</key>
@@ -11,14 +12,26 @@
                 <!-- Indicates support for text items -->
                 <key>NSExtensionActivationSupportsText</key>
                 <true/>
-                
+
                 <!-- Indicates support for a single web URL -->
                 <key>NSExtensionActivationSupportsWebURLWithMaxCount</key>
                 <integer>1</integer>
-                
+
                 <!-- Indicates support for a single image -->
                 <key>NSExtensionActivationSupportsImageWithMaxCount</key>
                 <integer>1</integer>
+
+                <!-- Indicates support for file attachments (like PDFs) -->
+                <key>NSExtensionActivationSupportsFileWithMaxCount</key>
+                <integer>1</integer>
+
+                <!-- Limit the content types to PDFs and URLs -->
+                <key>NSExtensionActivationContentTypes</key>
+                <array>
+                    <string>com.adobe.pdf</string>
+                    <string>public.pdf</string>
+                    <string>public.url</string>
+                </array>
             </dict>
         </dict>
         <key>NSExtensionPointIdentifier</key>
