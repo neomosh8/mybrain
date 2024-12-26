@@ -32,7 +32,7 @@ struct StreamThoughtView: View {
     @State private var totalElapsedTime: Double = 0.0
     
     /// Buffer factor so we can request the next chapter slightly before the current one ends.
-    private let buffer: Double = 0.40
+    private let buffer: Double = 0.50
     
     // MARK: - NEW CODE: Subtitles
     @StateObject private var subtitleViewModel = SubtitleViewModel()
