@@ -34,7 +34,8 @@ struct StreamThoughtView: View {
     // MARK: - NEW CODE: Subtitles
     @StateObject private var subtitleViewModel = SubtitleViewModel()
     // MARK: End of NEW CODE
-    
+    @State private var subsUrlStr: String?
+
     var body: some View {
         ZStack {
             Color.clear.ignoresSafeArea()
@@ -340,6 +341,7 @@ struct StreamThoughtView: View {
             print("handleStreamingLinksResponse => subtitles_playlist url = \(subsUrlStr)")
             // Fetch the .m3u8 for subtitles, parse it, and store in subtitleViewModel
             fetchSubtitlePlaylist(playlistURL: subsUrlStr)
+            self.subsUrlStr = subsUrlStr
         }
         // MARK: End of NEW CODE
         
@@ -453,6 +455,7 @@ struct StreamThoughtView: View {
 
         // We let the single AVPlayer keep going, no need to refetch here
         durations_so_far += audioDuration
+        if let subsUrlStr = subsUrlStr { fetchSubtitlePlaylist(playlistURL: subsUrlStr)}
 
     }
     
