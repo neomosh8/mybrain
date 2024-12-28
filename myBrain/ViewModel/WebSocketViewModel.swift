@@ -72,6 +72,7 @@ class WebSocketViewModel: ObservableObject {
 
 
     private func handleIncomingMessage(_ text: String) {
+        print("Incoming raw message: \(text)")
         guard let data = text.data(using: .utf8) else { return }
 
         do {

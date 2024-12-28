@@ -15,7 +15,7 @@ struct StreamThoughtView: View {
     @State private var playerItemObservation: AnyCancellable?
     @State private var playbackProgressObserver: Any?
     @State private var currentChapterNumber: Int = 1
-    
+    @State private var durations_so_far: Double = 0.0
     @State private var showRestartOptions = false
     @State private var thoughtStatus: ThoughtStatus?
     @State private var showResetSuccess = false
@@ -28,12 +28,9 @@ struct StreamThoughtView: View {
     /// Time in seconds after which we request the next chapter.
     @State private var nextChapterTime: Double? = nil
 
-    /// Accumulated time to keep track of total duration played.
-    @State private var totalElapsedTime: Double = 0.0
-    
     /// Buffer factor so we can request the next chapter slightly before the current one ends.
-    private let buffer: Double = 0.50
-    
+    private let buffer: Double = 0.60
+
     // MARK: - NEW CODE: Subtitles
     @StateObject private var subtitleViewModel = SubtitleViewModel()
     // MARK: End of NEW CODE
@@ -113,7 +110,6 @@ struct StreamThoughtView: View {
     func fetchThoughtStatus() {
         print("fetchThoughtStatus => sending 'thought_status' for thought.id = \(thought.id)")
         socketViewModel.sendMessage(action: "thought_status", data: ["thought_id": thought.id])
-        
         socketViewModel.$incomingMessage
             .compactMap { $0 }
             .filter { $0["type"] as? String == "thought_chapters" }
@@ -122,6 +118,8 @@ struct StreamThoughtView: View {
                 print("fetchThoughtStatus => got thought_chapters => handleThoughtStatusResponse")
                 DispatchQueue.main.async {
                     self.handleThoughtStatusResponse(message: message)
+                    // Optional: clear it out
+                    self.socketViewModel.incomingMessage = nil
                 }
             }
             .store(in: &socketViewModel.cancellables)
@@ -129,14 +127,25 @@ struct StreamThoughtView: View {
     
     func handleThoughtStatusResponse(message: [String: Any]) {
         print("handleThoughtStatusResponse => \(message)")
-        guard let status = message["status"] as? String,
-              status == "success",
-              let data = message["data"] as? [String: Any],
-              let thoughtId = data["thought_id"] as? Int,
-              let thoughtName = data["thought_name"] as? String,
-              let statusType = data["status"] as? String,
-              let progressData = data["progress"] as? [String: Any],
-              let chaptersData = data["chapters"] as? [[String: Any]]
+        
+        // Expecting:
+        // "data" : "success"
+        // "message": {
+        //   "thought_id": ...
+        //   "thought_name": ...
+        //   "status": ...
+        //   "progress": {...}
+        //   "chapters": [...]
+        // }
+        
+        guard let dataValue = message["data"] as? String,
+              dataValue == "success",
+              let messageDict = message["message"] as? [String: Any],
+              let thoughtId = messageDict["thought_id"] as? Int,
+              let thoughtName = messageDict["thought_name"] as? String,
+              let statusType = messageDict["status"] as? String,
+              let progressData = messageDict["progress"] as? [String: Any],
+              let chaptersData = messageDict["chapters"] as? [[String: Any]]
         else {
             print("handleThoughtStatusResponse => missing data, returning")
             return
@@ -180,7 +189,7 @@ struct StreamThoughtView: View {
             fetchStreamingLinks()
         }
     }
-    
+
     // MARK: - 2. Restart / Reset
     var restartOptionsAlert: some View {
         VStack {
@@ -234,6 +243,8 @@ struct StreamThoughtView: View {
                 print("resetReading => got 'reset_response' => handleResetResponse")
                 DispatchQueue.main.async {
                     self.handleResetResponse(message: message)
+                    // Optional: clear it out
+                    self.socketViewModel.incomingMessage = nil
                 }
             }
             .store(in: &socketViewModel.cancellables)
@@ -252,7 +263,6 @@ struct StreamThoughtView: View {
         showRestartOptions = false
         resetCompleted = true
         fetchStreamingLinks()
-        totalElapsedTime = 0.0
         nextChapterTime = nil
     }
     
@@ -270,10 +280,13 @@ struct StreamThoughtView: View {
                 print("fetchStreamingLinks => got streaming_links => handleStreamingLinksResponse")
                 DispatchQueue.main.async {
                     self.handleStreamingLinksResponse(message: message)
+                    // Optional: clear it out
+                    self.socketViewModel.incomingMessage = nil
                 }
             }
             .store(in: &socketViewModel.cancellables)
         
+        // IMPORTANT: first chapter info
         socketViewModel.$incomingMessage
             .compactMap { $0 }
             .filter { $0["type"] as? String == "chapter_response" }
@@ -282,6 +295,8 @@ struct StreamThoughtView: View {
                 print("fetchStreamingLinks => got initial chapter_response => handleNextChapterResponse")
                 DispatchQueue.main.async {
                     self.handleNextChapterResponse(message: message)
+                    // Optional: clear it out
+                    self.socketViewModel.incomingMessage = nil
                 }
             }
             .store(in: &socketViewModel.cancellables)
@@ -379,14 +394,10 @@ struct StreamThoughtView: View {
     
     // MARK: - 5. Check Progress & Request Next Chapter
     func checkPlaybackProgress(currentTime: Double) {
+        print(currentTime)
         guard let _ = player else {
             print("checkPlaybackProgress => guard #1: player is nil, returning")
             return
-        }
-        
-        if let start = startTime {
-            let elapsed = Date().timeIntervalSince(start)
-            print("checkPlaybackProgress => total elapsed: \(elapsed)")
         }
         
         guard let nextChapterTime = nextChapterTime else {
@@ -402,10 +413,11 @@ struct StreamThoughtView: View {
     }
     
     func requestNextChapter() {
+        self.socketViewModel.incomingMessage = nil
         print("requestNextChapter => sending 'next_chapter'")
         let data: [String: Any] = ["thought_id": thought.id, "generate_audio": true]
         socketViewModel.sendMessage(action: "next_chapter", data: data)
-        
+        print("GOOOH", socketViewModel.incomingMessage ?? "No message")
         socketViewModel.$incomingMessage
             .compactMap { $0 }
             .filter { $0["type"] as? String == "chapter_response" }
@@ -413,6 +425,8 @@ struct StreamThoughtView: View {
             .sink { message in
                 print("requestNextChapter => got next chapter_response => handleNextChapterResponse")
                 self.handleNextChapterResponse(message: message)
+                // Optional: clear it out
+                self.socketViewModel.incomingMessage = nil
             }
             .store(in: &socketViewModel.cancellables)
     }
@@ -425,57 +439,21 @@ struct StreamThoughtView: View {
         let audioDuration = data["audio_duration"] as? Double ?? 0.0
         let generationTime = data["generation_time"] as? Double ?? 0.0
         print("handleNextChapterResponse => chapterNumber=\(chapterNumber), audioDuration=\(audioDuration), generationTime=\(generationTime)")
-        
+        // "playableDuration" is the approximate length (in seconds) of the new chapter's audio.
         let playableDuration = audioDuration - generationTime
-        let timeToRequestNextChapter = playableDuration * (1 - buffer)
         
-        if nextChapterTime == nil {
-            // first chapter
-            nextChapterTime = timeToRequestNextChapter
-            print("handleNextChapterResponse => first chapter => nextChapterTime = \(String(describing: nextChapterTime))")
-        } else {
-            nextChapterTime! += timeToRequestNextChapter
-            print("handleNextChapterResponse => next chapter => nextChapterTime = \(String(describing: nextChapterTime))")
-        }
+        // ---- CHANGED HERE (accumulate from previous chapters) ----
+        self.nextChapterTime = durations_so_far + playableDuration * (1 - buffer)
+        // ----------------------------------------------------------
+        
+        print("handleNextChapterResponse => new nextChapterTime = \(String(describing: nextChapterTime))")
         
         nextChapterRequested = false
+        self.socketViewModel.incomingMessage = nil
+
         // We let the single AVPlayer keep going, no need to refetch here
-    }
-    
-    /// Force re-init the same .m3u8, always seeking to .zero
-    func refetchPlaylistAndPlay() {
-        guard let masterURL = masterPlaylistURL else {
-            print("refetchPlaylistAndPlay => no masterPlaylistURL, cannot re-init")
-            return
-        }
-        
-        print("refetchPlaylistAndPlay => pausing old player, then reinit from 0s")
-        player?.pause()
-        
-        playerItemObservation?.cancel()
-        playerItemObservation = nil
-        if let observer = playbackProgressObserver {
-            player?.removeTimeObserver(observer)
-        }
-        playbackProgressObserver = nil
-        
-        let newItem = AVPlayerItem(url: masterURL)
-        player?.replaceCurrentItem(with: newItem)
-        
-        playerItemObservation = player?.publisher(for: \.currentItem?.status)
-            .compactMap { $0 }
-            .sink { status in
-                print("refetchPlaylistAndPlay => new item status: \(status.rawValue)")
-                if status == .readyToPlay {
-                    print("refetchPlaylistAndPlay => new item ready => seeking to 0s")
-                    self.player?.seek(to: .zero, toleranceBefore: .zero, toleranceAfter: .zero) { _ in
-                        print("refetchPlaylistAndPlay => successfully sought to 0s")
-                        self.player?.play()
-                        self.isPlaying = true
-                        self.startPlaybackProgressObservation()
-                    }
-                }
-            }
+        durations_so_far += audioDuration
+
     }
     
     // MARK: - NEW CODE: Fetch the Subtitles Playlist (.m3u8) and parse it
@@ -492,14 +470,6 @@ struct StreamThoughtView: View {
                 return
             }
             // parse lines for #EXTINF and the subsequent .vtt
-            // Example:
-            // #EXTM3U
-            // #EXT-X-PLAYLIST-TYPE:EVENT
-            // #EXT-X-START:TIME-OFFSET=0
-            // #EXTINF:0.480,
-            // educational_1735028551_1_3.vtt
-            // ...
-            
             var segments: [SubtitleSegmentLink] = []
             let lines = text.components(separatedBy: .newlines)
             var i = 0
@@ -507,7 +477,6 @@ struct StreamThoughtView: View {
                 let line = lines[i]
                 if line.hasPrefix("#EXTINF:") {
                     // parse duration
-                    // #EXTINF:0.480,
                     let durationString = line
                         .replacingOccurrences(of: "#EXTINF:", with: "")
                         .replacingOccurrences(of: ",", with: "")
@@ -533,7 +502,6 @@ struct StreamThoughtView: View {
             }
             
             DispatchQueue.main.async {
-                // store in subtitleViewModel
                 self.subtitleViewModel.segments = segments
                 // load the first segment
                 self.subtitleViewModel.loadSegment(at: 0)
@@ -564,6 +532,7 @@ struct StreamThoughtView: View {
         let status: String
     }
 }
+
 // MARK: - NEW CODE
 
 /// A single link in the subtitles .m3u8, e.g. (vttURL, duration).
@@ -605,12 +574,12 @@ class SubtitleViewModel: ObservableObject {
     // load the .vtt file at a given index, parse it, and set `currentSegment`.
     func loadSegment(at index: Int) {
         guard index >= 0, index < segments.count else {
-            print("loadSegment => index out of range")
+//            print("loadSegment => index out of range")
             return
         }
         currentSegmentIndex = index
-        let link = segments[index]
         
+        let link = segments[index]
         fetchAndParseVTT(from: link.urlString) { [weak self] segmentData in
             DispatchQueue.main.async {
                 self?.currentSegment = segmentData
@@ -618,27 +587,24 @@ class SubtitleViewModel: ObservableObject {
         }
     }
     
-    /// Directly store the player's global time; do not subtract segment durations.
+    /// Directly store the player's global time.
     func updateCurrentTime(_ globalPlayerTime: Double) {
         self.currentGlobalTime = globalPlayerTime
     }
     
     /// If you want to auto-switch segments once we pass the last cue of the current segment:
-    /// We can see if the global time surpasses the last time in the currentSegment,
+    /// We can see if the global time surpasses the maxEnd of the currentSegment,
     /// then load the next segment. But only if each .vtt truly ends and the next .vtt picks up later.
     func checkSegmentBoundary(onNextSegment: (Int) -> Void) {
         guard currentSegmentIndex < segments.count,
               let segData = currentSegment
         else { return }
         
-        // If we want to load the "next" VTT file only once we pass the maxEnd of the current one:
         if currentGlobalTime >= segData.maxEnd {
-            // Move to next segment, or do nothing if it doesn't exist
             let nextIndex = currentSegmentIndex + 1
             onNextSegment(nextIndex)
         }
     }
-
     
     /// Download and parse the .vtt file
     private func fetchAndParseVTT(from urlString: String, completion: @escaping (SubtitleSegmentData) -> Void) {
@@ -673,7 +639,6 @@ class SubtitleViewModel: ObservableObject {
         
         for i in 0..<lines.count {
             let line = lines[i]
-            // If line matches "start --> end"
             if let match = timeRegex.firstMatch(
                 in: line,
                 options: [],
@@ -744,8 +709,7 @@ class SubtitleViewModel: ObservableObject {
     }
 }
 
-
-// MARK: - The SwiftUI view that displays the currentSegment’s paragraph, highlighting the active word.
+/// A SwiftUI view that displays the currentSegment’s paragraph, highlighting the active word.
 struct SubtitleView: View {
     @ObservedObject var viewModel: SubtitleViewModel
     
@@ -769,7 +733,7 @@ struct SubtitleView: View {
         var result = ""
         for (idx, word) in words.enumerated() {
             if idx == highlightIndex {
-                // bracket
+                // bracket or color highlight...
                 result.append("[\(word.text)] ")
             } else {
                 result.append("\(word.text) ")
@@ -778,6 +742,4 @@ struct SubtitleView: View {
         return result
     }
 }
-
-
 // MARK: - END NEW CODE
