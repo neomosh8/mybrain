@@ -128,25 +128,14 @@ struct StreamThoughtView: View {
     
     func handleThoughtStatusResponse(message: [String: Any]) {
         print("handleThoughtStatusResponse => \(message)")
-        
-        // Expecting:
-        // "data" : "success"
-        // "message": {
-        //   "thought_id": ...
-        //   "thought_name": ...
-        //   "status": ...
-        //   "progress": {...}
-        //   "chapters": [...]
-        // }
-        
-        guard let dataValue = message["data"] as? String,
-              dataValue == "success",
-              let messageDict = message["message"] as? [String: Any],
-              let thoughtId = messageDict["thought_id"] as? Int,
-              let thoughtName = messageDict["thought_name"] as? String,
-              let statusType = messageDict["status"] as? String,
-              let progressData = messageDict["progress"] as? [String: Any],
-              let chaptersData = messageDict["chapters"] as? [[String: Any]]
+        guard let status = message["status"] as? String,
+              status == "success",
+              let data = message["data"] as? [String: Any],
+              let thoughtId = data["thought_id"] as? Int,
+              let thoughtName = data["thought_name"] as? String,
+              let statusType = data["status"] as? String,
+              let progressData = data["progress"] as? [String: Any],
+              let chaptersData = data["chapters"] as? [[String: Any]]
         else {
             print("handleThoughtStatusResponse => missing data, returning")
             return
