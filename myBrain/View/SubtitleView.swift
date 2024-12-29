@@ -1,6 +1,7 @@
 import SwiftUI
 import AVKit
 import Combine
+
 /// A SwiftUI view that displays the currentSegment’s paragraph, highlighting the active word.
 struct SubtitleView: View {
     @ObservedObject var viewModel: SubtitleViewModel
@@ -13,25 +14,40 @@ struct SubtitleView: View {
             }
             
             ScrollView {
-                Text(buildSubtitleString(words: segment.words, highlightIndex: highlightIndex))
+                Text(buildSubtitleAttributedString(words: segment.words, highlightIndex: highlightIndex))
                     .padding()
+                    // Comment this in or out depending on whether you want
+                    // the highlight color to animate in/out:
+                    // .animation(.easeInOut, value: highlightIndex)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         } else {
             Text("Loading subtitles...")
         }
     }
     
-    func buildSubtitleString(words: [WordTimestamp], highlightIndex: Int?) -> String {
-        var result = ""
+    
+    func buildSubtitleAttributedString(words: [WordTimestamp], highlightIndex: Int?) -> AttributedString {
+        var result = AttributedString()
+        
         for (idx, word) in words.enumerated() {
+            var attributedString = AttributedString(word.text + " ")
+            
+            // Use a consistent font for all words:
+            var attributes = AttributeContainer()
+            attributes.font = .system(size: 16, weight: .regular)
+            
+            // Only change background (and maybe foreground) color for the highlighted word
             if idx == highlightIndex {
-                // bracket or color highlight...
-                result.append("[\(word.text)] ")
+                attributes.backgroundColor = .yellow
+                attributes.foregroundColor = .black
             } else {
-                result.append("\(word.text) ")
+                attributes.foregroundColor = .primary
             }
+            
+            attributedString.mergeAttributes(attributes)
+            result.append(attributedString)
         }
         return result
     }
 }
-// MARK: - END NEW CODE
