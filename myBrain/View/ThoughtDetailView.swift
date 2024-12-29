@@ -279,8 +279,3 @@ struct ThoughtDetailView: View {
     }
 }
 
-struct ProgressData: Decodable {
-    let total: Int
-    let completed: Int
-    let remaining: Int
-}
