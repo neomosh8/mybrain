@@ -1,0 +1,21 @@
+{
+  "images" : [
+    {
+      "filename" : "migix._dark_stary_night_sky_clean_with_white_fluffy_clouds_be_241ba76c-dcf2-4f48-8727-24444d468a43_0.png",
+      "idiom" : "universal",
+      "scale" : "1x"
+    },
+    {
+      "idiom" : "universal",
+      "scale" : "2x"
+    },
+    {
+      "idiom" : "universal",
+      "scale" : "3x"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

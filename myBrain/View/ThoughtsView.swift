@@ -9,6 +9,7 @@ struct ThoughtsView: View {
     @StateObject private var viewModel: ThoughtsViewModel
     @StateObject private var socketViewModel: WebSocketViewModel
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.colorScheme) var colorScheme
     
     @State private var showConnectedBanner = false
     @State private var processingThoughtIDs = Set<Int>()
@@ -16,61 +17,17 @@ struct ThoughtsView: View {
     @State private var selectedThought: Thought?
     @State private var isRefreshing = false
     @State private var lastScenePhase: ScenePhase = .active
-    @State private var mode: Mode = .eye // Initial mode
+    @State private var mode: Mode = .eye
     @State private var batteryLevel: Int?
     @State private var showPerformanceView = false
     @StateObject private var performanceVM = PerformanceViewModel()
-    
-    // New property for timer
-    private var batteryLevelTimer: Timer.TimerPublisher = Timer.publish(every: 6, on: .main, in: .common) // 6 seconds
-    
+
+    // Timer for battery level
+    private var batteryLevelTimer: Timer.TimerPublisher = Timer.publish(every: 6, on: .main, in: .common)
     @State private var cancellable: AnyCancellable?
-    
-    // Animation properties for background gradient
-   @State private var gradientStart = UnitPoint(x: 0, y: 0)
-   @State private var gradientEnd = UnitPoint(x: 1, y: 1)
-    @State private var isAnimating = false
 
-
-    private let columns = [
-        GridItem(.flexible(), spacing: 30),
-        GridItem(.flexible(), spacing: 30)
-    ]
-    
-    private var batteryIconName: String {
-        guard let batteryLevel = batteryLevel else {
-            return "battery.0"
-        }
-        
-        switch batteryLevel {
-        case 76...100:
-            return "battery.100"
-        case 51...75:
-            return "battery.75"
-        case 26...50:
-            return "battery.50"
-        case 1...25:
-            return "battery.25"
-        case 0:
-            return "battery.0"
-        default:
-            return "battery.0"
-        }
-    }
-    
-    private var batteryColor: Color {
-        guard let level = batteryLevel else {
-            return .gray // Or some default color
-        }
-        
-        if level > 75 {
-            return .green
-        } else if level > 40 {
-           return .yellow
-        } else {
-            return .red
-        }
-    }
+    // Carousel index
+    @State private var currentIndex = 0
 
     init(accessToken: String) {
         _viewModel = StateObject(wrappedValue: ThoughtsViewModel(accessToken: accessToken))
@@ -79,19 +36,32 @@ struct ThoughtsView: View {
 
     var body: some View {
         ZStack {
-            // Animated Gradient Background
-            animatedGradientBackground()
-            
+            // MARK: - Light/Dark Background
+            if colorScheme == .dark {
+                Image("DarkBackground")
+                    .resizable()
+                    .scaledToFill()
+                    .edgesIgnoringSafeArea(.all)
+            } else {
+                Image("LightBackground")
+                    .resizable()
+                    .scaledToFill()
+                    .edgesIgnoringSafeArea(.all)
+            }
+
+            // MARK: - Main content
             Group {
                 if viewModel.isLoading {
                     loadingView
                 } else if let errorMessage = viewModel.errorMessage {
                     errorView(message: errorMessage)
                 } else {
-                    thoughtsGrid
+                    CarouselView(viewModel: viewModel, selectedThought: $selectedThought)
+
                 }
             }
-            
+
+            // MARK: - Refresh overlay
             if isRefreshing {
                 VStack {
                     Text("Refreshing...")
@@ -107,7 +77,7 @@ struct ThoughtsView: View {
                 .transition(.move(edge: .top).combined(with: .opacity))
             }
 
-            // Overlay a "Connected" banner if showConnectedBanner is true
+            // MARK: - "Connected" Banner
             if showConnectedBanner {
                 VStack {
                     Text("Connected")
@@ -129,17 +99,13 @@ struct ThoughtsView: View {
             refreshData()
             fetchBatteryLevel()
             startBatteryLevelTimer()
-            startAnimatingGradient()
-            
         }
         .onDisappear {
             stopBatteryLevelTimer()
-           stopAnimatingGradient()
         }
         .onChange(of: socketViewModel.welcomeMessage) { newMessage in
             if let message = newMessage {
                 print("Received welcome message from WS: \(message)")
-                
                 // Show the connected banner once welcome message is received
                 showConnectedBanner = true
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
@@ -201,48 +167,42 @@ struct ThoughtsView: View {
             PerformanceView(viewModel: performanceVM)
         }
     }
-    
-    // MARK: - Animated Gradient Background
-    private func animatedGradientBackground() -> some View {
-        LinearGradient(
-            gradient: Gradient(colors: [
-                Color(hex: "#EEF0F2"), // Bright Gray
-                Color(hex: "#65AFFF")  // Slightly Dark White
-            ]),
-            startPoint: gradientStart,
-            endPoint: gradientEnd
-        )
-        .ignoresSafeArea()
-        .onAppear {
-            startAnimatingGradient()
-        }
-        .onChange(of: scenePhase) { newPhase in
-            if newPhase == .active {
-                startAnimatingGradient()
-            } else {
-                stopAnimatingGradient()
-            }
-        }
-    }
-    
-    private func startAnimatingGradient() {
-        guard !isAnimating else { return }
-        isAnimating = true
-        withAnimation(.linear(duration: 4).repeatForever(autoreverses: true)) {
-            // Move 30%
-            gradientStart = UnitPoint(x: 0.5, y: 0.5)
-            gradientEnd = UnitPoint(x: 1.5, y: 1.6)
 
+
+    // MARK: - Battery Icon
+    private var batteryIconName: String {
+        guard let batteryLevel = batteryLevel else {
+            return "battery.0"
+        }
+        switch batteryLevel {
+        case 76...100:
+            return "battery.100"
+        case 51...75:
+            return "battery.75"
+        case 26...50:
+            return "battery.50"
+        case 1...25:
+            return "battery.25"
+        case 0:
+            return "battery.0"
+        default:
+            return "battery.0"
         }
     }
     
-    private func stopAnimatingGradient() {
-        isAnimating = false
-        withAnimation {
-            gradientStart = UnitPoint(x: 0, y: 0)
-            gradientEnd = UnitPoint(x: 1, y: 1)
+    private var batteryColor: Color {
+        guard let level = batteryLevel else {
+            return .gray
+        }
+        if level > 75 {
+            return .green
+        } else if level > 40 {
+            return .yellow
+        } else {
+            return .red
         }
     }
+    
     // MARK: - Loading View
     private var loadingView: some View {
         ProgressView("Loading Thoughts...")
@@ -257,33 +217,6 @@ struct ThoughtsView: View {
             .padding()
     }
     
-    // MARK: - Thoughts Grid
-    private var thoughtsGrid: some View {
-        ScrollView {
-            LazyVGrid(columns: columns, spacing: 32) {
-                ForEach(viewModel.thoughts) { thought in
-                    let isClickable = (thought.status == "processed")
-                    Button {
-                        if isClickable {
-                            selectedThought = thought
-                        }
-                    } label: {
-                        ThoughtCard(thought: thought)
-                           .padding(.vertical, 4)
-                           .padding(.horizontal, 8)
-                    }
-                    .disabled(!isClickable)
-                    .opacity(isClickable ? 1 : 0.7)
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 32)
-        }
-        .refreshable {
-            refreshData()
-        }
-    }
-    
     // MARK: - Refresh
     func refreshData() {
         isRefreshing = true
@@ -296,7 +229,7 @@ struct ThoughtsView: View {
         viewModel.fetchThoughts()
     }
     
-    // MARK: - Toolbar
+    // MARK: - Toolbar Items
     private var modeToolbarItem: some ToolbarContent {
         ToolbarItem(placement: .navigationBarLeading) {
             HStack {
@@ -306,15 +239,15 @@ struct ThoughtsView: View {
     }
     
     private var batteryToolbarItem: some ToolbarContent {
-         ToolbarItem(placement: .navigationBarLeading) {
-             Button(action: {
-                 showPerformanceView = true
-             }) {
+        ToolbarItem(placement: .navigationBarLeading) {
+            Button(action: {
+                showPerformanceView = true
+            }) {
                 Image(systemName: batteryIconName)
-                   .foregroundColor(.white)
-                   .padding(8)
-                   .background(batteryColor)
-                   .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .foregroundColor(.white)
+                    .padding(8)
+                    .background(batteryColor)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
             }
             .padding(.horizontal, 4)
         }
@@ -365,7 +298,6 @@ struct ThoughtsView: View {
             return
         }
 
-        // Update the thought status in your viewModel.thoughts
         if let index = viewModel.thoughts.firstIndex(where: { $0.id == id }) {
             var updatedThought = viewModel.thoughts[index]
             updatedThought.status = status
@@ -374,7 +306,6 @@ struct ThoughtsView: View {
             tempThoughts[index] = updatedThought
             viewModel.thoughts = tempThoughts
 
-            // Update processingThoughtIDs set
             if status == "processing"
                 || status == "pending"
                 || status == "extracted"
@@ -403,6 +334,7 @@ struct ThoughtsView: View {
                let status = thoughtData["status"] as? String,
                let created_at = thoughtData["created_at"] as? String,
                let updated_at = thoughtData["updated_at"] as? String {
+                
                 let model3D = thoughtData["model_3d"] as? String ?? "none"
                 let thought = Thought(
                     id: id,
@@ -422,27 +354,26 @@ struct ThoughtsView: View {
         DispatchQueue.main.async {
             self.viewModel.thoughts = tempThoughts
             self.isRefreshing = false
+            self.currentIndex = 0
         }
     }
     
     private func fetchBatteryLevel() {
-            performanceVM.fetchBatteryLevel()
-                .sink(receiveCompletion: { completion in
-                    switch completion {
-                    case .finished:
-                        break
-                    case .failure(let error):
-                        print("Failed to fetch battery level: \(error)")
-                    }
-                }, receiveValue: { level in
-                    self.batteryLevel = level
-                })
-                .store(in: &performanceVM.cancellables)
+        performanceVM.fetchBatteryLevel()
+            .sink(receiveCompletion: { completion in
+                switch completion {
+                case .finished:
+                    break
+                case .failure(let error):
+                    print("Failed to fetch battery level: \(error)")
+                }
+            }, receiveValue: { level in
+                self.batteryLevel = level
+            })
+            .store(in: &performanceVM.cancellables)
     }
     
-    
     // MARK: - Battery level timer
-    
     private func startBatteryLevelTimer() {
         cancellable = batteryLevelTimer
             .autoconnect()
@@ -457,12 +388,12 @@ struct ThoughtsView: View {
     }
 }
 
-// MARK: - ModeSwitch
-
+// MARK: - Mode
 enum Mode {
     case eye, ear
 }
 
+// MARK: - ModeSwitch
 struct ModeSwitch: View {
     @Binding var mode: Mode
 
@@ -474,7 +405,6 @@ struct ModeSwitch: View {
                     .padding(8)
                     .background(mode == .ear ? Color.gray : .clear)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
-                    
             }
             Button(action: { mode = .eye }) {
                 Image(systemName: "eye")
@@ -490,53 +420,16 @@ struct ModeSwitch: View {
     }
 }
 
-extension Color {
-    init(hex: String) {
-        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-        var int: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&int)
-        
-        let a, r, g, b: UInt64
-        switch hex.count {
-        case 3: // RGB (12-bit)
-            (a, r, g, b) = (255, (int >> 8) * 17,
-                                  (int >> 4 & 0xF) * 17,
-                                  (int & 0xF) * 17)
-        case 6: // RGB (24-bit)
-            (a, r, g, b) = (255, int >> 16,
-                                  int >> 8 & 0xFF,
-                                  int & 0xFF)
-        case 8: // ARGB (32-bit)
-            (a, r, g, b) = (int >> 24,
-                                  int >> 16 & 0xFF,
-                                  int >> 8 & 0xFF,
-                                  int & 0xFF)
-        default:
-            (a, r, g, b) = (255, 0, 0, 0)
-        }
-        
-        self.init(
-            .sRGB,
-            red: Double(r) / 255,
-            green: Double(g) / 255,
-            blue: Double(b) / 255,
-            opacity: Double(a) / 255
-        )
-    }
-}
-
+// MARK: - Download Helper (unchanged)
 func downloadUSDZFile(from remoteURL: URL, to filename: String, completion: @escaping (Result<URL, Error>) -> Void) {
-    // Decide where you want to store the file — e.g., Caches directory
     let cacheDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
     let localURL = cacheDirectory.appendingPathComponent(filename)
     
-    // If it already exists, return immediately
     if FileManager.default.fileExists(atPath: localURL.path) {
         completion(.success(localURL))
         return
     }
     
-    // Otherwise, download
     URLSession.shared.downloadTask(with: remoteURL) { tempLocalURL, response, error in
         if let error = error {
             completion(.failure(error))
@@ -549,7 +442,6 @@ func downloadUSDZFile(from remoteURL: URL, to filename: String, completion: @esc
         }
         
         do {
-            // Move downloaded file to local cache path
             try FileManager.default.moveItem(at: tempLocalURL, to: localURL)
             completion(.success(localURL))
         } catch {

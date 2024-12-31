@@ -27,7 +27,7 @@ struct ThoughtCard: View {
                                                 if let localURL = modelFileURL {
                                                     // Show SceneKit-based 3D preview
                                                     SceneKitView(localFileURL: localURL)
-                                                        .frame(width: 180, height: 180)
+//                                                        .frame(width: 180, height: 180)
                                                         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
 
                                                 } else {
@@ -69,7 +69,7 @@ struct ThoughtCard: View {
                                 EmptyView()
                             }
                         }
-                        .frame(width: 180, height: 180)
+//                        .frame(width: 180, height: 180)
                         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                     }
                 }
@@ -92,7 +92,7 @@ struct ThoughtCard: View {
                     .padding(.bottom, 8)
             }
         }
-        .frame(width: 180)
+        .frame(width: 280)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             // Show overlay spinner if the status != "processed"
