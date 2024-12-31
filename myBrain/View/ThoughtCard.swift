@@ -12,9 +12,9 @@ struct ThoughtCard: View {
     
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(.ultraThinMaterial)
-                .shadow(radius: 2)
+            RoundedRectangle(cornerRadius: 36, style: .continuous)
+                .fill(.thinMaterial)
+                .shadow(radius: 8)
             
             VStack(alignment: .leading, spacing: 8) {
                 
@@ -28,7 +28,7 @@ struct ThoughtCard: View {
                                                     // Show SceneKit-based 3D preview
                                                     SceneKitView(localFileURL: localURL)
 //                                                        .frame(width: 180, height: 180)
-                                                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                                        .clipShape(RoundedRectangle(cornerRadius: 36, style: .continuous))
 
                                                 } else {
                                                     // If downloading, show spinner
@@ -70,7 +70,7 @@ struct ThoughtCard: View {
                             }
                         }
 //                        .frame(width: 180, height: 180)
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: 36, style: .continuous))
                     }
                 }
 
@@ -93,13 +93,13 @@ struct ThoughtCard: View {
             }
         }
         .frame(width: 280)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 36, style: .continuous))
         .overlay(
             // Show overlay spinner if the status != "processed"
             Group {
                 if thought.status != "processed" {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 16)
+                        RoundedRectangle(cornerRadius: 36)
                             .fill(Color.black.opacity(0.3))
                         ProgressView("Loading...")
                             .tint(.white)
@@ -108,7 +108,7 @@ struct ThoughtCard: View {
             }
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 36)
                 .stroke(Color.white, lineWidth: 1)
         )
         .alert("Download Error", isPresented: .constant(downloadError != nil), actions: {

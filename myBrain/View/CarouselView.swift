@@ -6,7 +6,7 @@ struct CarouselView: View {
     @State private var offsetAtDragStart: CGFloat = 0
     @State private var currentIndex: Int = 0
     
-    private let cardWidth: CGFloat = 240
+    private let cardWidth: CGFloat = 280
     private let cardHeight: CGFloat = 500
     private let spacing: CGFloat = 0
     
