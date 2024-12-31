@@ -7,7 +7,7 @@ struct Thought: Codable, Identifiable, Hashable {
     var status: String
     let created_at: String
     let updated_at: String
-    
+    let model_3d: String? 
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }

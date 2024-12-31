@@ -403,7 +403,7 @@ struct ThoughtsView: View {
                let status = thoughtData["status"] as? String,
                let created_at = thoughtData["created_at"] as? String,
                let updated_at = thoughtData["updated_at"] as? String {
-                
+                let model3D = thoughtData["model_3d"] as? String ?? "none"
                 let thought = Thought(
                     id: id,
                     name: name,
@@ -412,7 +412,8 @@ struct ThoughtsView: View {
                     cover: cover,
                     status: status,
                     created_at: created_at,
-                    updated_at: updated_at
+                    updated_at: updated_at,
+                    model_3d: model3D
                 )
                 tempThoughts.append(thought)
             }
@@ -522,4 +523,37 @@ extension Color {
             opacity: Double(a) / 255
         )
     }
+}
+
+func downloadUSDZFile(from remoteURL: URL, to filename: String, completion: @escaping (Result<URL, Error>) -> Void) {
+    // Decide where you want to store the file — e.g., Caches directory
+    let cacheDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+    let localURL = cacheDirectory.appendingPathComponent(filename)
+    
+    // If it already exists, return immediately
+    if FileManager.default.fileExists(atPath: localURL.path) {
+        completion(.success(localURL))
+        return
+    }
+    
+    // Otherwise, download
+    URLSession.shared.downloadTask(with: remoteURL) { tempLocalURL, response, error in
+        if let error = error {
+            completion(.failure(error))
+            return
+        }
+        
+        guard let tempLocalURL = tempLocalURL else {
+            completion(.failure(NSError(domain: "InvalidTemporaryURL", code: 0)))
+            return
+        }
+        
+        do {
+            // Move downloaded file to local cache path
+            try FileManager.default.moveItem(at: tempLocalURL, to: localURL)
+            completion(.success(localURL))
+        } catch {
+            completion(.failure(error))
+        }
+    }.resume()
 }
