@@ -10,10 +10,12 @@ struct ThoughtCard: View {
     @State private var isDownloading = false
     @State private var downloadError: String? = nil
     
+    @Environment(\.colorScheme) var colorScheme // for dark/light mode
+
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 36, style: .continuous)
-                .fill(.thinMaterial)
+                .fill(.regularMaterial) // Changed to .regularMaterial
                 .shadow(radius: 8)
             
             VStack(alignment: .leading, spacing: 8) {
@@ -77,20 +79,22 @@ struct ThoughtCard: View {
                 // MARK: - Title
                 Text(thought.name)
                     .font(.system(.title3).bold())
-                    .foregroundColor(.black)
+                    .foregroundColor(colorScheme == .dark ? .white : .black)  // Adapt text color
                     .multilineTextAlignment(.leading)
                     .lineLimit(nil)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 4)
+                    .padding(.horizontal, 12) // Increased horizontal padding
+
                 
                 // MARK: - Date
                 Text(relativeDateString(for: thought.created_at))
                     .font(.footnote)
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.leading)
-                    .padding(.horizontal, 8)
-                    .padding(.bottom, 8)
+                    .padding(.horizontal, 12)  // Increased horizontal padding
+                    .padding(.bottom, 12)  // Increased bottom padding
             }
+            .padding(.top, 8)
         }
         .frame(width: 280)
         .clipShape(RoundedRectangle(cornerRadius: 36, style: .continuous))

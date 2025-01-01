@@ -14,10 +14,10 @@ struct SceneKitView: UIViewRepresentable {
             let directionalLight = SCNNode()
             let light = SCNLight()
             light.type = .directional
-            light.intensity = 1000
+            light.intensity = 3000
             light.temperature = 6500
             light.castsShadow = true
-            light.shadowRadius = 3
+            light.shadowRadius = 5
             light.shadowColor = UIColor.black.withAlphaComponent(0.5)
             light.orthographicScale = 10
             directionalLight.light = light

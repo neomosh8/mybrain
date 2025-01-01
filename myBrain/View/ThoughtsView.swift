@@ -10,7 +10,7 @@ struct ThoughtsView: View {
     @StateObject private var socketViewModel: WebSocketViewModel
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.colorScheme) var colorScheme
-    
+
     @State private var showConnectedBanner = false
     @State private var processingThoughtIDs = Set<Int>()
     @State private var lastSocketMessage: String?
@@ -41,25 +41,63 @@ struct ThoughtsView: View {
                 Image("DarkBackground")
                     .resizable()
                     .scaledToFill()
-                    .edgesIgnoringSafeArea(.all)
+                    .ignoresSafeArea()
             } else {
                 Image("LightBackground")
                     .resizable()
                     .scaledToFill()
-                    .edgesIgnoringSafeArea(.all)
+                    .ignoresSafeArea()
             }
 
             // MARK: - Main content
-            Group {
-                if viewModel.isLoading {
-                    loadingView
-                } else if let errorMessage = viewModel.errorMessage {
-                    errorView(message: errorMessage)
-                } else {
-                    CarouselView(viewModel: viewModel, selectedThought: $selectedThought)
+            VStack { // Removed the spacing: 0 to use default
+                Spacer() // Push everything down from the top
+                // 1) Page title
+                Text("Thoughts")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+                    .padding(.bottom, 8) // added bottom padding
 
+                // 2) Custom ultra-thin container with Mode Switch & Battery
+                HStack(spacing: 8) {
+                    ModeSwitch(mode: $mode)
+                    
+                    Button(action: {
+                        showPerformanceView = true
+                    }) {
+                        Image(systemName: batteryIconName)
+                            .foregroundColor(batteryColor)
+                            .font(.title3)
+                    }
+                    .buttonStyle(.plain)
                 }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+               .padding(.bottom, 16) // add some padding under the header
+
+                // 3) Carousel or content below the header
+                Group {
+                    if viewModel.isLoading {
+                        loadingView
+                    } else if let errorMessage = viewModel.errorMessage {
+                        errorView(message: errorMessage)
+                    } else {
+                        CarouselView(viewModel: viewModel,
+                                     selectedThought: $selectedThought)
+                    }
+                }
+               
+                Button(action: logoutAction) {
+                                    Text("Logout")
+                                        .foregroundColor(.white)
+                                }
+
+                Spacer() // push everything up from bottom
             }
+           .frame(maxWidth: .infinity, maxHeight: .infinity) // Take up the whole screen
 
             // MARK: - Refresh overlay
             if isRefreshing {
@@ -71,7 +109,6 @@ struct ThoughtsView: View {
                         .padding()
                         .background(Color.green)
                         .cornerRadius(8)
-                        .padding(.top, 16)
                     Spacer()
                 }
                 .transition(.move(edge: .top).combined(with: .opacity))
@@ -88,13 +125,24 @@ struct ThoughtsView: View {
                         .background(Color.green)
                         .cornerRadius(8)
                         .padding(.top, 16)
-                    
                     Spacer()
                 }
                 .transition(.move(edge: .top).combined(with: .opacity))
                 .animation(.easeInOut, value: showConnectedBanner)
             }
         }
+        .navigationBarHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: logoutAction) {
+                    Text("Logout")
+                        .foregroundColor(.white)
+                }
+            }
+        }
+        // Keep the nav bar style dark/black if desired
+        .toolbarBackground(Color.black, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
         .onAppear {
             refreshData()
             fetchBatteryLevel()
@@ -103,6 +151,7 @@ struct ThoughtsView: View {
         .onDisappear {
             stopBatteryLevelTimer()
         }
+        // MARK: - Socket Observers
         .onChange(of: socketViewModel.welcomeMessage) { newMessage in
             if let message = newMessage {
                 print("Received welcome message from WS: \(message)")
@@ -140,22 +189,13 @@ struct ThoughtsView: View {
                 lastSocketMessage = string
             }
         }
+        // Refresh on becoming active
         .onChange(of: scenePhase) { newPhase in
             if newPhase == .active && lastScenePhase != .active {
                 refreshData()
             }
             lastScenePhase = newPhase
         }
-        .navigationTitle("Thoughts")
-        .navigationBarTitleDisplayMode(.inline)
-        .navigationBarBackButtonHidden(true)
-        .toolbar {
-            modeToolbarItem
-            trailingToolbarItem
-            batteryToolbarItem
-        }
-        .toolbarBackground(Color.black, for: .navigationBar)
-        .toolbarColorScheme(.dark, for: .navigationBar)
         .navigationDestination(item: $selectedThought) { thought in
             if mode == .eye {
                 ThoughtDetailView(thought: thought, socketViewModel: socketViewModel)
@@ -168,8 +208,7 @@ struct ThoughtsView: View {
         }
     }
 
-
-    // MARK: - Battery Icon
+    // MARK: - Battery Icon Name
     private var batteryIconName: String {
         guard let batteryLevel = batteryLevel else {
             return "battery.0"
@@ -190,6 +229,7 @@ struct ThoughtsView: View {
         }
     }
     
+    // MARK: - Battery Color
     private var batteryColor: Color {
         guard let level = batteryLevel else {
             return .gray
@@ -229,39 +269,7 @@ struct ThoughtsView: View {
         viewModel.fetchThoughts()
     }
     
-    // MARK: - Toolbar Items
-    private var modeToolbarItem: some ToolbarContent {
-        ToolbarItem(placement: .navigationBarLeading) {
-            HStack {
-                ModeSwitch(mode: $mode)
-            }
-        }
-    }
-    
-    private var batteryToolbarItem: some ToolbarContent {
-        ToolbarItem(placement: .navigationBarLeading) {
-            Button(action: {
-                showPerformanceView = true
-            }) {
-                Image(systemName: batteryIconName)
-                    .foregroundColor(.white)
-                    .padding(8)
-                    .background(batteryColor)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-            }
-            .padding(.horizontal, 4)
-        }
-    }
-    
-    private var trailingToolbarItem: some ToolbarContent {
-        ToolbarItem(placement: .navigationBarTrailing) {
-            Button(action: logoutAction) {
-                Text("Logout")
-                    .foregroundColor(.white)
-            }
-        }
-    }
-    
+    // MARK: - Logout
     private func logoutAction() {
         authVM.logoutFromServer(context: modelContext) { result in
             switch result {
@@ -358,6 +366,7 @@ struct ThoughtsView: View {
         }
     }
     
+    // MARK: - Battery Level
     private func fetchBatteryLevel() {
         performanceVM.fetchBatteryLevel()
             .sink(receiveCompletion: { completion in
@@ -414,9 +423,6 @@ struct ModeSwitch: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             }
         }
-        .background(Color.black.opacity(0.8))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .padding(4)
     }
 }
 
