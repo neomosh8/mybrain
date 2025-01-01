@@ -14,10 +14,13 @@ struct ChapterCompletionView: View {
     
     let thoughtId: Int
     
-    // For the animated fill
+    // For the animated circle fill
     @State private var fillAmount: CGFloat = 0.0
     // For showing the checkmark
     @State private var showCheckmark = false
+    
+    // Loading state (for feedback request)
+    @State private var isLoadingFeedback = false
     
     // Feedback data & selection
     @State private var feedbackPoints: [FeedbackPoint] = []
@@ -30,15 +33,19 @@ struct ChapterCompletionView: View {
                 .ignoresSafeArea()
             
             GeometryReader { geo in
-                ZStack(alignment: .bottom) {
+                ZStack {
+                    // 1) Growing green circle from the bottom-center
+                    let baseRadius = sqrt(pow(geo.size.width / 2, 2) + pow(geo.size.height, 2))
+                    // Multiply by ~1.3 so it fully covers wide/tall screens
+                    let maxRadius = baseRadius * 1.3
+                    let currentRadius = fillAmount * maxRadius
                     
-                    // 1) Green rectangle that grows from the bottom
-                    Rectangle()
+                    Circle()
                         .fill(Color.green.opacity(0.6))
-                        .frame(
-                            width: geo.size.width,
-                            height: geo.size.height * fillAmount
-                        )
+                        // Make the circle’s diameter = 2 * currentRadius
+                        .frame(width: currentRadius * 2, height: currentRadius * 2)
+                        // Position the center of the circle at the bottom-center of the screen
+                        .position(x: geo.size.width / 2, y: geo.size.height)
                         .animation(.easeInOut(duration: 2), value: fillAmount)
                     
                     // 2) Centered content: checkmark & message
@@ -54,18 +61,32 @@ struct ChapterCompletionView: View {
                                     let impact = UIImpactFeedbackGenerator(style: .heavy)
                                     impact.impactOccurred()
                                 }
-                                // Pop-in animation
                                 .transition(.scale)
                             
-                            // ---- Plot + tapped info goes here ----
-                            feedbackPlot
-                                .frame(height: 200)
-                                .padding(.horizontal)
-                                .padding(.top, 16)
-                            
-                            // Info about selected point + next 5
-                            if let selected = selectedPoint {
-                                selectedPointInfo(for: selected)
+                            // ---- Show either loading spinner OR the plot ----
+                            if isLoadingFeedback {
+                                // Just requested feedback => show loading spinner
+                                ProgressView("Loading feedback...")
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                    .scaleEffect(1.3, anchor: .center)
+                                    .padding(.top, 16)
+                            } else if feedbackPoints.isEmpty {
+                                // Not loading, but no data => could show "No data" or remain blank
+                                // Here, let's just show a placeholder
+                                Text("No feedback data")
+                                    .foregroundColor(.white)
+                                    .padding(.top, 16)
+                            } else {
+                                // Feedback data ready => show plot
+                                feedbackPlot
+                                    .frame(height: 200)
+                                    .padding(.horizontal)
+                                    .padding(.top, 16)
+                                
+                                // Info about selected point + next 5
+                                if let selected = selectedPoint {
+                                    selectedPointInfo(for: selected)
+                                }
                             }
                         }
                         
@@ -79,18 +100,21 @@ struct ChapterCompletionView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
                 .onAppear {
-                    // Begin the bottom fill after a brief delay
+                    // 1) After 0.5s, start the 2-second circle animation
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         withAnimation {
                             fillAmount = 1.0
                         }
-                    }
-                    // Show the checkmark after the fill completes
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
-                        withAnimation {
-                            showCheckmark = true
-                            // After the checkmark appears, request feedback data
-                            requestFeedbacks()
+                        // 2) Wait 2s for the circle animation to finish
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                            // Circle done => animate checkmark
+                            withAnimation(.spring()) {
+                                showCheckmark = true
+                            }
+                            // 3) Give the checkmark a moment to appear before requesting feedback
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                                requestFeedbacks()
+                            }
                         }
                     }
                 }
@@ -232,8 +256,11 @@ struct ChapterCompletionView: View {
 // MARK: - Network / Parsing
 extension ChapterCompletionView {
     
-    /// After the checkmark shows, request the feedback data from server
+    /// After the checkmark shows (plus a short delay), request the feedback data from server
     private func requestFeedbacks() {
+        // Indicate that we are now loading
+        isLoadingFeedback = true
+        
         let payload: [String: Any] = [
             "thought_id": thoughtId
         ]
@@ -252,6 +279,9 @@ extension ChapterCompletionView {
     ///   }
     /// }
     private func parseFeedbackResponse(_ jsonObject: [String: Any]) {
+        // We got a response => no longer loading
+        isLoadingFeedback = false
+        
         guard let dataDict = jsonObject["data"] as? [String: Any] else { return }
         
         var tempPoints: [FeedbackPoint] = []
