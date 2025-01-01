@@ -35,6 +35,7 @@
 		68ACE9CB2D17C7A3003BCC83 /* PerformanceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68ACE9CA2D17C7A3003BCC83 /* PerformanceView.swift */; };
 		68C9EBE12D248C50007F4517 /* SceneKitUSDZView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68C9EBE02D248C50007F4517 /* SceneKitUSDZView.swift */; };
 		68C9EBE32D24A744007F4517 /* CarouselView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68C9EBE22D24A744007F4517 /* CarouselView.swift */; };
+		68C9EBEF2D25FDED007F4517 /* FeedbackPlotView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68C9EBEE2D25FDED007F4517 /* FeedbackPlotView.swift */; };
 		68DF43FB2D20CE0C00A6E46C /* SubtitleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68DF43FA2D20CE0C00A6E46C /* SubtitleView.swift */; };
 		68DF43FD2D20CE5F00A6E46C /* SubtitleViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68DF43FC2D20CE5F00A6E46C /* SubtitleViewModel.swift */; };
 		68DF43FF2D20CEA800A6E46C /* StreamModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68DF43FE2D20CEA800A6E46C /* StreamModels.swift */; };
@@ -95,6 +96,7 @@
 		68ACE9CA2D17C7A3003BCC83 /* PerformanceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceView.swift; sourceTree = "<group>"; };
 		68C9EBE02D248C50007F4517 /* SceneKitUSDZView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneKitUSDZView.swift; sourceTree = "<group>"; };
 		68C9EBE22D24A744007F4517 /* CarouselView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarouselView.swift; sourceTree = "<group>"; };
+		68C9EBEE2D25FDED007F4517 /* FeedbackPlotView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackPlotView.swift; sourceTree = "<group>"; };
 		68DF43FA2D20CE0C00A6E46C /* SubtitleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleView.swift; sourceTree = "<group>"; };
 		68DF43FC2D20CE5F00A6E46C /* SubtitleViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleViewModel.swift; sourceTree = "<group>"; };
 		68DF43FE2D20CEA800A6E46C /* StreamModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamModels.swift; sourceTree = "<group>"; };
@@ -202,6 +204,7 @@
 				68DF43FA2D20CE0C00A6E46C /* SubtitleView.swift */,
 				68C9EBE02D248C50007F4517 /* SceneKitUSDZView.swift */,
 				68C9EBE22D24A744007F4517 /* CarouselView.swift */,
+				68C9EBEE2D25FDED007F4517 /* FeedbackPlotView.swift */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -344,6 +347,7 @@
 				68C9EBE32D24A744007F4517 /* CarouselView.swift in Sources */,
 				6844270C2D13D802002E9BC6 /* AuthModels.swift in Sources */,
 				684427102D13D886002E9BC6 /* RegisterView.swift in Sources */,
+				68C9EBEF2D25FDED007F4517 /* FeedbackPlotView.swift in Sources */,
 				6844271A2D13E572002E9BC6 /* Thought.swift in Sources */,
 				68C9EBE12D248C50007F4517 /* SceneKitUSDZView.swift in Sources */,
 				684427042D13D580002E9BC6 /* ContentView.swift in Sources */,
