@@ -30,17 +30,21 @@ struct CarouselView: View {
                         let scale = max(0.7, 1 - distance / 500)
                         let opacity = distance <= 20 ? 1.0 : Double(max(0.7, 1 - distance / 500))
                         
-                        ThoughtCard(thought: thought)
-                            .scaleEffect(scale)
-                            .opacity(opacity)
-                            .animation(.easeInOut(duration: 0.2), value: scale)
-                            .onTapGesture {
-                                // If you only want to check the status, remove the scale check:
-                                if thought.status == "processed" {
-                                    selectedThought = thought
-                                }
+                        ThoughtCard(
+                            thought: thought,
+                            onDelete: { thoughtToDelete in
+                                viewModel.deleteThought(thoughtToDelete)
                             }
-
+                        )
+                        .scaleEffect(scale)
+                        .opacity(opacity)
+                        .animation(.easeInOut(duration: 0.2), value: scale)
+                        .onTapGesture {
+                            // If you only want to check the status, remove the scale check:
+                            if thought.status == "processed" {
+                                selectedThought = thought
+                            }
+                        }
                     }
                     .frame(width: cardWidth, height: cardHeight)
                 }
@@ -50,15 +54,13 @@ struct CarouselView: View {
             .gesture(
                 DragGesture(minimumDistance: 5)
                     .onChanged { value in
-                        // Simple direct translation during drag
                         offset = offsetAtDragStart + value.translation.width
                     }
                     .onEnded { value in
-                        let dragThreshold: CGFloat = 50 // Minimum drag distance to trigger page change
+                        let dragThreshold: CGFloat = 50
                         let dragDirection = value.translation.width
                         let velocity = value.predictedEndLocation.x - value.location.x
                         
-                        // Determine if we should move to next/previous card
                         if abs(dragDirection) > dragThreshold || abs(velocity) > 100 {
                             if dragDirection > 0 && currentIndex > 0 {
                                 currentIndex -= 1
@@ -67,16 +69,12 @@ struct CarouselView: View {
                             }
                         }
                         
-                        // Calculate the target offset based on current index
                         let targetOffset = -CGFloat(currentIndex) * cardWidth
-                        
-                        // Adjust for center positioning
                         let adjustedOffset = targetOffset + (screenWidth - cardWidth) / 2 - initialOffset
                         
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                             offset = adjustedOffset
                         }
-                        
                         offsetAtDragStart = adjustedOffset
                         
                         let impact = UIImpactFeedbackGenerator(style: .light)
@@ -86,7 +84,6 @@ struct CarouselView: View {
         }
         .padding(.vertical, 20)
         .onAppear {
-            // Initialize with first card centered
             let screenWidth = UIScreen.main.bounds.width
             let initialCenter = (screenWidth - cardWidth) / 2
             offset = -initialCenter

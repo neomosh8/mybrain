@@ -5,49 +5,61 @@ struct ThoughtCard: View {
     let thought: Thought
     private let baseUrl = "https://brain.sorenapp.ir"
 
-    // Holds local downloaded URL for the usdz, if any
+    /// Called when user taps "Delete" - triggers a server call in your ViewModel
+    var onDelete: (Thought) -> Void
+
+    // MARK: 3D model or cover image states
     @State private var modelFileURL: URL? = nil
     @State private var isDownloading = false
     @State private var downloadError: String? = nil
-    
-    @Environment(\.colorScheme) var colorScheme // for dark/light mode
+
+    // Whether the red "Delete" bar is showing
+    @State private var showDeleteUI = false
+
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         ZStack {
+            // MARK: - Card Background
             RoundedRectangle(cornerRadius: 36, style: .continuous)
-                .fill(.regularMaterial) // Changed to .regularMaterial
+                .fill(.regularMaterial)
                 .shadow(radius: 8)
-            
+
+            // MARK: - Card Content
             VStack(alignment: .leading, spacing: 8) {
-                
-                // MARK: - Top: Either 3D or Cover Image
+                // 1) 3D model or cover image
                 ZStack {
                     if let modelPath = thought.model_3d,
                        modelPath != "none" {
-                        
-                        // If we have downloaded the model
-                                                if let localURL = modelFileURL {
-                                                    // Show SceneKit-based 3D preview
-                                                    SceneKitView(localFileURL: localURL)
-//                                                        .frame(width: 180, height: 180)
-                                                        .clipShape(RoundedRectangle(cornerRadius: 36, style: .continuous))
-
-                                                } else {
-                                                    // If downloading, show spinner
-                                                    if isDownloading {
-                                                        ProgressView("Downloading model...")
-                                                            .frame(width: 180, height: 180)
-                                                    } else {
-                                                        // Start download on appear
-                                                        Color.gray.opacity(0.2)
-                                                            .frame(width: 180, height: 180)
-                                                            .onAppear {
-                                                                downloadModelIfNeeded(modelPath)
-                                                            }
-                                                    }
-                                                }
+                        if let localURL = modelFileURL {
+                            // Show 3D preview in SceneKit
+                            SceneKitView(localFileURL: localURL)
+                                .clipShape(RoundedRectangle(cornerRadius: 36, style: .continuous))
+                            // 1) Use a high-priority gesture
+                                       .highPriorityGesture(
+                                           DragGesture(minimumDistance: 0)
+                                               .onChanged { _ in
+                                                   // Do nothing. Just preventing the carousel from moving.
+                                               }
+                                               .onEnded { _ in
+                                                   // Also do nothing or handle if you want.
+                                               }
+                                       )
+                        } else {
+                            // Download if needed
+                            if isDownloading {
+                                ProgressView("Downloading model...")
+                                    .frame(width: 180, height: 180)
+                            } else {
+                                Color.gray.opacity(0.2)
+                                    .frame(width: 180, height: 180)
+                                    .onAppear {
+                                        downloadModelIfNeeded(modelPath)
+                                    }
+                            }
+                        }
                     } else {
-                        // Show cover image if model is none
+                        // Show cover image if no 3D
                         AsyncImage(url: URL(string: baseUrl + (thought.cover ?? ""))) { phase in
                             switch phase {
                             case .empty:
@@ -71,35 +83,68 @@ struct ThoughtCard: View {
                                 EmptyView()
                             }
                         }
-//                        .frame(width: 180, height: 180)
                         .clipShape(RoundedRectangle(cornerRadius: 36, style: .continuous))
                     }
                 }
 
-                // MARK: - Title
+                // 2) Title
                 Text(thought.name)
                     .font(.system(.title3).bold())
-                    .foregroundColor(colorScheme == .dark ? .white : .black)  // Adapt text color
+                    .foregroundColor(colorScheme == .dark ? .white : .black)
                     .multilineTextAlignment(.leading)
                     .lineLimit(nil)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 12) // Increased horizontal padding
+                    .padding(.horizontal, 12)
 
-                
-                // MARK: - Date
+                // 3) Date
                 Text(relativeDateString(for: thought.created_at))
                     .font(.footnote)
                     .foregroundColor(.gray)
-                    .multilineTextAlignment(.leading)
-                    .padding(.horizontal, 12)  // Increased horizontal padding
-                    .padding(.bottom, 12)  // Increased bottom padding
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 12)
             }
             .padding(.top, 8)
+
+            // MARK: - Delete Overlay & Button
+            if showDeleteUI {
+                // (A) Clear overlay behind delete button
+                //     Taps here will dismiss the delete UI
+                Color.black
+                    .opacity(0.01)        // nearly transparent
+                    .ignoresSafeArea()    // covers entire card area
+                    .onTapGesture {
+                        withAnimation {
+                            showDeleteUI = false
+                        }
+                    }
+
+                // (B) The actual delete button
+                VStack {
+                    Spacer()
+                    Button(role: .destructive) {
+                        onDelete(thought)    // Call the delete
+                        showDeleteUI = false
+                    } label: {
+                        Text("Delete")
+                            .bold()
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.red)
+                            .cornerRadius(12)
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 20)
+                    }
+                }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .animation(.easeInOut(duration: 0.2), value: showDeleteUI)
+            }
         }
+        // MARK: - Card Modifiers
         .frame(width: 280)
         .clipShape(RoundedRectangle(cornerRadius: 36, style: .continuous))
         .overlay(
-            // Show overlay spinner if the status != "processed"
+            // If status != processed, show a translucent overlay + spinner
             Group {
                 if thought.status != "processed" {
                     ZStack {
@@ -115,14 +160,26 @@ struct ThoughtCard: View {
             RoundedRectangle(cornerRadius: 36)
                 .stroke(Color.white, lineWidth: 1)
         )
-        .alert("Download Error", isPresented: .constant(downloadError != nil), actions: {
+        .alert("Download Error", isPresented: .constant(downloadError != nil)) {
             Button("OK") { downloadError = nil }
-        }, message: {
+        } message: {
             Text(downloadError ?? "")
-        })
+        }
+        // MARK: - Long Press => Show delete bar
+        .gesture(
+            LongPressGesture(minimumDuration: 0.5)
+                .onEnded { _ in
+                    withAnimation {
+                        showDeleteUI = true
+                    }
+                }
+        )
     }
-    
-    // MARK: - Download Helper
+}
+
+
+
+extension ThoughtCard {
     private func downloadModelIfNeeded(_ path: String) {
         guard let remoteURL = URL(string: baseUrl + path) else {
             return
@@ -142,7 +199,7 @@ struct ThoughtCard: View {
     }
 }
 
-// MARK: - Date Helpers (unchanged)
+// MARK: - Date Utils Example
 func relativeDateString(for serverDateString: String) -> String {
     guard let date = parseISO8601Date(serverDateString) else {
         return serverDateString

@@ -59,4 +59,26 @@ class ThoughtsViewModel: ObservableObject {
             }
         }.resume()
     }
+    func deleteThought(_ thought: Thought) {
+        let token = self.accessToken
+        guard let url = URL(string: "https://brain.sorenapp.ir/api/v1/thoughts/\(thought.id)/delete/") else { return }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("Delete error:", error.localizedDescription)
+                return
+            }
+            
+            // If successful, remove it from local list
+            DispatchQueue.main.async {
+                self.thoughts.removeAll { $0.id == thought.id }
+            }
+        }
+        task.resume()
+    }
+
 }
