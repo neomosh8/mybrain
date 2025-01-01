@@ -35,16 +35,6 @@ struct ThoughtCard: View {
                             // Show 3D preview in SceneKit
                             SceneKitView(localFileURL: localURL)
                                 .clipShape(RoundedRectangle(cornerRadius: 36, style: .continuous))
-                            // 1) Use a high-priority gesture
-                                       .highPriorityGesture(
-                                           DragGesture(minimumDistance: 0)
-                                               .onChanged { _ in
-                                                   // Do nothing. Just preventing the carousel from moving.
-                                               }
-                                               .onEnded { _ in
-                                                   // Also do nothing or handle if you want.
-                                               }
-                                       )
                         } else {
                             // Download if needed
                             if isDownloading {
