@@ -12,7 +12,7 @@ struct AnimatedParagraphView: View {
     let socketViewModel: WebSocketViewModel
     let onHalfway: () -> Void
     let onFinished: () -> Void
-    
+    @State private var totalTextHeight: CGFloat = 0
     @Binding var currentChapterIndex: Int?
 
     // MARK: - State
@@ -67,6 +67,8 @@ struct AnimatedParagraphView: View {
             }
         }
         .padding()
+        .frame(width: containerWidth, height: totalTextHeight + 40)  // <–– FORCE HEIGHT
+
         .background(backgroundColor)
         .cornerRadius(6)
         .onAppear {
@@ -135,7 +137,7 @@ extension AnimatedParagraphView {
         layoutManager.addTextContainer(textContainer)
         _ = layoutManager.glyphRange(for: textContainer)
 
-        // B) Enumerate words using NaturalLanguage
+        // B) Enumerate words
         let fullString = attrStr.string
         let allWordRanges = self.tokenRanges(for: fullString)
 
@@ -148,8 +150,16 @@ extension AnimatedParagraphView {
             }
         }
 
+        // Compute the largest maxY
+        let maxBottom = result.map { $0.rect.maxY }.max() ?? 0
+        // Store it in a @State var so we can use it for frame height
+        DispatchQueue.main.async {
+            self.totalTextHeight = maxBottom
+        }
+
         completion(result)
     }
+
 
     private func boundingRect(for range: NSRange,
                               layoutManager: NSLayoutManager,
