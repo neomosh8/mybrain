@@ -69,7 +69,7 @@ struct AnimatedParagraphView: View {
         .padding()
         .frame(width: containerWidth, height: totalTextHeight + 40)  // <–– FORCE HEIGHT
 
-        .background(backgroundColor)
+        .background(Color.clear)
         .cornerRadius(6)
         .onAppear {
             loadHTMLAndMeasure(containerWidth: containerWidth)
