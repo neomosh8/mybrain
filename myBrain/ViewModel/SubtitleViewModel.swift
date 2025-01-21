@@ -1,3 +1,4 @@
+//SubtitleViewModel.swift
 import SwiftUI
 import Combine
 
@@ -36,15 +37,28 @@ class SubtitleViewModel: ObservableObject {
     /// We can see if the global time surpasses the maxEnd of the currentSegment,
     /// then load the next segment. But only if each .vtt truly ends and the next .vtt picks up later.
     func checkSegmentBoundary(onNextSegment: (Int) -> Void) {
-        guard currentSegmentIndex < segments.count,
-              let segData = currentSegment
-        else { return }
+        guard !segments.isEmpty else { return }
         
-        if currentGlobalTime >= segData.maxEnd {
-            let nextIndex = currentSegmentIndex + 1
-            onNextSegment(nextIndex)
+        // Figure out which segment truly matches the current global time
+        if let newIndex = findSegmentIndex(for: currentGlobalTime),
+           newIndex != currentSegmentIndex {
+            onNextSegment(newIndex)  // Tells the caller: "Load segment at newIndex"
         }
     }
+
+    /// Finds the segment whose [minStart, maxEnd) range contains `time`.
+    /// If none match exactly, returns nil or the last if you want a fallback.
+    private func findSegmentIndex(for time: Double) -> Int? {
+        for (i, seg) in segments.enumerated() {
+            if time >= seg.minStart && time < seg.maxEnd {
+                return i
+            }
+        }
+        // If time goes beyond the last segment’s maxEnd, you can decide:
+        // return segments.count - 1 to stick on the last segment
+        return nil
+    }
+
     
     /// Download and parse the .vtt file
     private func fetchAndParseVTT(from urlString: String, completion: @escaping (SubtitleSegmentData) -> Void) {

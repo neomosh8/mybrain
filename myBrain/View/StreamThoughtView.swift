@@ -1,3 +1,4 @@
+//StreamThoughtView.swift
 import SwiftUI
 import AVKit
 import Combine
@@ -372,18 +373,26 @@ struct StreamThoughtView: View {
         }
         let interval = CMTime(seconds: 0.1, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
         print("startPlaybackProgressObservation => addPeriodicTimeObserver(0.1s)")
-        playbackProgressObserver = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { time in
+        playbackProgressObserver = player.addPeriodicTimeObserver(
+            forInterval: CMTime(seconds: 0.1, preferredTimescale: CMTimeScale(NSEC_PER_SEC)),
+            queue: .main
+        ) { time in
             let currentTime = time.seconds
             self.checkPlaybackProgress(currentTime: currentTime)
-            
-            // MARK: - NEW CODE: Update subtitle time
+
+            // Update subtitle time
             self.subtitleViewModel.updateCurrentTime(currentTime)
-            // If we detect that the current segment ended, load next
-            self.subtitleViewModel.checkSegmentBoundary { nextSegmentIndex in
-                self.subtitleViewModel.loadSegment(at: nextSegmentIndex)
+
+            // (OLD) self.subtitleViewModel.checkSegmentBoundary { nextSegmentIndex in
+            //     self.subtitleViewModel.loadSegment(at: nextSegmentIndex)
+            // }
+
+            // (NEW) Use the improved boundary check
+            self.subtitleViewModel.checkSegmentBoundary { newIndex in
+                self.subtitleViewModel.loadSegment(at: newIndex)
             }
-            // MARK: End of NEW CODE
         }
+
     }
     
     // MARK: - 5. Check Progress & Request Next Chapter
@@ -464,44 +473,156 @@ struct StreamThoughtView: View {
                 print("fetchSubtitlePlaylist => invalid data")
                 return
             }
-            // parse lines for #EXTINF and the subsequent .vtt
-            var segments: [SubtitleSegmentLink] = []
+            
+            // Parse lines for #EXTINF and .vtt references:
+            var vttFiles: [String] = []
             let lines = text.components(separatedBy: .newlines)
             var i = 0
             while i < lines.count {
                 let line = lines[i]
                 if line.hasPrefix("#EXTINF:") {
-                    // parse duration
-                    let durationString = line
-                        .replacingOccurrences(of: "#EXTINF:", with: "")
-                        .replacingOccurrences(of: ",", with: "")
-                        .trimmingCharacters(in: .whitespaces)
-                    
-                    if let duration = Double(durationString) {
-                        let nextLineIndex = i + 1
-                        if nextLineIndex < lines.count {
-                            let vttFile = lines[nextLineIndex].trimmingCharacters(in: .whitespaces)
-                            if !vttFile.isEmpty {
-                                // build absolute url from relative path
-                                let base = playlistURL.replacingOccurrences(of: "/subtitles.m3u8", with: "/")
-                                let vttURL = base + vttFile
-                                let segment = SubtitleSegmentLink(urlString: vttURL,
-                                                                  duration: duration)
-                                segments.append(segment)
-                            }
-                            i += 1
+                    let nextLineIndex = i + 1
+                    if nextLineIndex < lines.count {
+                        let vttFile = lines[nextLineIndex].trimmingCharacters(in: .whitespaces)
+                        if !vttFile.isEmpty {
+                            let base = playlistURL.replacingOccurrences(of: "/subtitles.m3u8", with: "/")
+                            let vttURL = base + vttFile
+                            vttFiles.append(vttURL)
                         }
+                        i += 1
                     }
                 }
                 i += 1
             }
-            
+
+            // Next, for each vtt file, parse for actual times
             DispatchQueue.main.async {
-                self.subtitleViewModel.segments = segments
-                // load the first segment
-                self.subtitleViewModel.loadSegment(at: 0)
+                self.processVTTFiles(vttFiles)
             }
+            
         }.resume()
     }
+
+    private func processVTTFiles(_ vttFiles: [String]) {
+        guard !vttFiles.isEmpty else { return }
+        
+        var pendingCount = vttFiles.count
+        var newSegments: [SubtitleSegmentLink] = []
+        
+        for vttURL in vttFiles {
+            determineSegmentTimes(vttURL: vttURL) { maybeLink in
+                DispatchQueue.main.async {
+                    pendingCount -= 1
+                    if let link = maybeLink {
+                        newSegments.append(link)
+                    }
+                    // Once all VTTs are processed
+                    if pendingCount == 0 {
+                        self.appendSegments(newSegments)
+                    }
+                }
+            }
+        }
+    }
+
+    // Called once all new .vtt files have been parsed
+    private func appendSegments(_ newSegments: [SubtitleSegmentLink]) {
+        // 1) Filter out duplicates by urlString
+        let existingURLs = Set(self.subtitleViewModel.segments.map { $0.urlString })
+        let trulyNew = newSegments.filter { !existingURLs.contains($0.urlString) }
+        
+        // 2) Sort them by minStart, in case they come out of order
+        let sortedNew = trulyNew.sorted { $0.minStart < $1.minStart }
+        
+        // 3) Append
+        self.subtitleViewModel.segments.append(contentsOf: sortedNew)
+        
+        // 4) If no segment loaded, load segment 0
+        if self.subtitleViewModel.currentSegment == nil,
+           !self.subtitleViewModel.segments.isEmpty {
+            self.subtitleViewModel.loadSegment(at: 0)
+        }
+    }
     // MARK: End of NEW CODE
+}
+private func determineSegmentTimes(vttURL: String,
+                                   completion: @escaping (SubtitleSegmentLink?) -> Void)
+{
+    guard let url = URL(string: vttURL) else {
+        completion(nil)
+        return
+    }
+
+    URLSession.shared.dataTask(with: url) { data, _, error in
+        guard error == nil,
+              let data = data,
+              let content = String(data: data, encoding: .utf8)
+        else {
+            completion(nil)
+            return
+        }
+        // Parse the VTT to find earliest and latest time
+        let lines = content.components(separatedBy: .newlines)
+        
+        var earliest = Double.greatestFiniteMagnitude
+        var latest   = Double.leastNormalMagnitude
+        
+        let timeRegex = try! NSRegularExpression(
+            pattern: #"(\d+):(\d+):(\d+\.\d+)\s-->\s(\d+):(\d+):(\d+\.\d+)"#,
+            options: []
+        )
+        
+        for line in lines {
+            // Check if line matches a time range
+            if let match = timeRegex.firstMatch(
+                in: line, options: [],
+                range: NSRange(location: 0, length: line.utf16.count))
+            {
+                let startTime = parseTime(line: line, match: match, isStart: true)
+                let endTime   = parseTime(line: line, match: match, isStart: false)
+                
+                if let s = startTime, let e = endTime {
+                    earliest = min(earliest, s)
+                    latest   = max(latest, e)
+                }
+            }
+        }
+        
+        // If we found any real cues
+        if earliest < Double.greatestFiniteMagnitude,
+           latest   > Double.leastNormalMagnitude {
+            let duration = latest - earliest
+            let segmentLink = SubtitleSegmentLink(urlString: vttURL,
+                                                  duration: duration,
+                                                  minStart: earliest,
+                                                  maxEnd:   latest)
+            completion(segmentLink)
+        } else {
+            completion(nil)
+        }
+    }
+    .resume()
+}
+
+private func parseTime(line: String,
+                       match: NSTextCheckingResult,
+                       isStart: Bool) -> Double?
+{
+    // Indices in the regex match
+    let hourIndex   = isStart ? 1 : 4
+    let minuteIndex = isStart ? 2 : 5
+    let secondIndex = isStart ? 3 : 6
+    
+    func groupString(_ idx: Int) -> String {
+        let range = match.range(at: idx)
+        return (line as NSString).substring(with: range)
+    }
+    
+    guard let hh = Double(groupString(hourIndex)),
+          let mm = Double(groupString(minuteIndex)),
+          let ss = Double(groupString(secondIndex)) else {
+        return nil
+    }
+    
+    return hh * 3600.0 + mm * 60.0 + ss
 }

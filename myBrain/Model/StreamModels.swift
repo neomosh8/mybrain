@@ -34,9 +34,12 @@ struct ChapterDataModel {
 
 /// A single link in the subtitles .m3u8, e.g. (vttURL, duration).
 struct SubtitleSegmentLink {
-let urlString: String
-let duration: Double
+    let urlString: String
+    let duration: Double
+    var minStart: Double  // or let
+    var maxEnd: Double    // or let
 }
+
 
 /// Each word in a single .vtt file.
 struct WordTimestamp: Identifiable {
