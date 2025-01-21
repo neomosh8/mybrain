@@ -167,7 +167,7 @@ class ShareViewController: UIViewController {
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
         let body: [String: Any] = [
-            "content_type": "url",
+            "content_type": "podcast",
             "source": url.absoluteString
         ]
         request.httpBody = try? JSONSerialization.data(withJSONObject: body, options: [])

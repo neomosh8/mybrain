@@ -14,29 +14,14 @@
 		684427052D13D580002E9BC6 /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684426FD2D13D580002E9BC6 /* Item.swift */; };
 		6844270C2D13D802002E9BC6 /* AuthModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6844270B2D13D802002E9BC6 /* AuthModels.swift */; };
 		6844270E2D13D862002E9BC6 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6844270D2D13D862002E9BC6 /* AuthViewModel.swift */; };
-		684427102D13D886002E9BC6 /* RegisterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6844270F2D13D886002E9BC6 /* RegisterView.swift */; };
-		684427122D13D89D002E9BC6 /* VerifyRegistrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427112D13D89D002E9BC6 /* VerifyRegistrationView.swift */; };
-		684427142D13D8B6002E9BC6 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427132D13D8B6002E9BC6 /* LoginView.swift */; };
-		684427162D13D8CC002E9BC6 /* VerifyLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427152D13D8CC002E9BC6 /* VerifyLoginView.swift */; };
 		684427182D13E17B002E9BC6 /* AuthData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427172D13E17B002E9BC6 /* AuthData.swift */; };
 		6844271A2D13E572002E9BC6 /* Thought.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427192D13E572002E9BC6 /* Thought.swift */; };
 		6844271C2D13E5B6002E9BC6 /* ThoughtsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6844271B2D13E5B6002E9BC6 /* ThoughtsViewModel.swift */; };
-		6844271E2D13E629002E9BC6 /* ThoughtsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6844271D2D13E629002E9BC6 /* ThoughtsView.swift */; };
 		6844272D2D13F09C002E9BC6 /* myBrain by neocoreShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 684427232D13F09C002E9BC6 /* myBrain by neocoreShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		684427382D13F22E002E9BC6 /*  SharedDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427372D13F22E002E9BC6 /*  SharedDataManager.swift */; };
 		684427392D13F22E002E9BC6 /*  SharedDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427372D13F22E002E9BC6 /*  SharedDataManager.swift */; };
 		684427612D14B96B002E9BC6 /* WebSocketViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427602D14B96B002E9BC6 /* WebSocketViewModel.swift */; };
-		684427632D14BF76002E9BC6 /* ThoughtDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427622D14BF76002E9BC6 /* ThoughtDetailView.swift */; };
-		684427652D14C41A002E9BC6 /* AnimatedParagraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427642D14C41A002E9BC6 /* AnimatedParagraphView.swift */; };
-		686EED312D1523B60056ACDE /* StreamThoughtView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 686EED302D1523B60056ACDE /* StreamThoughtView.swift */; };
-		68ACE9B12D176D5A003BCC83 /* ThoughtCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68ACE9B02D176D5A003BCC83 /* ThoughtCard.swift */; };
-		68ACE9B32D178155003BCC83 /* ChapterCompletionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68ACE9B22D178155003BCC83 /* ChapterCompletionView.swift */; };
 		68ACE9C92D17C78C003BCC83 /* PerformanceViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68ACE9C82D17C78C003BCC83 /* PerformanceViewModel.swift */; };
-		68ACE9CB2D17C7A3003BCC83 /* PerformanceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68ACE9CA2D17C7A3003BCC83 /* PerformanceView.swift */; };
-		68C9EBE12D248C50007F4517 /* SceneKitUSDZView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68C9EBE02D248C50007F4517 /* SceneKitUSDZView.swift */; };
-		68C9EBE32D24A744007F4517 /* CarouselView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68C9EBE22D24A744007F4517 /* CarouselView.swift */; };
-		68C9EBEF2D25FDED007F4517 /* FeedbackPlotView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68C9EBEE2D25FDED007F4517 /* FeedbackPlotView.swift */; };
-		68DF43FB2D20CE0C00A6E46C /* SubtitleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68DF43FA2D20CE0C00A6E46C /* SubtitleView.swift */; };
 		68DF43FD2D20CE5F00A6E46C /* SubtitleViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68DF43FC2D20CE5F00A6E46C /* SubtitleViewModel.swift */; };
 		68DF43FF2D20CEA800A6E46C /* StreamModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68DF43FE2D20CEA800A6E46C /* StreamModels.swift */; };
 /* End PBXBuildFile section */
@@ -75,29 +60,14 @@
 		684427062D13D585002E9BC6 /* myBrain-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "myBrain-Bridging-Header.h"; sourceTree = "<group>"; };
 		6844270B2D13D802002E9BC6 /* AuthModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthModels.swift; sourceTree = "<group>"; };
 		6844270D2D13D862002E9BC6 /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
-		6844270F2D13D886002E9BC6 /* RegisterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegisterView.swift; sourceTree = "<group>"; };
-		684427112D13D89D002E9BC6 /* VerifyRegistrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerifyRegistrationView.swift; sourceTree = "<group>"; };
-		684427132D13D8B6002E9BC6 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
-		684427152D13D8CC002E9BC6 /* VerifyLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerifyLoginView.swift; sourceTree = "<group>"; };
 		684427172D13E17B002E9BC6 /* AuthData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthData.swift; sourceTree = "<group>"; };
 		684427192D13E572002E9BC6 /* Thought.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Thought.swift; sourceTree = "<group>"; };
 		6844271B2D13E5B6002E9BC6 /* ThoughtsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtsViewModel.swift; sourceTree = "<group>"; };
-		6844271D2D13E629002E9BC6 /* ThoughtsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtsView.swift; sourceTree = "<group>"; };
 		684427232D13F09C002E9BC6 /* myBrain by neocoreShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "myBrain by neocoreShare.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		684427332D13F189002E9BC6 /* myBrain.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = myBrain.entitlements; path = myBrain/myBrain.entitlements; sourceTree = "<group>"; };
 		684427372D13F22E002E9BC6 /*  SharedDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = " SharedDataManager.swift"; sourceTree = "<group>"; };
 		684427602D14B96B002E9BC6 /* WebSocketViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSocketViewModel.swift; sourceTree = "<group>"; };
-		684427622D14BF76002E9BC6 /* ThoughtDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtDetailView.swift; sourceTree = "<group>"; };
-		684427642D14C41A002E9BC6 /* AnimatedParagraphView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedParagraphView.swift; sourceTree = "<group>"; };
-		686EED302D1523B60056ACDE /* StreamThoughtView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamThoughtView.swift; sourceTree = "<group>"; };
-		68ACE9B02D176D5A003BCC83 /* ThoughtCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtCard.swift; sourceTree = "<group>"; };
-		68ACE9B22D178155003BCC83 /* ChapterCompletionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChapterCompletionView.swift; sourceTree = "<group>"; };
 		68ACE9C82D17C78C003BCC83 /* PerformanceViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceViewModel.swift; sourceTree = "<group>"; };
-		68ACE9CA2D17C7A3003BCC83 /* PerformanceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceView.swift; sourceTree = "<group>"; };
-		68C9EBE02D248C50007F4517 /* SceneKitUSDZView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneKitUSDZView.swift; sourceTree = "<group>"; };
-		68C9EBE22D24A744007F4517 /* CarouselView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarouselView.swift; sourceTree = "<group>"; };
-		68C9EBEE2D25FDED007F4517 /* FeedbackPlotView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackPlotView.swift; sourceTree = "<group>"; };
-		68DF43FA2D20CE0C00A6E46C /* SubtitleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleView.swift; sourceTree = "<group>"; };
 		68DF43FC2D20CE5F00A6E46C /* SubtitleViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleViewModel.swift; sourceTree = "<group>"; };
 		68DF43FE2D20CEA800A6E46C /* StreamModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamModels.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -113,6 +83,11 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		684063782D39E32200E3CB73 /* View */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = View;
+			sourceTree = "<group>";
+		};
 		684427242D13F09C002E9BC6 /* myBrainShare */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -145,8 +120,8 @@
 			isa = PBXGroup;
 			children = (
 				684427332D13F189002E9BC6 /* myBrain.entitlements */,
+				684063782D39E32200E3CB73 /* View */,
 				684427092D13D793002E9BC6 /* ViewModel */,
-				684427082D13D784002E9BC6 /* View */,
 				684427072D13D761002E9BC6 /* Model */,
 				684427242D13F09C002E9BC6 /* myBrainShare */,
 				684426C92D13CF03002E9BC6 /* Products */,
@@ -187,28 +162,6 @@
 			path = Model;
 			sourceTree = "<group>";
 		};
-		684427082D13D784002E9BC6 /* View */ = {
-			isa = PBXGroup;
-			children = (
-				6844270F2D13D886002E9BC6 /* RegisterView.swift */,
-				684427112D13D89D002E9BC6 /* VerifyRegistrationView.swift */,
-				684427132D13D8B6002E9BC6 /* LoginView.swift */,
-				684427152D13D8CC002E9BC6 /* VerifyLoginView.swift */,
-				6844271D2D13E629002E9BC6 /* ThoughtsView.swift */,
-				684427622D14BF76002E9BC6 /* ThoughtDetailView.swift */,
-				684427642D14C41A002E9BC6 /* AnimatedParagraphView.swift */,
-				686EED302D1523B60056ACDE /* StreamThoughtView.swift */,
-				68ACE9B02D176D5A003BCC83 /* ThoughtCard.swift */,
-				68ACE9B22D178155003BCC83 /* ChapterCompletionView.swift */,
-				68ACE9CA2D17C7A3003BCC83 /* PerformanceView.swift */,
-				68DF43FA2D20CE0C00A6E46C /* SubtitleView.swift */,
-				68C9EBE02D248C50007F4517 /* SceneKitUSDZView.swift */,
-				68C9EBE22D24A744007F4517 /* CarouselView.swift */,
-				68C9EBEE2D25FDED007F4517 /* FeedbackPlotView.swift */,
-			);
-			path = View;
-			sourceTree = "<group>";
-		};
 		684427092D13D793002E9BC6 /* ViewModel */ = {
 			isa = PBXGroup;
 			children = (
@@ -238,6 +191,9 @@
 			);
 			dependencies = (
 				6844272C2D13F09C002E9BC6 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				684063782D39E32200E3CB73 /* View */,
 			);
 			name = "myBrain by neocore";
 			packageProductDependencies = (
@@ -331,32 +287,17 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				686EED312D1523B60056ACDE /* StreamThoughtView.swift in Sources */,
-				6844271E2D13E629002E9BC6 /* ThoughtsView.swift in Sources */,
 				68DF43FD2D20CE5F00A6E46C /* SubtitleViewModel.swift in Sources */,
 				6844270E2D13D862002E9BC6 /* AuthViewModel.swift in Sources */,
 				684427032D13D580002E9BC6 /* myBrainApp.swift in Sources */,
-				684427632D14BF76002E9BC6 /* ThoughtDetailView.swift in Sources */,
 				684427612D14B96B002E9BC6 /* WebSocketViewModel.swift in Sources */,
-				68ACE9B32D178155003BCC83 /* ChapterCompletionView.swift in Sources */,
 				684427382D13F22E002E9BC6 /*  SharedDataManager.swift in Sources */,
-				684427652D14C41A002E9BC6 /* AnimatedParagraphView.swift in Sources */,
-				684427162D13D8CC002E9BC6 /* VerifyLoginView.swift in Sources */,
 				68ACE9C92D17C78C003BCC83 /* PerformanceViewModel.swift in Sources */,
-				68DF43FB2D20CE0C00A6E46C /* SubtitleView.swift in Sources */,
-				68C9EBE32D24A744007F4517 /* CarouselView.swift in Sources */,
 				6844270C2D13D802002E9BC6 /* AuthModels.swift in Sources */,
-				684427102D13D886002E9BC6 /* RegisterView.swift in Sources */,
-				68C9EBEF2D25FDED007F4517 /* FeedbackPlotView.swift in Sources */,
 				6844271A2D13E572002E9BC6 /* Thought.swift in Sources */,
-				68C9EBE12D248C50007F4517 /* SceneKitUSDZView.swift in Sources */,
 				684427042D13D580002E9BC6 /* ContentView.swift in Sources */,
-				684427122D13D89D002E9BC6 /* VerifyRegistrationView.swift in Sources */,
-				68ACE9B12D176D5A003BCC83 /* ThoughtCard.swift in Sources */,
-				68ACE9CB2D17C7A3003BCC83 /* PerformanceView.swift in Sources */,
 				6844271C2D13E5B6002E9BC6 /* ThoughtsViewModel.swift in Sources */,
 				684427182D13E17B002E9BC6 /* AuthData.swift in Sources */,
-				684427142D13D8B6002E9BC6 /* LoginView.swift in Sources */,
 				684427052D13D580002E9BC6 /* Item.swift in Sources */,
 				68DF43FF2D20CEA800A6E46C /* StreamModels.swift in Sources */,
 			);
