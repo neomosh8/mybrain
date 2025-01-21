@@ -47,7 +47,10 @@ struct StreamThoughtView: View {
                     // Audio controls only
                     audioPlayerControls
                     // MARK: - NEW CODE: Show Subtitles
-                    SubtitleView(viewModel: subtitleViewModel)
+                    SubtitleView(viewModel: subtitleViewModel,
+                                 thoughtId: thought.id,
+                                 chapterNumber: 1,//so here basically everytime a new chapter comes as the response of next chaper, this number should update
+                                 socketViewModel: socketViewModel)
                     // MARK: End of NEW CODE
                 } else if let error = playerError {
                     Text("Player Error: \(error.localizedDescription)")
