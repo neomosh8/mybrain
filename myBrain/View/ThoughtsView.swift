@@ -1,3 +1,4 @@
+//ThoughtView.swift
 import SwiftUI
 import SwiftData
 import Combine
