@@ -24,6 +24,7 @@
 		68ACE9C92D17C78C003BCC83 /* PerformanceViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68ACE9C82D17C78C003BCC83 /* PerformanceViewModel.swift */; };
 		68DF43FD2D20CE5F00A6E46C /* SubtitleViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68DF43FC2D20CE5F00A6E46C /* SubtitleViewModel.swift */; };
 		68DF43FF2D20CEA800A6E46C /* StreamModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68DF43FE2D20CEA800A6E46C /* StreamModels.swift */; };
+		68FE23132D43328F00FA59AA /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 68FE23122D43328F00FA59AA /* Lottie */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -110,6 +111,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				68FE23132D43328F00FA59AA /* Lottie in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -219,6 +221,7 @@
 			);
 			name = "myBrain by neocoreShare";
 			packageProductDependencies = (
+				68FE23122D43328F00FA59AA /* Lottie */,
 			);
 			productName = myBrainShare;
 			productReference = 684427232D13F09C002E9BC6 /* myBrain by neocoreShare.appex */;
@@ -252,6 +255,9 @@
 			);
 			mainGroup = 684426BF2D13CF03002E9BC6;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				68FE23112D43328F00FA59AA /* XCRemoteSwiftPackageReference "lottie-ios" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 684426C92D13CF03002E9BC6 /* Products */;
 			projectDirPath = "";
@@ -593,6 +599,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		68FE23112D43328F00FA59AA /* XCRemoteSwiftPackageReference "lottie-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/airbnb/lottie-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.5.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		68FE23122D43328F00FA59AA /* Lottie */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 68FE23112D43328F00FA59AA /* XCRemoteSwiftPackageReference "lottie-ios" */;
+			productName = Lottie;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 684426C02D13CF03002E9BC6 /* Project object */;
 }

@@ -51,22 +51,15 @@ struct ThoughtsView: View {
             }
 
             VStack(spacing: 0) {
-                // MARK: - Top Bar (headphone, brain, gear, ear/eye toggle, battery)
-                topBarView
-                    .padding(.vertical, 8)
-
-                // Main Title
-                Text("MyBrain")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .foregroundColor(.primary)
+                // MARK: - Top Section
+                topSection
+                    .padding(.horizontal, 16)
                     .padding(.top, 8)
 
-                // Subtitle
-                Text("My Thoughts")
-                    .font(.title2)
-                    .foregroundColor(.secondary)
-                    .padding(.bottom, 16)
+                // MARK: - Second Row (list title + mode switch + gear + brain)
+                secondRow
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
 
                 // MARK: - Content
                 if viewModel.isLoading {
@@ -89,7 +82,6 @@ struct ThoughtsView: View {
                 .padding(.top, 16)
                 .padding(.bottom, 20)
             }
-            .padding(.horizontal, 16)
 
             // MARK: - Overlays
             if isRefreshing {
@@ -155,7 +147,7 @@ struct ThoughtsView: View {
             }
             lastScenePhase = newPhase
         }
-        // Navigation Destinations: detail or performance view
+        // Navigation Destinations
         .navigationDestination(item: $selectedThought) { thought in
             if mode == .eye {
                 ThoughtDetailView(thought: thought, socketViewModel: socketViewModel)
@@ -169,68 +161,90 @@ struct ThoughtsView: View {
     }
 
     // MARK: - Subviews
-    
-    /// Top bar with headphone, gear, brain, ear/eye toggle, battery icon
-    private var topBarView: some View {
-        HStack(spacing: 16) {
-            // Headphone icon
-            Image("headphone")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 24, height: 24)
-            
-            // Brain icon
-            Image(systemName: "brain.head.profile")
-                .font(.title2)
-                .onTapGesture {
-                    showPerformanceView = true
-                }
 
-            // Gear icon
-            Image(systemName: "gearshape")
+    /// Top section with a bigger headphone + battery above it, and the app title "MyBrain" to the right.
+    private var topSection: some View {
+        HStack(alignment: .top, spacing: 16) {
+            
+
+            // "MyBrain" title
+            Text("MyBrain")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+                .foregroundColor(.primary)
+            
+            Spacer()
+            // Headphone + Battery in a vertical container
+            VStack(spacing: 4) {
+//                // Battery icon
+//                Button(action: {
+//                    showPerformanceView = true
+//                }) {
+//                    Image(systemName: batteryIconName)
+//                        .foregroundColor(batteryColor)
+//                        .font(.title3)
+//                }
+//                .buttonStyle(.plain)
+
+                // Headphone image
+                Image(colorScheme == .dark ? "headphone" : "headphone_b")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 44, height: 44)
+            }
+        }
+    }
+
+    /// Second row: "My Thoughts" on the left, and on the right a container for the mode switch + gear + brain icons (outside the container).
+    private var secondRow: some View {
+        HStack {
+            // Left: List Title
+            Text("My Thoughts")
                 .font(.title2)
+                .foregroundColor(.secondary)
+
+            Spacer()
+            
+            // Container with mode switch
+            HStack(spacing: 8) {
+                ModeSwitch(mode: $mode)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Color.secondary.opacity(0.2))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+
+            // Gear icon (outside container)
+            Image(systemName: "gearshape")
+                .font(.title3)
                 .onTapGesture {
                     print("Settings tapped")
                 }
-            
-            // Ear/Eye Toggle
-            ModeSwitch(mode: $mode)
-            
-            // Battery icon
-            Button(action: {
-                showPerformanceView = true
-            }) {
-                Image(systemName: batteryIconName)
-                    .foregroundColor(batteryColor)
-                    .font(.title3)
-            }
-            .buttonStyle(.plain)
-            
-            Spacer()
+
+            // Brain icon (outside container)
+            Image(systemName: "brain.head.profile")
+                .font(.title3)
+                .onTapGesture {
+                    showPerformanceView = true
+                }
         }
-        .foregroundColor(.white)
-        .padding(.horizontal, 12)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
-    
+
     /// Scrollable list of `ThoughtCard`
     private var scrollListView: some View {
         ScrollView {
             VStack(spacing: 16) {
                 ForEach(viewModel.thoughts) { thought in
-                    // Use your ThoughtCard view
                     ThoughtCard(thought: thought) { thoughtToDelete in
-                        // Trigger delete logic in your ViewModel
                         viewModel.deleteThought(thoughtToDelete)
                     }
                     .onTapGesture {
-                        // If you want to push detail on tap
                         selectedThought = thought
                     }
                 }
             }
             .padding(.vertical, 16)
+            .padding(.horizontal, 16)
         }
     }
     
@@ -238,6 +252,7 @@ struct ThoughtsView: View {
         ProgressView("Loading Thoughts...")
             .tint(.white)
             .foregroundColor(.white)
+            .padding(.top, 40)
     }
 
     private func errorView(message: String) -> some View {
@@ -247,7 +262,6 @@ struct ThoughtsView: View {
             .padding()
     }
     
-    /// "Refreshing..." overlay at top
     private var refreshOverlay: some View {
         VStack {
             Text("Refreshing...")
@@ -264,7 +278,6 @@ struct ThoughtsView: View {
         .animation(.easeInOut, value: isRefreshing)
     }
     
-    /// "Connected" banner at top
     private var connectedBanner: some View {
         VStack {
             Text("Connected")
@@ -283,18 +296,17 @@ struct ThoughtsView: View {
 
     // MARK: - Functions
 
-    /// Refresh entire data (server + socket)
-    func refreshData() {
+    private func refreshData() {
         isRefreshing = true
         fetchThoughts()
         socketViewModel.sendMessage(action: "list_thoughts", data: [:])
     }
 
-    func fetchThoughts() {
+    private func fetchThoughts() {
         viewModel.fetchThoughts()
     }
 
-    func logoutAction() {
+    private func logoutAction() {
         authVM.logoutFromServer(context: modelContext) { result in
             switch result {
             case .success:
@@ -305,7 +317,6 @@ struct ThoughtsView: View {
         }
     }
 
-    // MARK: - Handle Socket JSON
     private func handleSocketJSONMessage(jsonString: String) {
         guard let data = jsonString.data(using: .utf8) else { return }
         do {
