@@ -1,104 +1,92 @@
 import SwiftUI
-import QuickLook
 
 struct ThoughtCard: View {
     let thought: Thought
     private let baseUrl = "https://brain.sorenapp.ir"
-
+    
     /// Called when user taps "Delete" - triggers a server call in your ViewModel
     var onDelete: (Thought) -> Void
 
-    // MARK: 3D model or cover image states
-    @State private var modelFileURL: URL? = nil
-    @State private var isDownloading = false
-    @State private var downloadError: String? = nil
-
-    // Whether the red "Delete" bar is showing
+    /// Whether the red "Delete" bar is showing
     @State private var showDeleteUI = false
 
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         ZStack {
-            // MARK: - Card Background
-            RoundedRectangle(cornerRadius: 36, style: .continuous)
-                .fill(.regularMaterial)
-                .shadow(radius: 8)
-
-            // MARK: - Card Content
-            VStack(alignment: .leading, spacing: 8) {
-                // 1) 3D model or cover image
-                ZStack {
-                    if let modelPath = thought.model_3d,
-                       modelPath != "none" {
-                        if let localURL = modelFileURL {
-                            // Show 3D preview in SceneKit
-                            SceneKitView(localFileURL: localURL)
-                                .clipShape(RoundedRectangle(cornerRadius: 36, style: .continuous))
-                        } else {
-                            // Download if needed
-                            if isDownloading {
-                                ProgressView("Downloading model...")
-                                    .frame(width: 180, height: 180)
-                            } else {
-                                Color.gray.opacity(0.2)
-                                    .frame(width: 180, height: 180)
-                                    .onAppear {
-                                        downloadModelIfNeeded(modelPath)
-                                    }
-                            }
-                        }
-                    } else {
-                        // Show cover image if no 3D
-                        AsyncImage(url: URL(string: baseUrl + (thought.cover ?? ""))) { phase in
-                            switch phase {
-                            case .empty:
-                                ProgressView()
-                                    .tint(.white)
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                    .background(Color.gray.opacity(0.3))
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .scaledToFill()
-                                    .clipped()
-                            case .failure:
-                                Image(systemName: "photo")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .foregroundColor(.gray)
-                                    .padding()
-                                    .frame(maxWidth: .infinity)
-                            @unknown default:
-                                EmptyView()
-                            }
-                        }
-                        .clipShape(RoundedRectangle(cornerRadius: 36, style: .continuous))
+            // MARK: - Main Card
+            HStack(alignment: .center, spacing: 16) {
+                // 1) Cover Image
+                AsyncImage(url: URL(string: baseUrl + (thought.cover ?? ""))) { phase in
+                    switch phase {
+                    case .empty:
+                        ProgressView()
+                            .frame(width: 80, height: 80)
+                            .background(Color.gray.opacity(0.3))
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 80, height: 80)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                    case .failure:
+                        Image(systemName: "photo")
+                            .resizable()
+                            .scaledToFit()
+                            .foregroundColor(.gray)
+                            .padding()
+                            .frame(width: 80, height: 80)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                    @unknown default:
+                        EmptyView()
                     }
                 }
 
-                // 2) Title
-                Text(thought.name)
-                    .font(.system(.title3).bold())
-                    .foregroundColor(colorScheme == .dark ? .white : .black)
-                    .multilineTextAlignment(.leading)
-                    .lineLimit(nil)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 12)
+                // 2) Title & Subtitle
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(thought.name)
+                        .font(.title3)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
 
-                // 3) Date
-                Text(relativeDateString(for: thought.created_at))
-                    .font(.footnote)
-                    .foregroundColor(.gray)
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 12)
+                    Text(relativeDateString(for: thought.created_at))
+                        .font(.body)
+                        .foregroundColor(
+                            Color(UIColor { traitCollection in
+                                // If the system is in Light Mode, return a darker gray
+                                // Otherwise, return the system's default secondary label color
+                                traitCollection.userInterfaceStyle == .light
+                                ? .black
+                                : .secondaryLabel
+                            })
+                        )
+                }
+                Spacer()
             }
-            .padding(.top, 8)
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(.ultraThinMaterial)
+            )
+
+            // MARK: - Status Overlay (If not processed)
+            .overlay(
+                Group {
+                    if thought.status != "processed" {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.black.opacity(0.3))
+                            ProgressView("Loading...")
+                                .tint(.white)
+                        }
+                    }
+                }
+            )
 
             // MARK: - Delete Overlay & Button
             if showDeleteUI {
                 // (A) Clear overlay behind delete button
-                //     Taps here will dismiss the delete UI
                 Color.black
                     .opacity(0.01)        // nearly transparent
                     .ignoresSafeArea()    // covers entire card area
@@ -130,31 +118,6 @@ struct ThoughtCard: View {
                 .animation(.easeInOut(duration: 0.2), value: showDeleteUI)
             }
         }
-        // MARK: - Card Modifiers
-        .frame(width: 280)
-        .clipShape(RoundedRectangle(cornerRadius: 36, style: .continuous))
-        .overlay(
-            // If status != processed, show a translucent overlay + spinner
-            Group {
-                if thought.status != "processed" {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 36)
-                            .fill(Color.black.opacity(0.3))
-                        ProgressView("Loading...")
-                            .tint(.white)
-                    }
-                }
-            }
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 36)
-                .stroke(Color.white, lineWidth: 1)
-        )
-        .alert("Download Error", isPresented: .constant(downloadError != nil)) {
-            Button("OK") { downloadError = nil }
-        } message: {
-            Text(downloadError ?? "")
-        }
         // MARK: - Long Press => Show delete bar
         .gesture(
             LongPressGesture(minimumDuration: 0.5)
@@ -167,29 +130,7 @@ struct ThoughtCard: View {
     }
 }
 
-
-
-extension ThoughtCard {
-    private func downloadModelIfNeeded(_ path: String) {
-        guard let remoteURL = URL(string: baseUrl + path) else {
-            return
-        }
-        isDownloading = true
-        downloadUSDZFile(from: remoteURL, to: "model-\(thought.id).usdz") { result in
-            DispatchQueue.main.async {
-                isDownloading = false
-                switch result {
-                case .success(let localURL):
-                    self.modelFileURL = localURL
-                case .failure(let error):
-                    self.downloadError = error.localizedDescription
-                }
-            }
-        }
-    }
-}
-
-// MARK: - Date Utils Example
+// MARK: - Date Utilities
 func relativeDateString(for serverDateString: String) -> String {
     guard let date = parseISO8601Date(serverDateString) else {
         return serverDateString

@@ -1,135 +1,102 @@
-//ThoughtView.swift
 import SwiftUI
 import SwiftData
 import Combine
 
 struct ThoughtsView: View {
+    // MARK: - Environment & State
     @EnvironmentObject var authVM: AuthViewModel
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    @StateObject private var viewModel: ThoughtsViewModel
-    @StateObject private var socketViewModel: WebSocketViewModel
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.colorScheme) var colorScheme
 
-    @State private var showConnectedBanner = false
+    @StateObject private var viewModel: ThoughtsViewModel
+    @StateObject private var socketViewModel: WebSocketViewModel
+
     @State private var processingThoughtIDs = Set<Int>()
     @State private var lastSocketMessage: String?
     @State private var selectedThought: Thought?
     @State private var isRefreshing = false
     @State private var lastScenePhase: ScenePhase = .active
+
+    // Ear/Eye mode
     @State private var mode: Mode = .eye
+
+    // Battery/Performance
     @State private var batteryLevel: Int?
     @State private var showPerformanceView = false
     @StateObject private var performanceVM = PerformanceViewModel()
-
+    
+    // "Connected" banner
+    @State private var showConnectedBanner = false
+    
     // Timer for battery level
     private var batteryLevelTimer: Timer.TimerPublisher = Timer.publish(every: 6, on: .main, in: .common)
-    @State private var cancellable: AnyCancellable?
+    @State private var batteryCancellable: AnyCancellable?
 
-    // Carousel index
-    @State private var currentIndex = 0
-
+    // MARK: - Init
     init(accessToken: String) {
         _viewModel = StateObject(wrappedValue: ThoughtsViewModel(accessToken: accessToken))
         _socketViewModel = StateObject(wrappedValue: WebSocketViewModel(baseUrl: "brain.sorenapp.ir", token: accessToken))
     }
 
+    // MARK: - Body
     var body: some View {
         ZStack {
-            // MARK: - Light/Dark Background
+            // Adaptive background color (dark/light)
             if colorScheme == .dark {
-                Image("DarkBackground")
-                    .resizable()
-                    .scaledToFill()
-                    .ignoresSafeArea()
+                Color.black.ignoresSafeArea()
             } else {
-                Image("LightBackground")
-                    .resizable()
-                    .scaledToFill()
-                    .ignoresSafeArea()
+                Color.white.ignoresSafeArea()
             }
 
-            // MARK: - Main content
-            VStack { // Removed the spacing: 0 to use default
-                Spacer() // Push everything down from the top
-                // 1) Page title
-                Text("Thoughts")
+            VStack(spacing: 0) {
+                // MARK: - Top Bar (headphone, brain, gear, ear/eye toggle, battery)
+                topBarView
+                    .padding(.vertical, 8)
+
+                // Main Title
+                Text("MyBrain")
                     .font(.largeTitle)
                     .fontWeight(.bold)
-                    .foregroundColor(.white)
-                    .padding(.bottom, 8) // added bottom padding
+                    .foregroundColor(.primary)
+                    .padding(.top, 8)
 
-                // 2) Custom ultra-thin container with Mode Switch & Battery
-                HStack(spacing: 8) {
-                    ModeSwitch(mode: $mode)
-                    
-                    Button(action: {
-                        showPerformanceView = true
-                    }) {
-                        Image(systemName: batteryIconName)
-                            .foregroundColor(batteryColor)
-                            .font(.title3)
-                    }
-                    .buttonStyle(.plain)
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(.ultraThinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-               .padding(.bottom, 16) // add some padding under the header
+                // Subtitle
+                Text("My Thoughts")
+                    .font(.title2)
+                    .foregroundColor(.secondary)
+                    .padding(.bottom, 16)
 
-                // 3) Carousel or content below the header
-                Group {
-                    if viewModel.isLoading {
-                        loadingView
-                    } else if let errorMessage = viewModel.errorMessage {
-                        errorView(message: errorMessage)
-                    } else {
-                        CarouselView(viewModel: viewModel,
-                                     selectedThought: $selectedThought)
-                    }
+                // MARK: - Content
+                if viewModel.isLoading {
+                    loadingView
+                } else if let error = viewModel.errorMessage {
+                    errorView(message: error)
+                } else {
+                    scrollListView
                 }
-               
+
+                // MARK: - Logout button at bottom
                 Button(action: logoutAction) {
-                                    Text("Logout")
-                                        .foregroundColor(.white)
-                                }
-
-                Spacer() // push everything up from bottom
+                    Text("Logout")
+                        .foregroundColor(.white)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 16)
+                        .background(Color.red)
+                        .cornerRadius(8)
+                }
+                .padding(.top, 16)
+                .padding(.bottom, 20)
             }
-           .frame(maxWidth: .infinity, maxHeight: .infinity) // Take up the whole screen
+            .padding(.horizontal, 16)
 
-            // MARK: - Refresh overlay
+            // MARK: - Overlays
             if isRefreshing {
-                VStack {
-                    Text("Refreshing...")
-                        .font(.callout)
-                        .bold()
-                        .foregroundColor(.white)
-                        .padding()
-                        .background(Color.green)
-                        .cornerRadius(8)
-                    Spacer()
-                }
-                .transition(.move(edge: .top).combined(with: .opacity))
+                refreshOverlay
             }
-
-            // MARK: - "Connected" Banner
             if showConnectedBanner {
-                VStack {
-                    Text("Connected")
-                        .font(.callout)
-                        .bold()
-                        .foregroundColor(.white)
-                        .padding()
-                        .background(Color.green)
-                        .cornerRadius(8)
-                        .padding(.top, 16)
-                    Spacer()
-                }
-                .transition(.move(edge: .top).combined(with: .opacity))
-                .animation(.easeInOut, value: showConnectedBanner)
+                connectedBanner
             }
         }
         .navigationBarHidden(true)
@@ -137,13 +104,12 @@ struct ThoughtsView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: logoutAction) {
                     Text("Logout")
-                        .foregroundColor(.white)
                 }
             }
         }
-        // Keep the nav bar style dark/black if desired
         .toolbarBackground(Color.black, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
+        // MARK: - Lifecycle
         .onAppear {
             refreshData()
             fetchBatteryLevel()
@@ -156,7 +122,7 @@ struct ThoughtsView: View {
         .onChange(of: socketViewModel.welcomeMessage) { newMessage in
             if let message = newMessage {
                 print("Received welcome message from WS: \(message)")
-                // Show the connected banner once welcome message is received
+                // Show "Connected" banner for a moment
                 showConnectedBanner = true
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                     withAnimation {
@@ -172,15 +138,7 @@ struct ThoughtsView: View {
         }
         .onChange(of: lastSocketMessage) { newMessage in
             if let message = newMessage {
-                if let data = message.data(using: .utf8) {
-                    do {
-                        if let jsonObject = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
-                            handleSocketMessage(message: jsonObject)
-                        }
-                    } catch {
-                        print("Failed to decode incoming message: \(error)")
-                    }
-                }
+                handleSocketJSONMessage(jsonString: message)
             }
         }
         .onReceive(socketViewModel.$incomingMessage) { message in
@@ -197,6 +155,7 @@ struct ThoughtsView: View {
             }
             lastScenePhase = newPhase
         }
+        // Navigation Destinations: detail or performance view
         .navigationDestination(item: $selectedThought) { thought in
             if mode == .eye {
                 ThoughtDetailView(thought: thought, socketViewModel: socketViewModel)
@@ -209,48 +168,78 @@ struct ThoughtsView: View {
         }
     }
 
-    // MARK: - Battery Icon Name
-    private var batteryIconName: String {
-        guard let batteryLevel = batteryLevel else {
-            return "battery.0"
+    // MARK: - Subviews
+    
+    /// Top bar with headphone, gear, brain, ear/eye toggle, battery icon
+    private var topBarView: some View {
+        HStack(spacing: 16) {
+            // Headphone icon
+            Image("headphone")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 24, height: 24)
+            
+            // Brain icon
+            Image(systemName: "brain.head.profile")
+                .font(.title2)
+                .onTapGesture {
+                    showPerformanceView = true
+                }
+
+            // Gear icon
+            Image(systemName: "gearshape")
+                .font(.title2)
+                .onTapGesture {
+                    print("Settings tapped")
+                }
+            
+            // Ear/Eye Toggle
+            ModeSwitch(mode: $mode)
+            
+            // Battery icon
+            Button(action: {
+                showPerformanceView = true
+            }) {
+                Image(systemName: batteryIconName)
+                    .foregroundColor(batteryColor)
+                    .font(.title3)
+            }
+            .buttonStyle(.plain)
+            
+            Spacer()
         }
-        switch batteryLevel {
-        case 76...100:
-            return "battery.100"
-        case 51...75:
-            return "battery.75"
-        case 26...50:
-            return "battery.50"
-        case 1...25:
-            return "battery.25"
-        case 0:
-            return "battery.0"
-        default:
-            return "battery.0"
+        .foregroundColor(.white)
+        .padding(.horizontal, 12)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+    
+    /// Scrollable list of `ThoughtCard`
+    private var scrollListView: some View {
+        ScrollView {
+            VStack(spacing: 16) {
+                ForEach(viewModel.thoughts) { thought in
+                    // Use your ThoughtCard view
+                    ThoughtCard(thought: thought) { thoughtToDelete in
+                        // Trigger delete logic in your ViewModel
+                        viewModel.deleteThought(thoughtToDelete)
+                    }
+                    .onTapGesture {
+                        // If you want to push detail on tap
+                        selectedThought = thought
+                    }
+                }
+            }
+            .padding(.vertical, 16)
         }
     }
     
-    // MARK: - Battery Color
-    private var batteryColor: Color {
-        guard let level = batteryLevel else {
-            return .gray
-        }
-        if level > 75 {
-            return .green
-        } else if level > 40 {
-            return .yellow
-        } else {
-            return .red
-        }
-    }
-    
-    // MARK: - Loading View
     private var loadingView: some View {
         ProgressView("Loading Thoughts...")
             .tint(.white)
+            .foregroundColor(.white)
     }
-    
-    // MARK: - Error View
+
     private func errorView(message: String) -> some View {
         Text("Error: \(message)")
             .foregroundColor(.red)
@@ -258,20 +247,54 @@ struct ThoughtsView: View {
             .padding()
     }
     
-    // MARK: - Refresh
+    /// "Refreshing..." overlay at top
+    private var refreshOverlay: some View {
+        VStack {
+            Text("Refreshing...")
+                .font(.callout)
+                .bold()
+                .foregroundColor(.white)
+                .padding()
+                .background(Color.green)
+                .cornerRadius(8)
+                .padding(.top, 16)
+            Spacer()
+        }
+        .transition(.move(edge: .top).combined(with: .opacity))
+        .animation(.easeInOut, value: isRefreshing)
+    }
+    
+    /// "Connected" banner at top
+    private var connectedBanner: some View {
+        VStack {
+            Text("Connected")
+                .font(.callout)
+                .bold()
+                .foregroundColor(.white)
+                .padding()
+                .background(Color.green)
+                .cornerRadius(8)
+                .padding(.top, 16)
+            Spacer()
+        }
+        .transition(.move(edge: .top).combined(with: .opacity))
+        .animation(.easeInOut, value: showConnectedBanner)
+    }
+
+    // MARK: - Functions
+
+    /// Refresh entire data (server + socket)
     func refreshData() {
         isRefreshing = true
         fetchThoughts()
         socketViewModel.sendMessage(action: "list_thoughts", data: [:])
     }
-    
-    // MARK: - Fetch
+
     func fetchThoughts() {
         viewModel.fetchThoughts()
     }
-    
-    // MARK: - Logout
-    private func logoutAction() {
+
+    func logoutAction() {
         authVM.logoutFromServer(context: modelContext) { result in
             switch result {
             case .success:
@@ -281,23 +304,35 @@ struct ThoughtsView: View {
             }
         }
     }
-    
-    // MARK: - Handle Socket Messages
+
+    // MARK: - Handle Socket JSON
+    private func handleSocketJSONMessage(jsonString: String) {
+        guard let data = jsonString.data(using: .utf8) else { return }
+        do {
+            if let jsonObject = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+                handleSocketMessage(message: jsonObject)
+            }
+        } catch {
+            print("Failed to decode incoming message: \(error)")
+        }
+    }
+
     private func handleSocketMessage(message: [String: Any]) {
         guard let type = message["type"] as? String else {
             print("Could not get type from socket message")
             return
         }
-
-        if type == "thought_update" {
+        switch type {
+        case "thought_update":
             handleThoughtUpdate(message: message)
-        } else if type == "thoughts_list" {
+        case "thoughts_list":
             handleThoughtsList(message: message)
+        default:
+            break
         }
-        
         print("Incoming socket message : \(message)")
     }
-    
+
     private func handleThoughtUpdate(message: [String: Any]) {
         guard let data = message["data"] as? [String: Any],
               let thoughtData = data["thought"] as? [String: Any],
@@ -315,24 +350,21 @@ struct ThoughtsView: View {
             tempThoughts[index] = updatedThought
             viewModel.thoughts = tempThoughts
 
-            if status == "processing"
-                || status == "pending"
-                || status == "extracted"
-                || status == "enriched" {
+            if ["processing", "pending", "extracted", "enriched"].contains(status) {
                 processingThoughtIDs.insert(id)
             } else {
                 processingThoughtIDs.remove(id)
             }
         }
     }
-    
+
     private func handleThoughtsList(message: [String: Any]) {
         guard let data = message["data"] as? [String: Any],
               let thoughtsData = data["thoughts"] as? [[String: Any]] else {
             print("Invalid data format in thoughts_list message")
             return
         }
-        
+
         var tempThoughts: [Thought] = []
         for thoughtData in thoughtsData {
             if let id = thoughtData["id"] as? Int,
@@ -359,22 +391,45 @@ struct ThoughtsView: View {
                 tempThoughts.append(thought)
             }
         }
-        
+
         DispatchQueue.main.async {
             self.viewModel.thoughts = tempThoughts
             self.isRefreshing = false
-            self.currentIndex = 0
+        }
+    }
+
+    // MARK: - Battery & Performance
+    private var batteryIconName: String {
+        guard let batteryLevel = batteryLevel else {
+            return "battery.0"
+        }
+        switch batteryLevel {
+        case 76...100: return "battery.100"
+        case 51...75:  return "battery.75"
+        case 26...50:  return "battery.50"
+        case 1...25:   return "battery.25"
+        case 0:        return "battery.0"
+        default:       return "battery.0"
         }
     }
     
-    // MARK: - Battery Level
+    private var batteryColor: Color {
+        guard let level = batteryLevel else {
+            return .gray
+        }
+        if level > 75 {
+            return .green
+        } else if level > 40 {
+            return .yellow
+        } else {
+            return .red
+        }
+    }
+    
     private func fetchBatteryLevel() {
         performanceVM.fetchBatteryLevel()
             .sink(receiveCompletion: { completion in
-                switch completion {
-                case .finished:
-                    break
-                case .failure(let error):
+                if case .failure(let error) = completion {
                     print("Failed to fetch battery level: \(error)")
                 }
             }, receiveValue: { level in
@@ -383,18 +438,17 @@ struct ThoughtsView: View {
             .store(in: &performanceVM.cancellables)
     }
     
-    // MARK: - Battery level timer
     private func startBatteryLevelTimer() {
-        cancellable = batteryLevelTimer
+        batteryCancellable = batteryLevelTimer
             .autoconnect()
             .sink { _ in
                 fetchBatteryLevel()
             }
     }
-    
+
     private func stopBatteryLevelTimer() {
-        cancellable?.cancel()
-        cancellable = nil
+        batteryCancellable?.cancel()
+        batteryCancellable = nil
     }
 }
 
@@ -403,56 +457,26 @@ enum Mode {
     case eye, ear
 }
 
-// MARK: - ModeSwitch
+// MARK: - ModeSwitch (Ear/Eye Toggle)
 struct ModeSwitch: View {
     @Binding var mode: Mode
-
+    
     var body: some View {
         HStack(spacing: 0) {
             Button(action: { mode = .ear }) {
                 Image(systemName: "ear")
                     .foregroundColor(mode == .ear ? .white : .gray)
                     .padding(8)
-                    .background(mode == .ear ? Color.gray : .clear)
+                    .background(mode == .ear ? Color.gray : Color.clear)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
             Button(action: { mode = .eye }) {
                 Image(systemName: "eye")
                     .foregroundColor(mode == .eye ? .white : .gray)
                     .padding(8)
-                    .background(mode == .eye ? Color.gray : .clear)
+                    .background(mode == .eye ? Color.gray : Color.clear)
                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             }
         }
     }
-}
-
-// MARK: - Download Helper (unchanged)
-func downloadUSDZFile(from remoteURL: URL, to filename: String, completion: @escaping (Result<URL, Error>) -> Void) {
-    let cacheDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
-    let localURL = cacheDirectory.appendingPathComponent(filename)
-    
-    if FileManager.default.fileExists(atPath: localURL.path) {
-        completion(.success(localURL))
-        return
-    }
-    
-    URLSession.shared.downloadTask(with: remoteURL) { tempLocalURL, response, error in
-        if let error = error {
-            completion(.failure(error))
-            return
-        }
-        
-        guard let tempLocalURL = tempLocalURL else {
-            completion(.failure(NSError(domain: "InvalidTemporaryURL", code: 0)))
-            return
-        }
-        
-        do {
-            try FileManager.default.moveItem(at: tempLocalURL, to: localURL)
-            completion(.success(localURL))
-        } catch {
-            completion(.failure(error))
-        }
-    }.resume()
 }
