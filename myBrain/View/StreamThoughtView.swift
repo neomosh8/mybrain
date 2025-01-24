@@ -1,4 +1,5 @@
-//StreamThoughtView.swift
+// StreamThoughtView.swift
+
 import SwiftUI
 import AVKit
 import Combine
@@ -17,10 +18,6 @@ struct StreamThoughtView: View {
     @State private var playbackProgressObserver: Any?
     @State private var currentChapterNumber: Int = 1
     @State private var durations_so_far: Double = 0.0
-    @State private var showRestartOptions = false
-    @State private var thoughtStatus: ThoughtStatus?
-    @State private var showResetSuccess = false
-    @State private var resetCompleted = false
     
     @State private var lastCheckTime: Double = 0.0
     @State private var startTime: Date?
@@ -32,54 +29,64 @@ struct StreamThoughtView: View {
     /// Buffer factor so we can request the next chapter slightly before the current one ends.
     private let buffer: Double = 0.60
     
-    // MARK: - NEW CODE: Subtitles
+    // Subtitles
     @StateObject private var subtitleViewModel = SubtitleViewModel()
-    // MARK: End of NEW CODE
     @State private var subsUrlStr: String?
     
     var body: some View {
-        ZStack {
-            Color.clear.ignoresSafeArea()
-            
-            VStack {
-                if isFetchingLinks {
-                    ProgressView("Fetching Streaming Links...")
-                } else if let player = player {
-                    // Audio controls only
-                    audioPlayerControls
-                    // MARK: - NEW CODE: Show Subtitles
-                    SubtitleView(viewModel: subtitleViewModel,
-                                 thoughtId: thought.id,
-                                 chapterNumber: 1,//so here basically everytime a new chapter comes as the response of next chaper, this number should update
-                                 socketViewModel: socketViewModel)
-                    // MARK: End of NEW CODE
-                } else if let error = playerError {
-                    Text("Player Error: \(error.localizedDescription)")
-                        .foregroundColor(.red)
-                } else {
-                    Text("Ready to Stream \(thought.name)")
-                        .foregroundColor(.black)
+        // ------------------------------------------
+        // Wrap our main stream UI inside ThoughtNavigationView
+        // ------------------------------------------
+        ThoughtNavigationView(
+            thought: thought,
+            socketViewModel: socketViewModel
+        ) {
+            // The MAIN content for streaming, shown once user chooses “Resume” or if brand new
+            ZStack {
+                Color.clear.ignoresSafeArea()
+                
+                VStack {
+                    if isFetchingLinks {
+                        ProgressView("Fetching Streaming Links...")
+                    } else if let player = player {
+                        // Audio controls only
+                        audioPlayerControls
+                        
+                        // Show Subtitles
+                        SubtitleView(
+                            viewModel: subtitleViewModel,
+                            thoughtId: thought.id,
+                            chapterNumber: currentChapterNumber,
+                            socketViewModel: socketViewModel
+                        )
+                    } else if let error = playerError {
+                        Text("Player Error: \(error.localizedDescription)")
+                            .foregroundColor(.red)
+                    } else {
+                        Text("Ready to Stream \(thought.name)")
+                            .foregroundColor(.black)
+                    }
                 }
-            }
-            .padding()
-            
-            if showRestartOptions {
-                restartOptionsAlert
+                .padding()
             }
         }
-        .alert(isPresented: $showResetSuccess) {
-            Alert(
-                title: Text("Success"),
-                message: Text("Reading progress reset successfully"),
-                dismissButton: .default(Text("Ok"))
-            )
+        // ------------------------------------------
+        // Provide closures for resume and reset
+        // ------------------------------------------
+        .onResume {
+            // Called when user picks “Resume” in the overlay (if in_progress)
+            // or after “not_started” with no prompt needed.
+            fetchStreamingLinks()
         }
-        .onAppear {
-            print("onAppear => fetchThoughtStatus()")
-            fetchThoughtStatus()
+        .onResetFinished {
+            // Called when user picks “Restart From Beginning” and server reset is successful
+            // We can clear out relevant local state, then fetch fresh streaming links:
+            durations_so_far = 0
+            nextChapterTime = nil
+            fetchStreamingLinks()
         }
+        // Clean up player on disappear
         .onDisappear {
-            print("onDisappear => cleaning up players/observers")
             player?.pause()
             player = nil
             masterPlaylistURL = nil
@@ -96,10 +103,8 @@ struct StreamThoughtView: View {
         HStack {
             Button(action: {
                 if isPlaying {
-                    print("audioPlayerControls => pause tapped")
                     player?.pause()
                 } else {
-                    print("audioPlayerControls => play tapped")
                     player?.play()
                 }
                 isPlaying.toggle()
@@ -111,208 +116,50 @@ struct StreamThoughtView: View {
         }
     }
     
-    // MARK: - 1. Thought Status
-    func fetchThoughtStatus() {
-        print("fetchThoughtStatus => sending 'thought_status' for thought.id = \(thought.id)")
-        socketViewModel.sendMessage(action: "thought_status", data: ["thought_id": thought.id])
-        socketViewModel.$incomingMessage
-            .compactMap { $0 }
-            .filter { $0["type"] as? String == "thought_chapters" }
-            .first()
-            .sink { message in
-                print("fetchThoughtStatus => got thought_chapters => handleThoughtStatusResponse")
-                DispatchQueue.main.async {
-                    self.handleThoughtStatusResponse(message: message)
-                    // Optional: clear it out
-                    self.socketViewModel.incomingMessage = nil
-                }
-            }
-            .store(in: &socketViewModel.cancellables)
-    }
-    
-    func handleThoughtStatusResponse(message: [String: Any]) {
-        print("handleThoughtStatusResponse => \(message)")
-        guard let status = message["status"] as? String,
-              status == "success",
-              let data = message["data"] as? [String: Any],
-              let thoughtId = data["thought_id"] as? Int,
-              let thoughtName = data["thought_name"] as? String,
-              let statusType = data["status"] as? String,
-              let progressData = data["progress"] as? [String: Any],
-              let chaptersData = data["chapters"] as? [[String: Any]]
-        else {
-            print("handleThoughtStatusResponse => missing data, returning")
-            return
-        }
-        
-        let progress = ProgressData(
-            total: progressData["total"] as? Int ?? 0,
-            completed: progressData["completed"] as? Int ?? 0,
-            remaining: progressData["remaining"] as? Int ?? 0
-        )
-        
-        var chapters: [ChapterDataModel] = []
-        for chapterData in chaptersData {
-            let chapter = ChapterDataModel(
-                chapter_number: chapterData["chapter_number"] as? Int ?? 0,
-                title: chapterData["title"] as? String ?? "",
-                content: chapterData["content"] as? String ?? "",
-                status: chapterData["status"] as? String ?? ""
-            )
-            chapters.append(chapter)
-        }
-        
-        let statusModel = ThoughtStatus(
-            thought_id: thoughtId,
-            thought_name: thoughtName,
-            status: statusType,
-            progress: progress,
-            chapters: chapters
-        )
-        self.thoughtStatus = statusModel
-        
-        print("handleThoughtStatusResponse => statusType = \(statusType)")
-        if statusType == "in_progress" {
-            print("handleThoughtStatusResponse => showRestartOptions = true (in_progress)")
-            showRestartOptions = true
-        } else if statusType == "finished" {
-            print("handleThoughtStatusResponse => showRestartOptions = true (finished)")
-            showRestartOptions = true
-        } else {
-            print("handleThoughtStatusResponse => calling fetchStreamingLinks()")
-            fetchStreamingLinks()
-        }
-    }
-    
-    // MARK: - 2. Restart / Reset
-    var restartOptionsAlert: some View {
-        VStack {
-            if thoughtStatus?.status == "in_progress" {
-                Text("It seems you are in the middle of the stream for \(thought.name).")
-                    .font(.headline)
-                    .padding()
-                
-                HStack {
-                    Button("Restart From Beginning") {
-                        print("restartOptionsAlert => user tapped 'Restart From Beginning'")
-                        resetReading()
-                    }
-                    .buttonStyle(.borderedProminent)
-                    
-                    Button("Resume") {
-                        print("restartOptionsAlert => user tapped 'Resume'")
-                        showRestartOptions = false
-                        fetchStreamingLinks()
-                    }
-                    .buttonStyle(.bordered)
-                }
-                
-            } else {
-                Text("It seems you have finished the stream for \(thought.name).")
-                    .font(.headline)
-                    .padding()
-                
-                Button("Restart From Beginning") {
-                    print("restartOptionsAlert => user tapped 'Restart From Beginning' (finished)")
-                    resetReading()
-                }
-                .buttonStyle(.borderedProminent)
-            }
-        }
-        .padding()
-        .background(Color.white)
-        .cornerRadius(10)
-    }
-    
-    func resetReading() {
-        print("resetReading => sending 'reset_reading' for thought.id = \(thought.id)")
-        resetCompleted = false
-        socketViewModel.sendMessage(action: "reset_reading", data: ["thought_id": thought.id])
-        
-        socketViewModel.$incomingMessage
-            .compactMap { $0 }
-            .filter { $0["type"] as? String == "reset_response" }
-            .first()
-            .sink { message in
-                print("resetReading => got 'reset_response' => handleResetResponse")
-                DispatchQueue.main.async {
-                    self.handleResetResponse(message: message)
-                    // Optional: clear it out
-                    self.socketViewModel.incomingMessage = nil
-                }
-            }
-            .store(in: &socketViewModel.cancellables)
-    }
-    
-    func handleResetResponse(message: [String: Any]) {
-        print("handleResetResponse => \(message)")
-        guard let status = message["status"] as? String,
-              status == "success" else {
-            print("handleResetResponse => reset reading was unsuccessful")
-            return
-        }
-        
-        print("handleResetResponse => success => showResetSuccess, fetchStreamingLinks()")
-        showResetSuccess = true
-        showRestartOptions = false
-        resetCompleted = true
-        fetchStreamingLinks()
-        nextChapterTime = nil
-    }
-    
-    // MARK: - 3. Fetch Streaming
+    // MARK: - Fetch Streaming
     func fetchStreamingLinks() {
         isFetchingLinks = true
-        print("fetchStreamingLinks => sending 'streaming_links' for thought.id = \(thought.id)")
+        // Send the request for streaming links
         socketViewModel.sendMessage(action: "streaming_links", data: ["thought_id": thought.id])
         
+        // Listen for streaming_links response
         socketViewModel.$incomingMessage
             .compactMap { $0 }
             .filter { $0["type"] as? String == "streaming_links" }
             .first()
             .sink { message in
-                print("fetchStreamingLinks => got streaming_links => handleStreamingLinksResponse")
                 DispatchQueue.main.async {
                     self.handleStreamingLinksResponse(message: message)
-                    // Optional: clear it out
+                    // Clear the incoming message to avoid repeated triggers
                     self.socketViewModel.incomingMessage = nil
                 }
             }
             .store(in: &socketViewModel.cancellables)
         
-        // IMPORTANT: first chapter info
+        // Listen for the initial chapter_response
         socketViewModel.$incomingMessage
             .compactMap { $0 }
             .filter { $0["type"] as? String == "chapter_response" }
             .first()
             .sink { message in
-                print("fetchStreamingLinks => got initial chapter_response => handleNextChapterResponse")
                 DispatchQueue.main.async {
                     self.handleNextChapterResponse(message: message)
-                    // Optional: clear it out
                     self.socketViewModel.incomingMessage = nil
                 }
             }
             .store(in: &socketViewModel.cancellables)
     }
     
-    func handleStreamingLinksResponse(message: [String: Any]) {
-        print("handleStreamingLinksResponse => \(message)")
+    private func handleStreamingLinksResponse(message: [String: Any]) {
         isFetchingLinks = false
         
         guard let status = message["status"] as? String,
-              status == "success" else {
+              status == "success",
+              let data = message["data"] as? [String: Any],
+              let masterPlaylistPath = data["master_playlist"] as? String
+        else {
             let errorMessage = message["message"] as? String ?? "Failed to get the streaming URLs"
-            print("handleStreamingLinksResponse => not success => \(errorMessage)")
             playerError = NSError(domain: "StreamingError", code: -1,
-                                  userInfo: [NSLocalizedDescriptionKey: errorMessage])
-            return
-        }
-        guard let data = message["data"] as? [String: Any],
-              let masterPlaylistPath = data["master_playlist"] as? String else {
-            let errorMessage = "Missing master_playlist in data"
-            print("handleStreamingLinksResponse => \(errorMessage)")
-            playerError = NSError(domain: "StreamingError", code: -2,
                                   userInfo: [NSLocalizedDescriptionKey: errorMessage])
             return
         }
@@ -320,31 +167,24 @@ struct StreamThoughtView: View {
         let baseURL = "https://\(socketViewModel.baseUrl)"
         guard let url = URL(string: baseURL + masterPlaylistPath) else {
             let errorMessage = "Invalid URL: \(baseURL + masterPlaylistPath)"
-            print("handleStreamingLinksResponse => \(errorMessage)")
             playerError = NSError(domain: "StreamingError", code: -3,
                                   userInfo: [NSLocalizedDescriptionKey: errorMessage])
             return
         }
+        masterPlaylistURL = url
         
-        self.masterPlaylistURL = url
-        
-        // MARK: - NEW CODE: Handle Subtitles
+        // Check if we have subtitles
         if let subsPath = data["subtitles_playlist"] as? String, !subsPath.isEmpty {
             let subsUrlStr = baseURL + subsPath
-            print("handleStreamingLinksResponse => subtitles_playlist url = \(subsUrlStr)")
-            // Fetch the .m3u8 for subtitles, parse it, and store in subtitleViewModel
-            fetchSubtitlePlaylist(playlistURL: subsUrlStr)
             self.subsUrlStr = subsUrlStr
+            fetchSubtitlePlaylist(playlistURL: subsUrlStr)
         }
-        // MARK: End of NEW CODE
         
-        print("handleStreamingLinksResponse => setupPlayer(url: \(url))")
         setupPlayer(url: url)
     }
     
-    // MARK: - 4. Setup Player
+    // MARK: - Setup Player
     func setupPlayer(url: URL) {
-        print("setupPlayer => creating AVPlayerItem => \(url)")
         let playerItem = AVPlayerItem(url: url)
         player = AVPlayer(playerItem: playerItem)
         isPlaying = true
@@ -355,112 +195,80 @@ struct StreamThoughtView: View {
             playerItemObservation = player?.publisher(for: \.currentItem?.status)
                 .compactMap { $0 }
                 .sink { status in
-                    print("playerItemObservation => AVPlayerItem status changed: \(status.rawValue)")
                     if status == .readyToPlay {
-                        print("playerItemObservation => status == .readyToPlay => startPlaybackProgressObservation()")
                         self.startPlaybackProgressObservation()
-                    } else {
-                        print("playerItemObservation => status != .readyToPlay => \(status.rawValue)")
                     }
                 }
         }
     }
     
     func startPlaybackProgressObservation() {
-        guard let player = player else {
-            print("startPlaybackProgressObservation => no player!")
-            return
-        }
+        guard let player = player else { return }
+        
         let interval = CMTime(seconds: 0.1, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
-        print("startPlaybackProgressObservation => addPeriodicTimeObserver(0.1s)")
         playbackProgressObserver = player.addPeriodicTimeObserver(
-            forInterval: CMTime(seconds: 0.1, preferredTimescale: CMTimeScale(NSEC_PER_SEC)),
+            forInterval: interval,
             queue: .main
         ) { time in
             let currentTime = time.seconds
             self.checkPlaybackProgress(currentTime: currentTime)
-
             // Update subtitle time
             self.subtitleViewModel.updateCurrentTime(currentTime)
-
-            // (OLD) self.subtitleViewModel.checkSegmentBoundary { nextSegmentIndex in
-            //     self.subtitleViewModel.loadSegment(at: nextSegmentIndex)
-            // }
-
-            // (NEW) Use the improved boundary check
+            // Adjust for segment boundary
             self.subtitleViewModel.checkSegmentBoundary { newIndex in
                 self.subtitleViewModel.loadSegment(at: newIndex)
             }
         }
-
     }
     
-    // MARK: - 5. Check Progress & Request Next Chapter
+    // MARK: - Check Progress & Request Next Chapter
     func checkPlaybackProgress(currentTime: Double) {
-        print(currentTime)
-        guard let _ = player else {
-            print("checkPlaybackProgress => guard #1: player is nil, returning")
+        guard let nextChapterTime = nextChapterTime, !nextChapterRequested else {
             return
         }
-        
-        guard let nextChapterTime = nextChapterTime else {
-            // No next chapter scheduled yet
-            return
-        }
-        
-        if currentTime >= nextChapterTime && !nextChapterRequested {
-            print("checkPlaybackProgress => currentTime >= nextChapterTime => requestNextChapter()")
+        if currentTime >= nextChapterTime {
             nextChapterRequested = true
             requestNextChapter()
         }
     }
     
     func requestNextChapter() {
-        self.socketViewModel.incomingMessage = nil
-        print("requestNextChapter => sending 'next_chapter'")
+        socketViewModel.incomingMessage = nil
         let data: [String: Any] = ["thought_id": thought.id, "generate_audio": true]
         socketViewModel.sendMessage(action: "next_chapter", data: data)
-        print("GOOOH", socketViewModel.incomingMessage ?? "No message")
+        
         socketViewModel.$incomingMessage
             .compactMap { $0 }
             .filter { $0["type"] as? String == "chapter_response" }
             .first()
             .sink { message in
-                print("requestNextChapter => got next chapter_response => handleNextChapterResponse")
                 self.handleNextChapterResponse(message: message)
-                // Optional: clear it out
                 self.socketViewModel.incomingMessage = nil
             }
             .store(in: &socketViewModel.cancellables)
     }
     
-    // MARK: - 6. Handle Next Chapter
+    // MARK: - Handle Next Chapter
     func handleNextChapterResponse(message: [String: Any]) {
         guard let data = message["data"] as? [String: Any] else { return }
         
         let chapterNumber = data["chapter_number"] as? Int ?? 0
         let audioDuration = data["audio_duration"] as? Double ?? 0.0
         let generationTime = data["generation_time"] as? Double ?? 0.0
-        print("handleNextChapterResponse => chapterNumber=\(chapterNumber), audioDuration=\(audioDuration), generationTime=\(generationTime)")
-        // "playableDuration" is the approximate length (in seconds) of the new chapter's audio.
+        
         let playableDuration = audioDuration - generationTime
-        
-        // ---- CHANGED HERE (accumulate from previous chapters) ----
-        self.nextChapterTime = durations_so_far + playableDuration * (1 - buffer)
-        // ----------------------------------------------------------
-        
-        print("handleNextChapterResponse => new nextChapterTime = \(String(describing: nextChapterTime))")
+        nextChapterTime = durations_so_far + (playableDuration * (1 - buffer))
         
         nextChapterRequested = false
-        self.socketViewModel.incomingMessage = nil
-        
-        // We let the single AVPlayer keep going, no need to refetch here
         durations_so_far += audioDuration
-        if let subsUrlStr = subsUrlStr { fetchSubtitlePlaylist(playlistURL: subsUrlStr)}
         
+        // Re‐fetch updated subtitles
+        if let subsUrlStr = subsUrlStr {
+            fetchSubtitlePlaylist(playlistURL: subsUrlStr)
+        }
     }
     
-    // MARK: - NEW CODE: Fetch the Subtitles Playlist (.m3u8) and parse it
+    // MARK: - Subtitles
     func fetchSubtitlePlaylist(playlistURL: String) {
         guard let url = URL(string: playlistURL) else { return }
         URLSession.shared.dataTask(with: url) { data, response, error in
@@ -469,12 +277,12 @@ struct StreamThoughtView: View {
                 return
             }
             guard let data = data,
-                  let text = String(data: data, encoding: .utf8) else {
+                  let text = String(data: data, encoding: .utf8)
+            else {
                 print("fetchSubtitlePlaylist => invalid data")
                 return
             }
             
-            // Parse lines for #EXTINF and .vtt references:
             var vttFiles: [String] = []
             let lines = text.components(separatedBy: .newlines)
             var i = 0
@@ -494,15 +302,13 @@ struct StreamThoughtView: View {
                 }
                 i += 1
             }
-
-            // Next, for each vtt file, parse for actual times
+            
             DispatchQueue.main.async {
                 self.processVTTFiles(vttFiles)
             }
-            
         }.resume()
     }
-
+    
     private func processVTTFiles(_ vttFiles: [String]) {
         guard !vttFiles.isEmpty else { return }
         
@@ -516,7 +322,6 @@ struct StreamThoughtView: View {
                     if let link = maybeLink {
                         newSegments.append(link)
                     }
-                    // Once all VTTs are processed
                     if pendingCount == 0 {
                         self.appendSegments(newSegments)
                     }
@@ -524,27 +329,21 @@ struct StreamThoughtView: View {
             }
         }
     }
-
-    // Called once all new .vtt files have been parsed
+    
     private func appendSegments(_ newSegments: [SubtitleSegmentLink]) {
-        // 1) Filter out duplicates by urlString
         let existingURLs = Set(self.subtitleViewModel.segments.map { $0.urlString })
         let trulyNew = newSegments.filter { !existingURLs.contains($0.urlString) }
-        
-        // 2) Sort them by minStart, in case they come out of order
         let sortedNew = trulyNew.sorted { $0.minStart < $1.minStart }
-        
-        // 3) Append
         self.subtitleViewModel.segments.append(contentsOf: sortedNew)
         
-        // 4) If no segment loaded, load segment 0
         if self.subtitleViewModel.currentSegment == nil,
            !self.subtitleViewModel.segments.isEmpty {
             self.subtitleViewModel.loadSegment(at: 0)
         }
     }
-    // MARK: End of NEW CODE
 }
+
+// MARK: - Helper for parsing time ranges in .vtt files
 private func determineSegmentTimes(vttURL: String,
                                    completion: @escaping (SubtitleSegmentLink?) -> Void)
 {
@@ -552,7 +351,6 @@ private func determineSegmentTimes(vttURL: String,
         completion(nil)
         return
     }
-
     URLSession.shared.dataTask(with: url) { data, _, error in
         guard error == nil,
               let data = data,
@@ -561,7 +359,6 @@ private func determineSegmentTimes(vttURL: String,
             completion(nil)
             return
         }
-        // Parse the VTT to find earliest and latest time
         let lines = content.components(separatedBy: .newlines)
         
         var earliest = Double.greatestFiniteMagnitude
@@ -573,14 +370,13 @@ private func determineSegmentTimes(vttURL: String,
         )
         
         for line in lines {
-            // Check if line matches a time range
             if let match = timeRegex.firstMatch(
-                in: line, options: [],
-                range: NSRange(location: 0, length: line.utf16.count))
-            {
+                in: line,
+                options: [],
+                range: NSRange(location: 0, length: line.utf16.count)
+            ) {
                 let startTime = parseTime(line: line, match: match, isStart: true)
                 let endTime   = parseTime(line: line, match: match, isStart: false)
-                
                 if let s = startTime, let e = endTime {
                     earliest = min(earliest, s)
                     latest   = max(latest, e)
@@ -588,14 +384,15 @@ private func determineSegmentTimes(vttURL: String,
             }
         }
         
-        // If we found any real cues
         if earliest < Double.greatestFiniteMagnitude,
            latest   > Double.leastNormalMagnitude {
             let duration = latest - earliest
-            let segmentLink = SubtitleSegmentLink(urlString: vttURL,
-                                                  duration: duration,
-                                                  minStart: earliest,
-                                                  maxEnd:   latest)
+            let segmentLink = SubtitleSegmentLink(
+                urlString: vttURL,
+                duration: duration,
+                minStart: earliest,
+                maxEnd:   latest
+            )
             completion(segmentLink)
         } else {
             completion(nil)
@@ -608,7 +405,6 @@ private func parseTime(line: String,
                        match: NSTextCheckingResult,
                        isStart: Bool) -> Double?
 {
-    // Indices in the regex match
     let hourIndex   = isStart ? 1 : 4
     let minuteIndex = isStart ? 2 : 5
     let secondIndex = isStart ? 3 : 6
@@ -620,9 +416,9 @@ private func parseTime(line: String,
     
     guard let hh = Double(groupString(hourIndex)),
           let mm = Double(groupString(minuteIndex)),
-          let ss = Double(groupString(secondIndex)) else {
+          let ss = Double(groupString(secondIndex))
+    else {
         return nil
     }
-    
     return hh * 3600.0 + mm * 60.0 + ss
 }
