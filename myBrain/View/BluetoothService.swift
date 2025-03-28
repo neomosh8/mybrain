@@ -11,12 +11,16 @@ class BluetoothService: NSObject, ObservableObject {
     @Published var batteryLevel: Int?
     @Published var serialNumber: String?
     @Published var permissionStatus: PermissionStatus = .unknown
+    private var autoStartStreaming = false
+    // Test signal related properties
+    @Published var isTestSignalEnabled = false
+    @Published var isStreamingEnabled = false
+    @Published var testSignalData: [Int32] = []
+    @Published var isReceivingTestData = false
+    @Published var eegChannel1: [Int32] = []
+    @Published var eegChannel2: [Int32] = []
     
-    // Diagnostic properties
-    @Published var diagnosticLog: [String] = []
-    @Published var serialNumberStatus: CommandStatus = .notRequested
-    @Published var batteryLevelStatus: CommandStatus = .notRequested
-    
+    private var isInTestMode = false
     // MARK: - Neocore Protocol Constants
     private let serviceUUID = CBUUID(string: "6E400001-B5A3-F393-E0A9-E50E24DCCA9E")
     private let writeCharacteristicUUID = CBUUID(string: "6E400002-B5A3-F393-E0A9-E50E24DCCA9E")
@@ -38,9 +42,12 @@ class BluetoothService: NSObject, ObservableObject {
     // Command IDs
     private let NEOCORE_CMD_ID_GET_SERIAL_NUM: UInt16 = 0x01
     private let NEOCORE_CMD_ID_GET_BATTERY_LEVEL: UInt16 = 0x00
+    private let NEOCORE_CMD_ID_DATA_STREAM_CTRL: UInt16 = 0x00
+    private let NEOCORE_CMD_ID_EEG_TEST_SIGNAL_CTRL: UInt16 = 0x01
+    private let NEOCORE_NOTIFY_ID_EEG_DATA: UInt16 = 0x00
     
-    // Command timeouts
-    private let commandTimeout: TimeInterval = 5.0 // 5 seconds
+    // EEG data header (Feature=2 (Sensor Stream), Type=1 (Notification), ID=0 (EEG Data))
+    private let EEG_DATA_HEADER: UInt16 = 0x0480
     
     // MARK: - Private Properties
     private var centralManager: CBCentralManager!
@@ -51,37 +58,17 @@ class BluetoothService: NSObject, ObservableObject {
     private let targetDevices = ["QCC5181", "QCC5181-LE", "NEOCORE"]
     private let savedDeviceKey = "savedBluetoothDeviceID"
     
-    // Command tracking
-    private var pendingCommands: [UInt16: (timer: Timer?, statusPublisher: Published<CommandStatus>.Publisher)] = [:]
-    
     // MARK: - Initialization
     override init() {
         super.init()
         centralManager = CBCentralManager(delegate: self, queue: nil)
     }
     
-    // MARK: - Logging
-    private func log(_ message: String) {
-        print("BLE: \(message)")
-        DispatchQueue.main.async {
-            self.diagnosticLog.append("[\(Date().formatted(date: .omitted, time: .standard))] \(message)")
-            // Keep log at a reasonable size
-            if self.diagnosticLog.count > 100 {
-                self.diagnosticLog.removeFirst(self.diagnosticLog.count - 100)
-            }
-        }
-    }
-    
-    // MARK: - Public Methods
+    // MARK: - Public Methods for Device Discovery and Connection
     func startScanning() {
-        guard centralManager.state == .poweredOn else {
-            log("Cannot start scanning - Bluetooth not powered on")
-            return
-        }
-        
+        guard centralManager.state == .poweredOn else { return }
         isScanning = true
         discoveredDevices = []
-        log("Starting device scan...")
         
         // Scan for all devices rather than specific service
         centralManager.scanForPeripherals(
@@ -98,47 +85,26 @@ class BluetoothService: NSObject, ObservableObject {
     func stopScanning() {
         centralManager.stopScan()
         isScanning = false
-        log("Scanning stopped")
     }
     
     func connect(to device: DiscoveredDevice) {
-        guard let peripheral = device.peripheral else {
-            log("Error: Cannot connect to device - peripheral is nil")
-            return
-        }
-        
+        guard let peripheral = device.peripheral else { return }
         self.peripheral = peripheral
-        log("Connecting to device: \(device.name)")
         centralManager.connect(peripheral, options: nil)
     }
     
     func disconnect() {
-        guard let peripheral = peripheral else {
-            log("Error: Cannot disconnect - no device connected")
-            return
-        }
-        
-        log("Disconnecting from device: \(peripheral.name ?? "Unknown")")
+        guard let peripheral = peripheral else { return }
         centralManager.cancelPeripheralConnection(peripheral)
     }
     
     func saveConnectedDevice() {
-        guard let device = connectedDevice else {
-            log("Error: Cannot save device - no device connected")
-            return
-        }
-        
+        guard let device = connectedDevice else { return }
         UserDefaults.standard.set(device.id, forKey: savedDeviceKey)
-        log("Saved device \(device.name) with ID \(device.id)")
     }
     
     func reconnectToPreviousDevice() {
-        guard let savedID = UserDefaults.standard.string(forKey: savedDeviceKey) else {
-            log("No previously saved device found")
-            return
-        }
-        
-        log("Attempting to reconnect to previously saved device with ID: \(savedID)")
+        guard let savedID = UserDefaults.standard.string(forKey: savedDeviceKey) else { return }
         
         // Start scanning to find the device
         startScanning()
@@ -148,10 +114,8 @@ class BluetoothService: NSObject, ObservableObject {
             .compactMap { devices in devices.first { $0.id == savedID } }
             .first()
             .sink { [weak self] device in
-                guard let self = self else { return }
-                self.log("Found previously saved device: \(device.name)")
-                self.stopScanning()
-                self.connect(to: device)
+                self?.stopScanning()
+                self?.connect(to: device)
             }
             .store(in: &cancellables)
     }
@@ -160,99 +124,231 @@ class BluetoothService: NSObject, ObservableObject {
         switch centralManager.state {
         case .poweredOn:
             permissionStatus = .authorized
-            log("Bluetooth state: Powered On")
         case .unauthorized:
             permissionStatus = .denied
-            log("Bluetooth state: Unauthorized")
         case .poweredOff:
             permissionStatus = .poweredOff
-            log("Bluetooth state: Powered Off")
         case .resetting:
             permissionStatus = .unknown
-            log("Bluetooth state: Resetting")
         case .unsupported:
             permissionStatus = .unsupported
-            log("Bluetooth state: Unsupported")
         case .unknown:
             permissionStatus = .notDetermined
-            log("Bluetooth state: Unknown")
         @unknown default:
             permissionStatus = .unknown
-            log("Bluetooth state: Unknown (future state)")
         }
     }
     
-    // MARK: - BLE Command Methods
-    
+    // MARK: - Device Information Commands
     func readSerialNumber() {
-        log("Requesting serial number...")
-        serialNumberStatus = .requested
-        
-        // Create command key for tracking
-        let commandKey = createCommandKey(featureId: NEOCORE_CORE_FEATURE_ID, pduId: NEOCORE_CMD_ID_GET_SERIAL_NUM)
-        
-        // Set up timeout timer
-        let timer = Timer.scheduledTimer(withTimeInterval: commandTimeout, repeats: false) { [weak self] _ in
-            guard let self = self else { return }
-            self.log("Serial number request timed out")
-            DispatchQueue.main.async {
-                self.serialNumberStatus = .timeout
-                self.pendingCommands.removeValue(forKey: commandKey)
-            }
-        }
-        
-        // Track the command
-        pendingCommands[commandKey] = (timer, $serialNumberStatus)
-        
-        // Send the command
-        sendCommand(
-            featureId: NEOCORE_CORE_FEATURE_ID,
-            pduType: PDU_TYPE_COMMAND,
-            pduId: NEOCORE_CMD_ID_GET_SERIAL_NUM,
-            data: nil
-        )
+        sendCommand(featureId: NEOCORE_CORE_FEATURE_ID,
+                   pduType: PDU_TYPE_COMMAND,
+                   pduId: NEOCORE_CMD_ID_GET_SERIAL_NUM,
+                   data: nil)
     }
     
     func readBatteryLevel() {
-        log("Requesting battery level...")
-        batteryLevelStatus = .requested
+        sendCommand(featureId: NEOCORE_BATTERY_FEATURE_ID,
+                   pduType: PDU_TYPE_COMMAND,
+                   pduId: NEOCORE_CMD_ID_GET_BATTERY_LEVEL,
+                   data: nil)
+    }
+    
+    // MARK: - Test Signal and Data Streaming
+    // Replace these methods in your BluetoothService class
+
+    func startTestDrive() {
+        // Reset data
+        eegChannel1 = []
+        eegChannel2 = []
+        isTestSignalEnabled = false
+        isStreamingEnabled = false
+        isReceivingTestData = false
+        isInTestMode = true
         
-        // Create command key for tracking
-        let commandKey = createCommandKey(featureId: NEOCORE_BATTERY_FEATURE_ID, pduId: NEOCORE_CMD_ID_GET_BATTERY_LEVEL)
         
-        // Set up timeout timer
-        let timer = Timer.scheduledTimer(withTimeInterval: commandTimeout, repeats: false) { [weak self] _ in
+        print("Starting test drive sequence")
+        
+        // 1. Enable notifications on the characteristic
+        if let notifyCharacteristic = notifyCharacteristic {
+            peripheral?.setNotifyValue(true, for: notifyCharacteristic)
+            print("Enabling notifications")
+        }
+        
+        // 2. Enable test signal
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self = self, self.isInTestMode else { return }
+            
+            print("Enabling test signal")
+            self.enableTestSignal(true)
+            
+            // 3. Enable streaming after test signal
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                guard let self = self, self.isInTestMode else { return }
+                
+                print("Enabling streaming")
+                self.enableDataStreaming(true)
+                
+                // 4. Start collecting data
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                    guard let self = self, self.isInTestMode else { return }
+                    
+                    self.isReceivingTestData = true
+                    print("Test mode fully activated - collecting data")
+                }
+            }
+        }
+    }
+
+    func stopTestDrive() {
+        print("Stopping test drive sequence")
+        isInTestMode = false
+        isReceivingTestData = false
+        
+        // 1. Disable streaming first
+        enableDataStreaming(false)
+        
+        // 2. Then disable test signal
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
             guard let self = self else { return }
-            self.log("Battery level request timed out")
-            DispatchQueue.main.async {
-                self.batteryLevelStatus = .timeout
-                self.pendingCommands.removeValue(forKey: commandKey)
+            self.enableTestSignal(false)
+            
+            // 3. Finally disable notifications
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                if let notifyCharacteristic = self?.notifyCharacteristic {
+                    self?.peripheral?.setNotifyValue(false, for: notifyCharacteristic)
+                }
+                
+                // Clear data after everything is stopped
+                DispatchQueue.main.async {
+                    self?.eegChannel2 = []
+                    self?.eegChannel1 = []
+                }
+            }
+        }
+    }
+
+    // Replace the handleEEGDataNotification method
+    private func handleEEGDataNotification(data: Data) {
+        // EEG data format: 2-byte header (0x0480) followed by interleaved 4-byte little-endian signed integers
+        guard data.count > 2 else { return }
+        
+        let eegData = data.subdata(in: 2..<data.count)
+        
+        // Total number of 4-byte samples
+        let totalSamples = eegData.count / 4
+        
+        // Print raw hex for debugging
+        print("EEG data hex: \(eegData.hexDescription)")
+        
+        var channel1Samples: [Int32] = []
+        var channel2Samples: [Int32] = []
+        
+        // Process the interleaved samples
+        // Each pair is 8 bytes: [Ch1_Sample(4 bytes)][Ch2_Sample(4 bytes)]
+        for i in stride(from: 0, to: eegData.count, by: 8) {
+            // Ensure we have enough bytes for Channel 1
+            if i + 3 < eegData.count {
+                // Channel 1 - first 4 bytes
+                let ch1Bytes = eegData.subdata(in: i..<(i+4))
+                let ch1Value = parseInt32LittleEndian(data: ch1Bytes)
+                channel1Samples.append(ch1Value)
+            }
+            
+            // Ensure we have enough bytes for Channel 2
+            if i + 7 < eegData.count {
+                // Channel 2 - next 4 bytes
+                let ch2Bytes = eegData.subdata(in: (i+4)..<(i+8))
+                let ch2Value = parseInt32LittleEndian(data: ch2Bytes)
+                channel2Samples.append(ch2Value)
             }
         }
         
-        // Track the command
-        pendingCommands[commandKey] = (timer, $batteryLevelStatus)
+        print("Parsed \(channel1Samples.count) samples for Channel 1")
+        print("Parsed \(channel2Samples.count) samples for Channel 2")
         
-        // Send the command
+        // Only append data if we're in test mode and receiving data
+        if isReceivingTestData && isInTestMode {
+            DispatchQueue.main.async {
+                // Add the new samples to each channel
+                self.eegChannel1.append(contentsOf: channel1Samples)
+                self.eegChannel2.append(contentsOf: channel2Samples)
+                
+                // Limit total points to prevent memory issues
+                let maxStoredSamples = 2000  // Lower for better performance
+                if self.eegChannel1.count > maxStoredSamples {
+                    self.eegChannel1.removeFirst(self.eegChannel1.count - maxStoredSamples)
+                }
+                if self.eegChannel2.count > maxStoredSamples {
+                    self.eegChannel2.removeFirst(self.eegChannel2.count - maxStoredSamples)
+                }
+                
+                print("Updated EEG channels: CH1=\(self.eegChannel1.count), CH2=\(self.eegChannel2.count)")
+            }
+        }
+    }
+
+    // Helper to parse Int32 from little-endian data
+    private func parseInt32LittleEndian(data: Data) -> Int32 {
+        guard data.count >= 4 else { return 0 }
+        
+        let byte0 = UInt32(data[0])
+        let byte1 = UInt32(data[1]) << 8
+        let byte2 = UInt32(data[2]) << 16
+        let byte3 = UInt32(data[3]) << 24
+        
+        return Int32(bitPattern: byte0 | byte1 | byte2 | byte3)
+    }
+    
+    private func enableDataStreaming(_ enable: Bool) {
+        // Construct the Data Stream Control command
+        // Feature ID: 0x01 (Sensor Configuration)
+        // PDU Type: 0x00 (Command)
+        // PDU Specific ID: 0x00 (Data Stream Control)
+        let payload = Data([enable ? 0x01 : 0x00])
+        
         sendCommand(
-            featureId: NEOCORE_BATTERY_FEATURE_ID,
+            featureId: NEOCORE_SENSOR_CFG_FEATURE_ID,
             pduType: PDU_TYPE_COMMAND,
-            pduId: NEOCORE_CMD_ID_GET_BATTERY_LEVEL,
-            data: nil
+            pduId: NEOCORE_CMD_ID_DATA_STREAM_CTRL,
+            data: payload
         )
+        
+        print("Data streaming \(enable ? "enabled" : "disabled")")
+        isStreamingEnabled = enable
+        
+        // If disabling streaming, also clear the test data
+        if !enable {
+            testSignalData = []
+        }
     }
     
-    // MARK: - Command Helpers
-    
-    private func createCommandKey(featureId: UInt16, pduId: UInt16) -> UInt16 {
-        return (featureId << 8) | pduId
+    private func enableTestSignal(_ enable: Bool) {
+        // Construct the Test Signal Control command
+        // Feature ID: 0x01 (Sensor Configuration)
+        // PDU Type: 0x00 (Command)
+        // PDU Specific ID: 0x01 (Test Signal Control)
+        let payload = Data([enable ? 0x01 : 0x00])
+        
+        sendCommand(
+            featureId: NEOCORE_SENSOR_CFG_FEATURE_ID,
+            pduType: PDU_TYPE_COMMAND,
+            pduId: NEOCORE_CMD_ID_EEG_TEST_SIGNAL_CTRL,
+            data: payload
+        )
+        
+        print("Test signal \(enable ? "enabled" : "disabled")")
+        isTestSignalEnabled = enable
+        isReceivingTestData = enable
     }
+    
+    // MARK: - Command and Response Handling
     
     // Helper method to build and send commands
     private func sendCommand(featureId: UInt16, pduType: UInt16, pduId: UInt16, data: Data?) {
         guard let writeCharacteristic = writeCharacteristic,
               let peripheral = peripheral else {
-            log("Error: Cannot send command - write characteristic or peripheral not available")
+            print("Cannot send command: write characteristic or peripheral not available")
             return
         }
         
@@ -274,16 +370,16 @@ class BluetoothService: NSObject, ObservableObject {
             commandData = Data(bytes)
         }
         
-        log("Sending command: \(String(format: "0x%04X", commandId)) - Raw data: \(commandData.hexDescription)")
+        print("Sending command: \(String(format: "0x%04X", commandId)) with payload: \(commandData.hexDescription)")
         
         // Write the command
         peripheral.writeValue(commandData, for: writeCharacteristic, type: .withResponse)
     }
     
-    // Helper method to parse responses
+    // Parse incoming data packets
     private func parseResponse(data: Data) {
         guard data.count >= 2 else {
-            log("Invalid response: too short")
+            print("Invalid response: too short")
             return
         }
         
@@ -292,69 +388,41 @@ class BluetoothService: NSObject, ObservableObject {
         let headerByte2 = data[1]
         let commandId: UInt16 = (UInt16(headerByte1) << 8) | UInt16(headerByte2)
         
-        // Parse header components
+        // Check for EEG data packets specifically (0x0480)
+        if commandId == EEG_DATA_HEADER {
+            handleEEGDataNotification(data: data)
+            return
+        }
+        
+        // For other packets, parse as before
         let featureId = commandId >> 9
         let pduType = (commandId >> 7) & 0x03
         let pduId = commandId & 0x7F
         
-        log("Received response: feature=\(featureId), type=\(pduType), id=\(pduId) - Raw data: \(data.hexDescription)")
+        print("Received response: feature=\(featureId), type=\(pduType), id=\(pduId), command=0x\(String(format: "%04X", commandId))")
         
         // Handle based on response type
         if pduType == PDU_TYPE_RESPONSE {
             // Response to commands
             if featureId == NEOCORE_CORE_FEATURE_ID && pduId == NEOCORE_CMD_ID_GET_SERIAL_NUM {
-                // Cancel timeout
-                let key = createCommandKey(featureId: NEOCORE_CORE_FEATURE_ID, pduId: NEOCORE_CMD_ID_GET_SERIAL_NUM)
-                pendingCommands[key]?.timer?.invalidate()
-                pendingCommands.removeValue(forKey: key)
-                
                 handleSerialNumberResponse(data: data)
             } else if featureId == NEOCORE_BATTERY_FEATURE_ID && pduId == NEOCORE_CMD_ID_GET_BATTERY_LEVEL {
-                // Cancel timeout
-                let key = createCommandKey(featureId: NEOCORE_BATTERY_FEATURE_ID, pduId: NEOCORE_CMD_ID_GET_BATTERY_LEVEL)
-                pendingCommands[key]?.timer?.invalidate()
-                pendingCommands.removeValue(forKey: key)
-                
                 handleBatteryLevelResponse(data: data)
             }
         } else if pduType == PDU_TYPE_NOTIFICATION {
-            // Asynchronous notifications
+            // Other notifications handled here
             if featureId == NEOCORE_BATTERY_FEATURE_ID {
                 // Battery notification
                 handleBatteryLevelResponse(data: data)
             }
         } else if pduType == PDU_TYPE_ERROR {
-            log("Received error response: \(data.hexDescription)")
-            
-            // Check if this is a response to a command we're tracking
-            if featureId == NEOCORE_CORE_FEATURE_ID && pduId == NEOCORE_CMD_ID_GET_SERIAL_NUM {
-                // Cancel timeout and update status
-                let key = createCommandKey(featureId: NEOCORE_CORE_FEATURE_ID, pduId: NEOCORE_CMD_ID_GET_SERIAL_NUM)
-                pendingCommands[key]?.timer?.invalidate()
-                pendingCommands.removeValue(forKey: key)
-                
-                DispatchQueue.main.async {
-                    self.serialNumberStatus = .error
-                }
-            } else if featureId == NEOCORE_BATTERY_FEATURE_ID && pduId == NEOCORE_CMD_ID_GET_BATTERY_LEVEL {
-                // Cancel timeout and update status
-                let key = createCommandKey(featureId: NEOCORE_BATTERY_FEATURE_ID, pduId: NEOCORE_CMD_ID_GET_BATTERY_LEVEL)
-                pendingCommands[key]?.timer?.invalidate()
-                pendingCommands.removeValue(forKey: key)
-                
-                DispatchQueue.main.async {
-                    self.batteryLevelStatus = .error
-                }
-            }
+            print("Received error response: \(data.hexDescription)")
         }
     }
     
     private func handleSerialNumberResponse(data: Data) {
         guard data.count > 2 else {
-            log("Invalid serial number response: payload too short")
-            DispatchQueue.main.async {
-                self.serialNumberStatus = .error
-            }
+            print("Invalid serial number response")
             return
         }
         
@@ -363,40 +431,35 @@ class BluetoothService: NSObject, ObservableObject {
         
         // Try to convert to string
         if let serialString = String(data: serialData, encoding: .utf8) {
-            log("Parsed serial number: \(serialString)")
             DispatchQueue.main.async {
                 self.serialNumber = serialString
-                self.serialNumberStatus = .success
+                print("Received serial number: \(serialString)")
             }
         } else {
             // If not a UTF-8 string, use hex representation
             let hexSerial = serialData.hexDescription
-            log("Parsed serial number (hex): \(hexSerial)")
             DispatchQueue.main.async {
                 self.serialNumber = hexSerial
-                self.serialNumberStatus = .success
+                print("Received serial number (hex): \(hexSerial)")
             }
         }
     }
     
     private func handleBatteryLevelResponse(data: Data) {
         guard data.count >= 3 else {
-            log("Invalid battery level response: payload too short")
-            DispatchQueue.main.async {
-                self.batteryLevelStatus = .error
-            }
+            print("Invalid battery level response")
             return
         }
         
         // Battery level is in the first byte after the header
         let level = Int(data[2])
-        log("Parsed battery level: \(level)%")
         
         DispatchQueue.main.async {
             self.batteryLevel = level
-            self.batteryLevelStatus = .success
+            print("Received battery level: \(level)%")
         }
     }
+    
 }
 
 // MARK: - CBCentralManagerDelegate
@@ -414,15 +477,6 @@ extension BluetoothService: CBCentralManagerDelegate {
         
         // Skip unknown devices
         guard name != "Unknown Device" else { return }
-        
-        // Log only for devices that might be ours
-        let mightBeOurs = targetDevices.contains { deviceName in name.contains(deviceName) }
-        if mightBeOurs {
-            log("Discovered potential device: \(name) (RSSI: \(RSSI.intValue))")
-            
-            // Log advertisement data for debugging
-            log("Advertisement data: \(advertisementData)")
-        }
         
         // Check if this is one of our target devices
         let isPriority = targetDevices.contains { deviceName in
@@ -452,7 +506,7 @@ extension BluetoothService: CBCentralManagerDelegate {
     }
     
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
-        log("Connected to \(peripheral.name ?? "Unknown Device")")
+        print("Connected to \(peripheral.name ?? "Unknown Device")")
         peripheral.delegate = self
         
         // Discover services - don't filter by UUID since we connected based on name
@@ -471,15 +525,11 @@ extension BluetoothService: CBCentralManagerDelegate {
     }
     
     func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
-        log("Failed to connect to \(peripheral.name ?? "Unknown Device"): \(error?.localizedDescription ?? "Unknown error")")
+        print("Failed to connect: \(error?.localizedDescription ?? "Unknown error")")
     }
     
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
-        if let error = error {
-            log("Disconnected from \(peripheral.name ?? "Unknown Device") with error: \(error.localizedDescription)")
-        } else {
-            log("Disconnected from \(peripheral.name ?? "Unknown Device")")
-        }
+        print("Disconnected from \(peripheral.name ?? "Unknown Device")")
         
         DispatchQueue.main.async {
             self.isConnected = false
@@ -488,8 +538,9 @@ extension BluetoothService: CBCentralManagerDelegate {
             self.serialNumber = nil
             self.writeCharacteristic = nil
             self.notifyCharacteristic = nil
-            self.serialNumberStatus = .notRequested
-            self.batteryLevelStatus = .notRequested
+            self.isTestSignalEnabled = false
+            self.isStreamingEnabled = false
+            self.isReceivingTestData = false
         }
     }
 }
@@ -497,138 +548,109 @@ extension BluetoothService: CBCentralManagerDelegate {
 // MARK: - CBPeripheralDelegate
 extension BluetoothService: CBPeripheralDelegate {
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
-        if let error = error {
-            log("Error discovering services: \(error.localizedDescription)")
+        guard error == nil else {
+            print("Error discovering services: \(error!.localizedDescription)")
             return
         }
         
         guard let services = peripheral.services else {
-            log("No services found")
+            print("No services found")
             return
         }
         
-        log("Discovered \(services.count) services")
-        
-        var foundNeocoreService = false
+        print("Discovered \(services.count) services")
         
         // For each service, discover the characteristics we need
         for service in services {
-            log("Found service: \(service.uuid)")
+            print("Found service: \(service.uuid)")
             
             // Check if this is the Neocore service
             if service.uuid == serviceUUID {
-                log("Found Neocore service")
-                foundNeocoreService = true
+                print("Found Neocore service")
                 peripheral.discoverCharacteristics(
                     [writeCharacteristicUUID, notifyCharacteristicUUID],
                     for: service
                 )
             }
         }
-        
-        if !foundNeocoreService {
-            log("Warning: Neocore service not found among discovered services")
-            // Still discover characteristics for all services in case the UUID is different
-            for service in services {
-                peripheral.discoverCharacteristics(nil, for: service)
-            }
-        }
     }
     
     func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
-        if let error = error {
-            log("Error discovering characteristics for service \(service.uuid): \(error.localizedDescription)")
+        guard error == nil else {
+            print("Error discovering characteristics: \(error!.localizedDescription)")
             return
         }
         
         guard let characteristics = service.characteristics else {
-            log("No characteristics found for service \(service.uuid)")
+            print("No characteristics found")
             return
         }
         
-        log("Discovered \(characteristics.count) characteristics for service \(service.uuid)")
-        
-        var foundWrite = false
-        var foundNotify = false
+        print("Discovered \(characteristics.count) characteristics for service \(service.uuid)")
         
         // Store references to our characteristics
         for characteristic in characteristics {
-            log("Found characteristic: \(characteristic.uuid)")
+            print("Found characteristic: \(characteristic.uuid)")
             
             if characteristic.uuid == writeCharacteristicUUID {
-                log("Found write characteristic")
+                print("Found write characteristic")
                 writeCharacteristic = characteristic
-                foundWrite = true
             } else if characteristic.uuid == notifyCharacteristicUUID {
-                log("Found notify characteristic")
+                print("Found notify characteristic")
                 notifyCharacteristic = characteristic
-                foundNotify = true
                 
-                // Enable notifications
-                peripheral.setNotifyValue(true, for: characteristic)
-            }
-        }
-        
-        // If we're looking at the Neocore service but didn't find our characteristics
-        if service.uuid == serviceUUID {
-            if !foundWrite {
-                log("Warning: Write characteristic not found in Neocore service")
-            }
-            if !foundNotify {
-                log("Warning: Notify characteristic not found in Neocore service")
+                // Do NOT enable notifications automatically
+                // We'll do this explicitly when needed
             }
         }
         
         // If we have both characteristics, we're ready to communicate
         if writeCharacteristic != nil && notifyCharacteristic != nil {
-            log("Found both write and notify characteristics - device is ready for communication")
-            
             DispatchQueue.main.async {
                 self.isConnected = true
                 
-                // Request serial number and battery level with a delay
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                // Request serial number and battery level
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     self.readSerialNumber()
                     
                     // Request battery level after serial number
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         self.readBatteryLevel()
                     }
                 }
             }
         }
     }
-    
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
-        if let error = error {
-            log("Error receiving characteristic update: \(error.localizedDescription)")
+        guard error == nil else {
+            print("Error receiving characteristic update: \(error!.localizedDescription)")
             return
         }
         
         // Handle notify characteristic updates
         if characteristic.uuid == notifyCharacteristicUUID, let data = characteristic.value {
-            log("Received data on notify characteristic: \(data.hexDescription)")
+            print("Received data: \(data.hexDescription)")
             parseResponse(data: data)
         }
     }
     
     func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
         if let error = error {
-            log("Error writing to characteristic: \(error.localizedDescription)")
+            print("Error writing to characteristic: \(error.localizedDescription)")
         } else {
-            log("Successfully wrote to characteristic: \(characteristic.uuid)")
+            print("Successfully wrote to characteristic")
         }
     }
     
     func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
         if let error = error {
-            log("Error changing notification state: \(error.localizedDescription)")
+            print("Error changing notification state: \(error.localizedDescription)")
         } else {
-            log("Notification state updated for \(characteristic.uuid)")
+            print("Notification state updated for \(characteristic.uuid)")
             if characteristic.isNotifying {
-                log("Notifications enabled")
+                print("Notifications enabled")
             } else {
-                log("Notifications disabled")
+                print("Notifications disabled")
             }
         }
     }
@@ -642,14 +664,6 @@ enum PermissionStatus {
     case poweredOff
     case unsupported
     case authorized
-}
-
-enum CommandStatus {
-    case notRequested
-    case requested
-    case success
-    case error
-    case timeout
 }
 
 struct DiscoveredDevice: Identifiable {

@@ -6,12 +6,15 @@
 //
 
 
-import SwiftUI
+import SwiftUI // Add this import at the top of DeviceDetailsView.swift (already present, ensuring it's here)
 
 struct DeviceDetailsView: View {
     @ObservedObject var bluetoothService: BluetoothService
     @Environment(\.presentationMode) var presentationMode
     @Environment(\.colorScheme) var colorScheme
+    
+    // Add this state variable in DeviceDetailsView struct
+    @State private var showTestSignalView = false
     
     var body: some View {
         ScrollView {
@@ -44,6 +47,12 @@ struct DeviceDetailsView: View {
         }
         .navigationTitle("Device")
         .navigationBarTitleDisplayMode(.inline)
+        // Add this sheet presentation to the end of the body in DeviceDetailsView
+        // Modify the sheet presentation in DeviceDetailsView.swift
+        .sheet(isPresented: $showTestSignalView) {
+            TestSignalView(bluetoothService: bluetoothService)
+        }
+
     }
     
     private var deviceStatusCard: some View {
@@ -108,7 +117,25 @@ struct DeviceDetailsView: View {
                 Spacer()
             }
             .padding(.bottom, 5)
-            
+
+            // Add this Button to deviceControlsView in DeviceDetailsView
+            Button(action: {
+                showTestSignalView = true
+            }) {
+                HStack {
+                    Image(systemName: "waveform")
+                    Text("Test Drive")
+                }
+                .font(.headline)
+                .foregroundColor(.white)
+                .frame(height: 50)
+                .frame(maxWidth: .infinity)
+                .background(Color.blue)
+                .cornerRadius(10)
+            }
+            .padding(.vertical, 8) // Added padding as specified in the snippet
+
+            // Existing Disconnect Button
             Button(action: {
                 bluetoothService.disconnect()
                 presentationMode.wrappedValue.dismiss()
