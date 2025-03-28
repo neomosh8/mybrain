@@ -20,6 +20,7 @@ class BluetoothService: NSObject, ObservableObject {
     @Published var eegChannel1: [Int32] = []
     @Published var eegChannel2: [Int32] = []
     private let EEG_PACKET_TYPE: UInt8 = 0x04
+    @Published var isInNormalMode = false  // True for normal mode, false for test signal mode
 
     private var isInTestMode = false
     // MARK: - Neocore Protocol Constants
@@ -158,7 +159,8 @@ class BluetoothService: NSObject, ObservableObject {
     // MARK: - Test Signal and Data Streaming
     // Replace these methods in your BluetoothService class
 
-    func startTestDrive() {
+    // Fix the operator precedence issue in startRecording method
+    func startRecording(useTestSignal: Bool) {
         // Reset data
         eegChannel1 = []
         eegChannel2 = []
@@ -166,9 +168,9 @@ class BluetoothService: NSObject, ObservableObject {
         isStreamingEnabled = false
         isReceivingTestData = false
         isInTestMode = true
+        isInNormalMode = !useTestSignal
         
-        
-        print("Starting test drive sequence")
+        print("Starting recording in \(useTestSignal ? "test signal" : "normal") mode")
         
         // 1. Enable notifications on the characteristic
         if let notifyCharacteristic = notifyCharacteristic {
@@ -176,57 +178,69 @@ class BluetoothService: NSObject, ObservableObject {
             print("Enabling notifications")
         }
         
-        // 2. Enable test signal
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-            guard let self = self, self.isInTestMode else { return }
-            
-            print("Enabling test signal")
-            self.enableTestSignal(true)
-            
-            // 3. Enable streaming after test signal
+        // 2. If using test signal, enable it (otherwise skip this step)
+        if useTestSignal {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
                 guard let self = self, self.isInTestMode else { return }
                 
-                print("Enabling streaming")
-                self.enableDataStreaming(true)
+                print("Enabling test signal")
+                self.enableTestSignal(true)
+            }
+        }
+        
+        // 3. Enable streaming - FIXED THE OPERATOR PRECEDENCE ISSUE
+        let streamingDelay = useTestSignal ? 1.0 : 0.5
+        DispatchQueue.main.asyncAfter(deadline: .now() + streamingDelay) { [weak self] in
+            guard let self = self, self.isInTestMode else { return }
+            
+            print("Enabling streaming")
+            self.enableDataStreaming(true)
+            
+            // 4. Start collecting data
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                guard let self = self, self.isInTestMode else { return }
                 
-                // 4. Start collecting data
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-                    guard let self = self, self.isInTestMode else { return }
-                    
-                    self.isReceivingTestData = true
-                    print("Test mode fully activated - collecting data")
-                }
+                self.isReceivingTestData = true
+                print("Recording fully activated - collecting \(useTestSignal ? "test signal" : "normal") data")
             }
         }
     }
-
-    func stopTestDrive() {
-        print("Stopping test drive sequence")
+    func stopRecording() {
+        print("Stopping recording")
         isInTestMode = false
         isReceivingTestData = false
         
         // 1. Disable streaming first
         enableDataStreaming(false)
         
-        // 2. Then disable test signal
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-            guard let self = self else { return }
-            self.enableTestSignal(false)
-            
-            // 3. Finally disable notifications
+        // 2. If test signal was enabled, disable it
+        if isTestSignalEnabled {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-                if let notifyCharacteristic = self?.notifyCharacteristic {
-                    self?.peripheral?.setNotifyValue(false, for: notifyCharacteristic)
-                }
-                
-                // Clear data after everything is stopped
-                DispatchQueue.main.async {
-                    self?.eegChannel2 = []
-                    self?.eegChannel1 = []
-                }
+                guard let self = self else { return }
+                self.enableTestSignal(false)
             }
         }
+        
+        // 3. Finally disable notifications
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            if let notifyCharacteristic = self?.notifyCharacteristic {
+                self?.peripheral?.setNotifyValue(false, for: notifyCharacteristic)
+            }
+            
+            // Clear data after everything is stopped
+            DispatchQueue.main.async {
+                self?.eegChannel1 = []
+                self?.eegChannel2 = []
+                self?.isInNormalMode = false
+            }
+        }
+    }
+    func startTestDrive() {
+        startRecording(useTestSignal: true)
+    }
+
+    func stopTestDrive() {
+        stopRecording()
     }
 
     // Replace the handleEEGDataNotification method

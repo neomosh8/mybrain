@@ -11,14 +11,20 @@ struct TestSignalView: View {
     @State private var timer: Timer?
     @State private var normalized = true
     @State private var selectedChannel = 0 // 0 = both, 1 = channel1, 2 = channel2
+    @State private var useTestSignal = true // Toggle between test signal and normal mode
     
     var body: some View {
         VStack(spacing: 20) {
             // Header
-            Text("Test Signal")
+            Text(useTestSignal ? "Test Signal" : "EEG Recording")
                 .font(.title)
                 .fontWeight(.bold)
                 .padding(.top)
+            
+            // Mode selection
+            Toggle("Use Test Signal", isOn: $useTestSignal)
+                .disabled(isRecording) // Can't change mode while recording
+                .padding(.horizontal)
             
             // Channel selection
             Picker("Channel", selection: $selectedChannel) {
@@ -61,8 +67,20 @@ struct TestSignalView: View {
                                     .foregroundColor(.secondary)
                             }
                             Spacer()
+                            
+                            // Mode indicator
+                            Text(useTestSignal ? "Test Signal Mode" : "Normal Mode")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .fill(Color.gray.opacity(0.2))
+                                )
                         }
                         .padding(.leading, 12)
+                        .padding(.trailing, 12)
                         .padding(.top, 4)
                         
                         // Channel waveforms
@@ -186,11 +204,13 @@ struct TestSignalView: View {
                         .font(.headline)
                     
                     Group {
+                        Text("Mode: \(useTestSignal ? "Test Signal" : "Normal")")
                         Text("Channel 1 Points: \(bluetoothService.eegChannel1.count)")
                         Text("Channel 2 Points: \(bluetoothService.eegChannel2.count)")
                         Text("Test Signal Enabled: \(bluetoothService.isTestSignalEnabled ? "Yes" : "No")")
                         Text("Streaming Enabled: \(bluetoothService.isStreamingEnabled ? "Yes" : "No")")
                         Text("Receiving Data: \(bluetoothService.isReceivingTestData ? "Yes" : "No")")
+                        Text("Normal Mode: \(bluetoothService.isInNormalMode ? "Yes" : "No")")
                         if let device = bluetoothService.connectedDevice {
                             Text("Device: \(device.name)")
                         }
@@ -217,7 +237,7 @@ struct TestSignalView: View {
         }
     }
     
-    // Toggle recording functions remain the same
+    // Updated toggle recording to use the mode
     private func toggleRecording() {
         if isRecording {
             stopRecording()
@@ -236,8 +256,8 @@ struct TestSignalView: View {
             recordingDuration = Date().timeIntervalSince(startTime)
         }
         
-        // Start the test drive
-        bluetoothService.startTestDrive()
+        // Start recording with or without test signal based on toggle
+        bluetoothService.startRecording(useTestSignal: useTestSignal)
     }
     
     private func stopRecording() {
@@ -245,8 +265,8 @@ struct TestSignalView: View {
         timer?.invalidate()
         timer = nil
         
-        // Stop the test drive
-        bluetoothService.stopTestDrive()
+        // Stop recording
+        bluetoothService.stopRecording()
     }
     
     private func stopRecordingIfNeeded() {
