@@ -9,7 +9,8 @@ struct ThoughtsView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.colorScheme) var colorScheme
-
+    @EnvironmentObject var bluetoothService: BluetoothService
+    @State private var showDeviceDetails = false
     @StateObject private var viewModel: ThoughtsViewModel
     @StateObject private var socketViewModel: WebSocketViewModel
 
@@ -165,8 +166,6 @@ struct ThoughtsView: View {
     /// Top section with a bigger headphone + battery above it, and the app title "MyBrain" to the right.
     private var topSection: some View {
         HStack(alignment: .top, spacing: 16) {
-            
-
             // "MyBrain" title
             Text("MyBrain")
                 .font(.largeTitle)
@@ -174,23 +173,38 @@ struct ThoughtsView: View {
                 .foregroundColor(.primary)
             
             Spacer()
+            
             // Headphone + Battery in a vertical container
             VStack(spacing: 4) {
-//                // Battery icon
-//                Button(action: {
-//                    showPerformanceView = true
-//                }) {
-//                    Image(systemName: batteryIconName)
-//                        .foregroundColor(batteryColor)
-//                        .font(.title3)
-//                }
-//                .buttonStyle(.plain)
-
-                // Headphone image
-                Image(colorScheme == .dark ? "headphone" : "headphone_b")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 44, height: 44)
+                // Device button - takes to device details
+                Button(action: {
+                    showDeviceDetails = true
+                }) {
+                    Image(colorScheme == .dark ? "headphone" : "headphone_b")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 44, height: 44)
+                        .overlay(
+                            Circle()
+                                .fill(bluetoothService.isConnected ? Color.green : Color.red)
+                                .frame(width: 12, height: 12)
+                                .offset(x: 15, y: 15)
+                        )
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+        }
+        .sheet(isPresented: $showDeviceDetails) {
+            NavigationView {
+                DeviceDetailsView(bluetoothService: bluetoothService)
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("Done") {
+                                showDeviceDetails = false
+                            }
+                        }
+                    }
             }
         }
     }
