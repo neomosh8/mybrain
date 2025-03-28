@@ -21,8 +21,12 @@ class BluetoothService: NSObject, ObservableObject {
     @Published var eegChannel2: [Int32] = []
     private let EEG_PACKET_TYPE: UInt8 = 0x04
     @Published var isInNormalMode = false  // True for normal mode, false for test signal mode
-
+    @Published var isLeadOffDetectionEnabled = false
+    private let NEOCORE_CMD_ID_EEG_LEAD_OFF_CTRL: UInt16 = 0x02
     private var isInTestMode = false
+    @Published var ch1ConnectionStatus: (connected: Bool, quality: Double) = (false, 0.0)
+    @Published var ch2ConnectionStatus: (connected: Bool, quality: Double) = (false, 0.0)
+    private var leadOffAnalysisTimer: Timer?
     // MARK: - Neocore Protocol Constants
     private let serviceUUID = CBUUID(string: "6E400001-B5A3-F393-E0A9-E50E24DCCA9E")
     private let writeCharacteristicUUID = CBUUID(string: "6E400002-B5A3-F393-E0A9-E50E24DCCA9E")
@@ -105,6 +109,25 @@ class BluetoothService: NSObject, ObservableObject {
         UserDefaults.standard.set(device.id, forKey: savedDeviceKey)
     }
     
+    private func enableLeadOffDetection(_ enable: Bool) {
+        // Construct the Lead-Off Detection Control command
+        // Feature ID: 0x01 (Sensor Configuration)
+        // PDU Type: 0x00 (Command)
+        // PDU Specific ID: 0x02 (Lead-Off Detection Control)
+        let payload = Data([enable ? 0x01 : 0x00])
+        
+        sendCommand(
+            featureId: NEOCORE_SENSOR_CFG_FEATURE_ID,
+            pduType: PDU_TYPE_COMMAND,
+            pduId: NEOCORE_CMD_ID_EEG_LEAD_OFF_CTRL,
+            data: payload
+        )
+        
+        print("Lead-off detection \(enable ? "enabled" : "disabled")")
+        isLeadOffDetectionEnabled = enable
+    }
+
+    
     func reconnectToPreviousDevice() {
         guard let savedID = UserDefaults.standard.string(forKey: savedDeviceKey) else { return }
         
@@ -160,17 +183,25 @@ class BluetoothService: NSObject, ObservableObject {
     // Replace these methods in your BluetoothService class
 
     // Fix the operator precedence issue in startRecording method
-    func startRecording(useTestSignal: Bool) {
+    func startRecording(useTestSignal: Bool, enableLeadOff: Bool = false) {
         // Reset data
         eegChannel1 = []
         eegChannel2 = []
         isTestSignalEnabled = false
         isStreamingEnabled = false
         isReceivingTestData = false
+        isLeadOffDetectionEnabled = false
         isInTestMode = true
         isInNormalMode = !useTestSignal
         
-        print("Starting recording in \(useTestSignal ? "test signal" : "normal") mode")
+        // Reset lead-off data
+        SignalProcessing.resetLeadoffData()
+        ch1ConnectionStatus = (false, 0.0)
+        ch2ConnectionStatus = (false, 0.0)
+        leadOffAnalysisTimer?.invalidate()
+        leadOffAnalysisTimer = nil
+        
+        print("Starting recording in \(useTestSignal ? "test signal" : "normal") mode with lead-off detection \(enableLeadOff ? "enabled" : "disabled")")
         
         // 1. Enable notifications on the characteristic
         if let notifyCharacteristic = notifyCharacteristic {
@@ -188,27 +219,74 @@ class BluetoothService: NSObject, ObservableObject {
             }
         }
         
-        // 3. Enable streaming - FIXED THE OPERATOR PRECEDENCE ISSUE
-        let streamingDelay = useTestSignal ? 1.0 : 0.5
+        // 3. If enabling lead-off detection, send the command
+        if enableLeadOff {
+            let leadOffDelay = useTestSignal ? 1.0 : 0.5
+            DispatchQueue.main.asyncAfter(deadline: .now() + leadOffDelay) { [weak self] in
+                guard let self = self, self.isInTestMode else { return }
+                
+                print("Enabling lead-off detection")
+                self.enableLeadOffDetection(true)
+            }
+        }
+        
+        // 4. Enable streaming
+        let streamingDelay = useTestSignal ? (enableLeadOff ? 1.5 : 1.0) : (enableLeadOff ? 1.0 : 0.5)
         DispatchQueue.main.asyncAfter(deadline: .now() + streamingDelay) { [weak self] in
             guard let self = self, self.isInTestMode else { return }
             
             print("Enabling streaming")
             self.enableDataStreaming(true)
             
-            // 4. Start collecting data
+            // 5. Start collecting data
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
                 guard let self = self, self.isInTestMode else { return }
                 
                 self.isReceivingTestData = true
-                print("Recording fully activated - collecting \(useTestSignal ? "test signal" : "normal") data")
+                print("Recording fully activated - collecting data with test signal: \(useTestSignal), lead-off: \(enableLeadOff)")
+                
+                // 6. Start lead-off analysis timer if lead-off detection is enabled
+                if enableLeadOff {
+                    self.startLeadOffAnalysis()
+                }
             }
         }
     }
+
+    // Add method to start lead-off analysis
+    private func startLeadOffAnalysis() {
+        // Create a timer that runs every second to analyze the data
+        leadOffAnalysisTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            guard let self = self,
+                  self.isLeadOffDetectionEnabled,
+                  !self.eegChannel1.isEmpty,
+                  !self.eegChannel2.isEmpty else {
+                return
+            }
+            
+            // Process lead-off detection
+            let result = SignalProcessing.processLeadoffDetection(
+                ch1Data: self.eegChannel1,
+                ch2Data: self.eegChannel2
+            )
+            
+            // Update connection status
+            DispatchQueue.main.async {
+                self.ch1ConnectionStatus = (result.ch1Connected, result.ch1Quality)
+                self.ch2ConnectionStatus = (result.ch2Connected, result.ch2Quality)
+            }
+        }
+    }
+
+    // Update stopRecording to clean up lead-off analysis
     func stopRecording() {
         print("Stopping recording")
         isInTestMode = false
         isReceivingTestData = false
+        
+        // Stop lead-off analysis
+        leadOffAnalysisTimer?.invalidate()
+        leadOffAnalysisTimer = nil
         
         // 1. Disable streaming first
         enableDataStreaming(false)
@@ -221,22 +299,35 @@ class BluetoothService: NSObject, ObservableObject {
             }
         }
         
-        // 3. Finally disable notifications
+        // 3. If lead-off detection was enabled, disable it
+        if isLeadOffDetectionEnabled {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                guard let self = self else { return }
+                self.enableLeadOffDetection(false)
+            }
+        }
+        
+        // 4. Finally disable notifications
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
             if let notifyCharacteristic = self?.notifyCharacteristic {
                 self?.peripheral?.setNotifyValue(false, for: notifyCharacteristic)
             }
             
-            // Clear data after everything is stopped
+            // Clear data and reset flags after everything is stopped
             DispatchQueue.main.async {
                 self?.eegChannel1 = []
                 self?.eegChannel2 = []
                 self?.isInNormalMode = false
+                self?.isLeadOffDetectionEnabled = false
+                self?.ch1ConnectionStatus = (false, 0.0)
+                self?.ch2ConnectionStatus = (false, 0.0)
             }
         }
     }
+
+    // Update the existing startTestDrive for backward compatibility
     func startTestDrive() {
-        startRecording(useTestSignal: true)
+        startRecording(useTestSignal: true, enableLeadOff: false)
     }
 
     func stopTestDrive() {

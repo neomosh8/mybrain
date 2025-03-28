@@ -12,19 +12,25 @@ struct TestSignalView: View {
     @State private var normalized = true
     @State private var selectedChannel = 0 // 0 = both, 1 = channel1, 2 = channel2
     @State private var useTestSignal = true // Toggle between test signal and normal mode
+    @State private var enableLeadOffDetection = false // Toggle for lead-off detection
     
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 16) {
             // Header
             Text(useTestSignal ? "Test Signal" : "EEG Recording")
                 .font(.title)
                 .fontWeight(.bold)
                 .padding(.top)
             
-            // Mode selection
-            Toggle("Use Test Signal", isOn: $useTestSignal)
-                .disabled(isRecording) // Can't change mode while recording
-                .padding(.horizontal)
+            // Mode toggles
+            VStack(alignment: .leading, spacing: 8) {
+                Toggle("Use Test Signal", isOn: $useTestSignal)
+                    .disabled(isRecording) // Can't change mode while recording
+                
+                Toggle("Enable Lead-Off Detection", isOn: $enableLeadOffDetection)
+                    .disabled(isRecording) // Can't change mode while recording
+            }
+            .padding(.horizontal)
             
             // Channel selection
             Picker("Channel", selection: $selectedChannel) {
@@ -51,33 +57,55 @@ struct TestSignalView: View {
                     }
                 } else {
                     VStack {
-                        // Channel selection label
+                        // Status bar with channel and mode info
                         HStack {
                             if selectedChannel == 0 {
-                                Text("Channel 1 & 2")
+                                Text("Ch 1 & 2")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             } else if selectedChannel == 1 {
-                                Text("Channel 1")
+                                Text("Ch 1")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             } else {
-                                Text("Channel 2")
+                                Text("Ch 2")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
                             Spacer()
                             
-                            // Mode indicator
-                            Text(useTestSignal ? "Test Signal Mode" : "Normal Mode")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 4)
-                                        .fill(Color.gray.opacity(0.2))
-                                )
+                            // Mode indicators
+                            HStack(spacing: 4) {
+                                if useTestSignal {
+                                    Text("Test Signal")
+                                        .font(.caption)
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 2)
+                                        .background(Color.blue.opacity(0.7))
+                                        .cornerRadius(4)
+                                }
+                                
+                                if bluetoothService.isLeadOffDetectionEnabled {
+                                    Text("Lead-Off")
+                                        .font(.caption)
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 2)
+                                        .background(Color.orange.opacity(0.7))
+                                        .cornerRadius(4)
+                                }
+                                
+                                if !useTestSignal && !bluetoothService.isLeadOffDetectionEnabled {
+                                    Text("Normal Mode")
+                                        .font(.caption)
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 2)
+                                        .background(Color.green.opacity(0.7))
+                                        .cornerRadius(4)
+                                }
+                            }
                         }
                         .padding(.leading, 12)
                         .padding(.trailing, 12)
@@ -120,7 +148,7 @@ struct TestSignalView: View {
                     .padding(8)
                 }
             }
-            .frame(height: 280)
+            .frame(height: 260)
             .padding(.horizontal)
             
             // Recording duration
@@ -143,7 +171,11 @@ struct TestSignalView: View {
                     .cornerRadius(10)
                 }
             }
-            .padding(.bottom, 10)
+            .padding(.bottom, 8)
+            
+            // Connection quality indicators
+            connectionQualityIndicators
+                .padding(.bottom, 8)
             
             // Normalization toggle
             Toggle("Normalize Signal", isOn: $normalized)
@@ -205,12 +237,13 @@ struct TestSignalView: View {
                     
                     Group {
                         Text("Mode: \(useTestSignal ? "Test Signal" : "Normal")")
+                        Text("Lead-Off Detection: \(enableLeadOffDetection ? "Enabled" : "Disabled")")
                         Text("Channel 1 Points: \(bluetoothService.eegChannel1.count)")
                         Text("Channel 2 Points: \(bluetoothService.eegChannel2.count)")
-                        Text("Test Signal Enabled: \(bluetoothService.isTestSignalEnabled ? "Yes" : "No")")
+                        Text("Test Signal Active: \(bluetoothService.isTestSignalEnabled ? "Yes" : "No")")
+                        Text("Lead-Off Active: \(bluetoothService.isLeadOffDetectionEnabled ? "Yes" : "No")")
                         Text("Streaming Enabled: \(bluetoothService.isStreamingEnabled ? "Yes" : "No")")
                         Text("Receiving Data: \(bluetoothService.isReceivingTestData ? "Yes" : "No")")
-                        Text("Normal Mode: \(bluetoothService.isInNormalMode ? "Yes" : "No")")
                         if let device = bluetoothService.connectedDevice {
                             Text("Device: \(device.name)")
                         }
@@ -237,7 +270,127 @@ struct TestSignalView: View {
         }
     }
     
-    // Updated toggle recording to use the mode
+    // MARK: - Connection Quality Components
+    
+    private var connectionQualityIndicators: some View {
+        VStack(spacing: 8) {
+            // Only show if lead-off detection is enabled
+            if bluetoothService.isLeadOffDetectionEnabled {
+                Text("Connection Quality")
+                    .font(.headline)
+                    .padding(.top, 4)
+                
+                // Channel 1 quality
+                HStack {
+                    Text("Channel 1:")
+                        .foregroundColor(.blue)
+                        .font(.subheadline)
+                        .frame(width: 80, alignment: .leading)
+                    
+                    connectionQualityBar(
+                        quality: bluetoothService.ch1ConnectionStatus.quality,
+                        isConnected: bluetoothService.ch1ConnectionStatus.connected
+                    )
+                    
+                    let qualityText = getQualityText(
+                        quality: bluetoothService.ch1ConnectionStatus.quality,
+                        isConnected: bluetoothService.ch1ConnectionStatus.connected
+                    )
+                    Text(qualityText)
+                        .font(.caption)
+                        .foregroundColor(getQualityColor(
+                            quality: bluetoothService.ch1ConnectionStatus.quality,
+                            isConnected: bluetoothService.ch1ConnectionStatus.connected
+                        ))
+                        .frame(width: 80, alignment: .trailing)
+                }
+                
+                // Channel 2 quality
+                HStack {
+                    Text("Channel 2:")
+                        .foregroundColor(.green)
+                        .font(.subheadline)
+                        .frame(width: 80, alignment: .leading)
+                    
+                    connectionQualityBar(
+                        quality: bluetoothService.ch2ConnectionStatus.quality,
+                        isConnected: bluetoothService.ch2ConnectionStatus.connected
+                    )
+                    
+                    let qualityText = getQualityText(
+                        quality: bluetoothService.ch2ConnectionStatus.quality,
+                        isConnected: bluetoothService.ch2ConnectionStatus.connected
+                    )
+                    Text(qualityText)
+                        .font(.caption)
+                        .foregroundColor(getQualityColor(
+                            quality: bluetoothService.ch2ConnectionStatus.quality,
+                            isConnected: bluetoothService.ch2ConnectionStatus.connected
+                        ))
+                        .frame(width: 80, alignment: .trailing)
+                }
+            }
+        }
+        .padding(.horizontal)
+        .animation(.easeInOut, value: bluetoothService.isLeadOffDetectionEnabled)
+    }
+    
+    private func connectionQualityBar(quality: Double, isConnected: Bool) -> some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                // Background
+                Rectangle()
+                    .fill(Color.gray.opacity(0.3))
+                    .cornerRadius(4)
+                
+                // Foreground (filled portion)
+                Rectangle()
+                    .fill(getQualityColor(quality: quality, isConnected: isConnected))
+                    .frame(width: max(0, min(geometry.size.width, CGFloat(quality / 100.0) * geometry.size.width)))
+                    .cornerRadius(4)
+            }
+        }
+        .frame(height: 12)
+    }
+    
+    private func getQualityText(quality: Double, isConnected: Bool) -> String {
+        if !isConnected {
+            return "Not Connected"
+        }
+        
+        if quality >= 80 {
+            return "Excellent"
+        } else if quality >= 60 {
+            return "Good"
+        } else if quality >= 40 {
+            return "Fair"
+        } else if quality >= 20 {
+            return "Poor"
+        } else {
+            return "Very Poor"
+        }
+    }
+    
+    private func getQualityColor(quality: Double, isConnected: Bool) -> Color {
+        if !isConnected {
+            return .red
+        }
+        
+        if quality >= 80 {
+            return .green
+        } else if quality >= 60 {
+            return .blue
+        } else if quality >= 40 {
+            return .yellow
+        } else if quality >= 20 {
+            return .orange
+        } else {
+            return .red
+        }
+    }
+    
+    // MARK: - Recording Control Methods
+    
     private func toggleRecording() {
         if isRecording {
             stopRecording()
@@ -256,8 +409,11 @@ struct TestSignalView: View {
             recordingDuration = Date().timeIntervalSince(startTime)
         }
         
-        // Start recording with or without test signal based on toggle
-        bluetoothService.startRecording(useTestSignal: useTestSignal)
+        // Start recording with current mode settings
+        bluetoothService.startRecording(
+            useTestSignal: useTestSignal,
+            enableLeadOff: enableLeadOffDetection
+        )
     }
     
     private func stopRecording() {
@@ -276,7 +432,8 @@ struct TestSignalView: View {
     }
 }
 
-// Updated waveform view with color parameter
+// MARK: - Waveform View for Signal Display
+
 struct WaveformView: View {
     let dataPoints: [Int32]
     let normalized: Bool
@@ -343,7 +500,7 @@ struct WaveformView: View {
                     }
                 }
                 
-                // Draw the path with the specified color
+                // Draw the path
                 context.stroke(
                     path,
                     with: .color(color),
@@ -353,3 +510,4 @@ struct WaveformView: View {
         }
     }
 }
+
