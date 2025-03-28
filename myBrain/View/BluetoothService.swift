@@ -19,7 +19,8 @@ class BluetoothService: NSObject, ObservableObject {
     @Published var isReceivingTestData = false
     @Published var eegChannel1: [Int32] = []
     @Published var eegChannel2: [Int32] = []
-    
+    private let EEG_PACKET_TYPE: UInt8 = 0x04
+
     private var isInTestMode = false
     // MARK: - Neocore Protocol Constants
     private let serviceUUID = CBUUID(string: "6E400001-B5A3-F393-E0A9-E50E24DCCA9E")
@@ -229,43 +230,107 @@ class BluetoothService: NSObject, ObservableObject {
     }
 
     // Replace the handleEEGDataNotification method
-    private func handleEEGDataNotification(data: Data) {
-        // EEG data format: 2-byte header (0x0480) followed by interleaved 4-byte little-endian signed integers
-        guard data.count > 2 else { return }
+    private func parseResponse(data: Data) {
+        guard data.count >= 1 else {
+            print("Invalid data: too short")
+            return
+        }
         
-        let eegData = data.subdata(in: 2..<data.count)
+        // Extract packet type (first byte)
+        let packetType = data[0]
         
-        // Total number of 4-byte samples
-        let totalSamples = eegData.count / 4
+        // Handle EEG data packets
+        if packetType == EEG_PACKET_TYPE {
+            handleEEGDataPacket(data)
+            return
+        }
         
-        // Print raw hex for debugging
-        print("EEG data hex: \(eegData.hexDescription)")
+        // For other packets, parse normally
+        // Continue with your existing parsing for other packet types
+        if packetType != EEG_PACKET_TYPE {
+            // Extract header
+            guard data.count >= 2 else { return }
+            
+            let headerByte1 = data[0]
+            let headerByte2 = data[1]
+            let commandId: UInt16 = (UInt16(headerByte1) << 8) | UInt16(headerByte2)
+            
+            // Parse header components
+            let featureId = commandId >> 9
+            let pduType = (commandId >> 7) & 0x03
+            let pduId = commandId & 0x7F
+            
+            print("Received response: feature=\(featureId), type=\(pduType), id=\(pduId), command=0x\(String(format: "%04X", commandId))")
+            
+            // Handle based on response type
+            if pduType == PDU_TYPE_RESPONSE {
+                // Response to commands
+                if featureId == NEOCORE_CORE_FEATURE_ID && pduId == NEOCORE_CMD_ID_GET_SERIAL_NUM {
+                    handleSerialNumberResponse(data: data)
+                } else if featureId == NEOCORE_BATTERY_FEATURE_ID && pduId == NEOCORE_CMD_ID_GET_BATTERY_LEVEL {
+                    handleBatteryLevelResponse(data: data)
+                }
+            } else if pduType == PDU_TYPE_NOTIFICATION {
+                // Other notifications handled here
+                if featureId == NEOCORE_BATTERY_FEATURE_ID {
+                    // Battery notification
+                    handleBatteryLevelResponse(data: data)
+                }
+            } else if pduType == PDU_TYPE_ERROR {
+                print("Received error response: \(data.hexDescription)")
+            }
+        }
+    }
+    
+    private func handleEEGDataPacket(_ data: Data) {
+        // EEG packet structure:
+        // [Packet Type (1 byte)] [Payload Length (1 byte)] [Message Index (2 bytes)] [Channel Data...]
         
+        // Ensure we have at least the header
+        guard data.count >= 4 else {
+            print("EEG packet too short")
+            return
+        }
+        
+        // Extract header fields
+        let packetType = data[0]   // Should be 0x04
+        let payloadLength = data[1]
+        let messageIndex = UInt16(data[2]) | (UInt16(data[3]) << 8)
+        
+        print("EEG Packet: Type=\(packetType), Length=\(payloadLength), Index=\(messageIndex)")
+        
+        // Skip the 4-byte header to get to the channel data
+        let channelData = data.subdata(in: 4..<data.count)
+        
+        // Process the interleaved channel data (each channel has 4-byte samples)
         var channel1Samples: [Int32] = []
         var channel2Samples: [Int32] = []
         
-        // Process the interleaved samples
-        // Each pair is 8 bytes: [Ch1_Sample(4 bytes)][Ch2_Sample(4 bytes)]
-        for i in stride(from: 0, to: eegData.count, by: 8) {
-            // Ensure we have enough bytes for Channel 1
-            if i + 3 < eegData.count {
-                // Channel 1 - first 4 bytes
-                let ch1Bytes = eegData.subdata(in: i..<(i+4))
-                let ch1Value = parseInt32LittleEndian(data: ch1Bytes)
+        // Process 8 bytes at a time (4 bytes per channel)
+        for i in stride(from: 0, to: channelData.count, by: 8) {
+            // Channel 1 (first 4 bytes)
+            if i + 3 < channelData.count {
+                let ch1Value = parseInt32(from: channelData, startIndex: i)
                 channel1Samples.append(ch1Value)
             }
             
-            // Ensure we have enough bytes for Channel 2
-            if i + 7 < eegData.count {
-                // Channel 2 - next 4 bytes
-                let ch2Bytes = eegData.subdata(in: (i+4)..<(i+8))
-                let ch2Value = parseInt32LittleEndian(data: ch2Bytes)
+            // Channel 2 (next 4 bytes)
+            if i + 7 < channelData.count {
+                let ch2Value = parseInt32(from: channelData, startIndex: i + 4)
                 channel2Samples.append(ch2Value)
             }
         }
         
         print("Parsed \(channel1Samples.count) samples for Channel 1")
         print("Parsed \(channel2Samples.count) samples for Channel 2")
+        
+        if channel1Samples.count > 0 {
+            print("CH1 first sample: \(channel1Samples[0])")
+        }
+        
+        if channel2Samples.count > 0 {
+            print("CH2 first sample: \(channel2Samples[0])")
+        }
         
         // Only append data if we're in test mode and receiving data
         if isReceivingTestData && isInTestMode {
@@ -275,7 +340,7 @@ class BluetoothService: NSObject, ObservableObject {
                 self.eegChannel2.append(contentsOf: channel2Samples)
                 
                 // Limit total points to prevent memory issues
-                let maxStoredSamples = 2000  // Lower for better performance
+                let maxStoredSamples = 2000
                 if self.eegChannel1.count > maxStoredSamples {
                     self.eegChannel1.removeFirst(self.eegChannel1.count - maxStoredSamples)
                 }
@@ -287,15 +352,17 @@ class BluetoothService: NSObject, ObservableObject {
             }
         }
     }
-
+    
+    
     // Helper to parse Int32 from little-endian data
-    private func parseInt32LittleEndian(data: Data) -> Int32 {
-        guard data.count >= 4 else { return 0 }
+    private func parseInt32(from data: Data, startIndex: Int) -> Int32 {
+        guard startIndex + 3 < data.count else { return 0 }
         
-        let byte0 = UInt32(data[0])
-        let byte1 = UInt32(data[1]) << 8
-        let byte2 = UInt32(data[2]) << 16
-        let byte3 = UInt32(data[3]) << 24
+        // Little-endian format
+        let byte0 = UInt32(data[startIndex])
+        let byte1 = UInt32(data[startIndex + 1]) << 8
+        let byte2 = UInt32(data[startIndex + 2]) << 16
+        let byte3 = UInt32(data[startIndex + 3]) << 24
         
         return Int32(bitPattern: byte0 | byte1 | byte2 | byte3)
     }
@@ -377,48 +444,6 @@ class BluetoothService: NSObject, ObservableObject {
     }
     
     // Parse incoming data packets
-    private func parseResponse(data: Data) {
-        guard data.count >= 2 else {
-            print("Invalid response: too short")
-            return
-        }
-        
-        // Extract header
-        let headerByte1 = data[0]
-        let headerByte2 = data[1]
-        let commandId: UInt16 = (UInt16(headerByte1) << 8) | UInt16(headerByte2)
-        
-        // Check for EEG data packets specifically (0x0480)
-        if commandId == EEG_DATA_HEADER {
-            handleEEGDataNotification(data: data)
-            return
-        }
-        
-        // For other packets, parse as before
-        let featureId = commandId >> 9
-        let pduType = (commandId >> 7) & 0x03
-        let pduId = commandId & 0x7F
-        
-        print("Received response: feature=\(featureId), type=\(pduType), id=\(pduId), command=0x\(String(format: "%04X", commandId))")
-        
-        // Handle based on response type
-        if pduType == PDU_TYPE_RESPONSE {
-            // Response to commands
-            if featureId == NEOCORE_CORE_FEATURE_ID && pduId == NEOCORE_CMD_ID_GET_SERIAL_NUM {
-                handleSerialNumberResponse(data: data)
-            } else if featureId == NEOCORE_BATTERY_FEATURE_ID && pduId == NEOCORE_CMD_ID_GET_BATTERY_LEVEL {
-                handleBatteryLevelResponse(data: data)
-            }
-        } else if pduType == PDU_TYPE_NOTIFICATION {
-            // Other notifications handled here
-            if featureId == NEOCORE_BATTERY_FEATURE_ID {
-                // Battery notification
-                handleBatteryLevelResponse(data: data)
-            }
-        } else if pduType == PDU_TYPE_ERROR {
-            print("Received error response: \(data.hexDescription)")
-        }
-    }
     
     private func handleSerialNumberResponse(data: Data) {
         guard data.count > 2 else {
