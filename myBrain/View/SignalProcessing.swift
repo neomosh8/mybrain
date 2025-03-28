@@ -28,6 +28,12 @@ class SignalProcessing {
         // Calculate power for each channel
         let ch1Power = calculatePower(data: ch1Double)
         let ch2Power = calculatePower(data: ch2Double)
+        
+        // 👇 ADD THESE DEBUG PRINTS
+        print("LEADOFF DEBUG - Channel Powers:")
+        print("CH1 Power: \(ch1Power)")
+        print("CH2 Power: \(ch2Power)")
+        // 👆 END OF ADDED CODE
 
         // Add to lead-off arrays
         leadoffCh1.append(ch1Power)
@@ -245,13 +251,9 @@ class SignalProcessing {
         let thresholdFactor = 1.5
         let threshold = baselineMean + thresholdFactor * baselineStd
 
-        // Also check if the baseline mean itself is reasonably low (indicating a good connection initially)
-        // Need a reference "good" power level. This is hardware/setup dependent.
-        // Let's add a placeholder check for very high baseline power suggesting bad connection from the start.
-        // This threshold needs calibration based on expected signal power. Let's assume < 1000 is okay.
-        let absoluteBaselineThreshold = 1000.0 // EXAMPLE VALUE - NEEDS CALIBRATION
 
-        return newDataMean > threshold && baselineMean < absoluteBaselineThreshold
+
+        return newDataMean > threshold 
 
         /* // Original statistical comparison (can be complex to tune)
         let baselineStd = calculateStandardDeviation(data: baselineClean, mean: baselineMean)
