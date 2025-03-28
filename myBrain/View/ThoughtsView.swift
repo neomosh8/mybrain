@@ -3,8 +3,8 @@ import SwiftData
 import Combine
 
 struct ThoughtsView: View {
+    // MARK: - Environment & State
     @EnvironmentObject var authVM: AuthViewModel
-    @EnvironmentObject var bleManager: BLEManager
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
@@ -18,7 +18,6 @@ struct ThoughtsView: View {
     @State private var selectedThought: Thought?
     @State private var isRefreshing = false
     @State private var lastScenePhase: ScenePhase = .active
-    @State private var showDeviceDetail = false
 
     // Ear/Eye mode
     @State private var mode: Mode = .eye
@@ -100,9 +99,6 @@ struct ThoughtsView: View {
                 }
             }
         }
-        .sheet(isPresented: $showDeviceDetail) {
-            DeviceDetailView(bleManager: bleManager)
-        }
         .toolbarBackground(Color.black, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         // MARK: - Lifecycle
@@ -168,38 +164,36 @@ struct ThoughtsView: View {
 
     /// Top section with a bigger headphone + battery above it, and the app title "MyBrain" to the right.
     private var topSection: some View {
-         HStack(alignment: .top, spacing: 16) {
-             // "MyBrain" title
-             Text("MyBrain")
-                 .font(.largeTitle)
-                 .fontWeight(.bold)
-                 .foregroundColor(.primary)
-             
-             Spacer()
-             
-             // Headphone + Battery in a vertical container
-             VStack(spacing: 4) {
-                 // Battery indicator (if connected)
-                 if let battery = bleManager.batteryLevel {
-                     Text("\(battery)%")
-                         .font(.caption)
-                         .foregroundColor(batteryColor(for: battery))
-                 }
-                 
-                 // Headphone image - tappable to access device page
-                 Button {
-                     showDeviceDetail = true
-                 } label: {
-                     Image(colorScheme == .dark ? "headphone" : "headphone_b")
-                         .resizable()
-                         .aspectRatio(contentMode: .fit)
-                         .frame(width: 44, height: 44)
-                         .opacity(bleManager.isConnected ? 1.0 : 0.6)
-                 }
-                 .buttonStyle(PlainButtonStyle())
-             }
-         }
-     }
+        HStack(alignment: .top, spacing: 16) {
+            
+
+            // "MyBrain" title
+            Text("MyBrain")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+                .foregroundColor(.primary)
+            
+            Spacer()
+            // Headphone + Battery in a vertical container
+            VStack(spacing: 4) {
+//                // Battery icon
+//                Button(action: {
+//                    showPerformanceView = true
+//                }) {
+//                    Image(systemName: batteryIconName)
+//                        .foregroundColor(batteryColor)
+//                        .font(.title3)
+//                }
+//                .buttonStyle(.plain)
+
+                // Headphone image
+                Image(colorScheme == .dark ? "headphone" : "headphone_b")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 44, height: 44)
+            }
+        }
+    }
 
     /// Second row: "My Thoughts" on the left, and on the right a container for the mode switch + gear + brain icons (outside the container).
     private var secondRow: some View {
@@ -430,10 +424,13 @@ struct ThoughtsView: View {
         }
     }
     
-    private func batteryColor(for level: Int) -> Color {
-        if level > 70 {
+    private var batteryColor: Color {
+        guard let level = batteryLevel else {
+            return .gray
+        }
+        if level > 75 {
             return .green
-        } else if level > 30 {
+        } else if level > 40 {
             return .yellow
         } else {
             return .red
