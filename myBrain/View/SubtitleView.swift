@@ -7,7 +7,7 @@ import Combine
 struct SubtitleView: View {
     @ObservedObject var viewModel: SubtitleViewModel
     let thoughtId: Int
-    let chapterNumber: Int
+    @Binding var chapterNumber: Int
     let socketViewModel: WebSocketViewModel
 
     /// Track the last highlighted index so we only send feedback once per word.

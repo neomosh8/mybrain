@@ -85,7 +85,8 @@ extension ThoughtNavigationView {
         if isInProgress || isFinished {
             showPrompt = true
         } else {
-            showPrompt = false
+            showPrompt = false
+            resetReading()
         }
     }
 }

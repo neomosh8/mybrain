@@ -56,7 +56,7 @@ struct StreamThoughtView: View {
                         SubtitleView(
                             viewModel: subtitleViewModel,
                             thoughtId: thought.id,
-                            chapterNumber: currentChapterNumber,
+                            chapterNumber: $currentChapterNumber,
                             socketViewModel: socketViewModel
                         )
                     } else if let error = playerError {
@@ -256,6 +256,8 @@ struct StreamThoughtView: View {
         let audioDuration = data["audio_duration"] as? Double ?? 0.0
         let generationTime = data["generation_time"] as? Double ?? 0.0
         
+        currentChapterNumber = chapterNumber
+
         let playableDuration = audioDuration - generationTime
         nextChapterTime = durations_so_far + (playableDuration * (1 - buffer))
         
