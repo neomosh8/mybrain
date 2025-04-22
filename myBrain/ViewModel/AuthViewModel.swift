@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 import SwiftData
 
 @MainActor
@@ -10,7 +11,25 @@ class AuthViewModel: ObservableObject {
     @Published var appleAuthManager = AppleAuthManager()
     @Published var googleAuthManager = GoogleAuthManager()
     
+    private var cancellables = Set<AnyCancellable>()
+    
     private let baseUrl = "https://brain.sorenapp.ir"
+    
+    
+    init() {
+        NotificationCenter.default.publisher(for: .didReceiveAuthTokens)
+            .receive(on: RunLoop.main)      // اطمینان از MainActor
+            .sink { [weak self] note in
+                guard let self else { return }
+                if let access  = note.userInfo?["access"]  as? String,
+                   let refresh = note.userInfo?["refresh"] as? String {
+                    self.accessToken  = access
+                    self.refreshToken = refresh
+                    self.isAuthenticated = true
+                }
+            }
+            .store(in: &cancellables)
+    }
     
     private func request(for endpoint: String, method: String = "POST") -> URLRequest {
         let url = URL(string: baseUrl + endpoint)!
