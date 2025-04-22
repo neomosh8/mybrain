@@ -52,7 +52,7 @@ struct SocialLoginView: View {
         }
         .padding(.horizontal, 20)
         
-        // نتیجهٔ Sign‑In با Apple
+        // SignIn result (Apple)
         .onReceive(authVM.appleAuthManager.$userId) { userId in
             guard
                 let userId,
@@ -76,15 +76,14 @@ struct SocialLoginView: View {
             }
         }
         
-        // نتیجهٔ Sign‑In با Google (API جدید)
+        // SignIn result (Google)
         .onReceive(authVM.googleAuthManager.$userId) { _ in
             Task { @MainActor in
                 guard var user = GIDSignIn.sharedInstance.currentUser else { return }
                 
-                // اگر لازم بود، توکن‌ها را نوسازی کن
                 do { user = try await user.refreshTokensIfNeeded() } catch { }
                 
-                if let idTokenString = user.idToken?.tokenString {          // ‎idToken جدید :contentReference[oaicite:0]{index=0}
+                if let idTokenString = user.idToken?.tokenString {
                     authVM.authenticateWithGoogle(
                         context: modelContext,
                         idToken: idTokenString
@@ -96,7 +95,7 @@ struct SocialLoginView: View {
                         }
                     }
                 } else {
-                    errorMessage = "Google ID Token بازیابی نشد"
+                    errorMessage = "Google ID Token not founded"
                 }
             }
         }
