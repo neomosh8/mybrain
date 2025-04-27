@@ -34,13 +34,9 @@ struct ContentView: View {
                     }
                 }
             } else {
-                // Show login/register flow
                 NavigationStack {
-                    VStack {
-                        NavigationLink("Register", destination: RegisterView().environmentObject(authVM))
-                        NavigationLink("Login", destination: LoginView().environmentObject(authVM))
-                    }
-                    .navigationTitle("MyBrain Auth")
+                    LoginScreen()
+                        .environmentObject(authVM)
                 }
             }
         }
