@@ -176,6 +176,20 @@ class WebSocketViewModel: ObservableObject {
             self.chapterData = chapter
         }
     }
+    
+    
+    func sendFeedbackWithBiometricData(thoughtId: Int, chapterNumber: Int, word: String, bluetoothService: BluetoothService) {
+        let value = bluetoothService.processFeedback(word: word)
+        
+        let feedbackData: [String: Any] = [
+            "thought_id": thoughtId,
+            "chapter_number": chapterNumber,
+            "word": word,
+            "value": value
+        ]
+        
+        self.sendMessage(action: "feedback", data: feedbackData)
+    }
 
 
     func sendMessage(action: String, data: [String: Any]) {
@@ -198,9 +212,6 @@ class WebSocketViewModel: ObservableObject {
             print("Failed to encode message: \(error)")
         }
     }
-    
-    // No disconnect function needed here
-    // The socket will remain open
 }
 
 

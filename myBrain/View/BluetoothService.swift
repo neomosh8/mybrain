@@ -4,6 +4,16 @@ import Combine
 
 class BluetoothService: NSObject, ObservableObject {
     // MARK: - Published Properties
+    
+    static let shared = BluetoothService()
+    
+    @Published var isDevelopmentMode = false
+    @Published var feedbackValue: Double = 0.0
+    
+    // MARK: - Simulation state
+    private var simPhase: Double = 0.0
+    private let simStep:  Double = 0.15
+    
     @Published var isScanning = false
     @Published var isConnected = false
     @Published var discoveredDevices: [DiscoveredDevice] = []
@@ -93,6 +103,18 @@ class BluetoothService: NSObject, ObservableObject {
         isScanning = false
     }
     
+    func autoConnect() {
+        // If we have a saved device, try to reconnect
+        if let savedID = UserDefaults.standard.string(forKey: savedDeviceKey) {
+            print("Attempting to auto-connect to saved device: \(savedID)")
+            reconnectToPreviousDevice()
+        } else {
+            // Start scanning for new devices
+            print("No saved device, starting scan")
+            startScanning()
+        }
+    }
+    
     func connect(to device: DiscoveredDevice) {
         guard let peripheral = device.peripheral else { return }
         self.peripheral = peripheral
@@ -180,8 +202,7 @@ class BluetoothService: NSObject, ObservableObject {
     }
     
     // MARK: - Test Signal and Data Streaming
-    // Replace these methods in your BluetoothService class
-
+    
     // Fix the operator precedence issue in startRecording method
     func startRecording(useTestSignal: Bool, enableLeadOff: Bool = false) {
         // Reset data
@@ -514,6 +535,51 @@ class BluetoothService: NSObject, ObservableObject {
         isReceivingTestData = enable
     }
     
+    
+    func processFeedback(word: String) -> Double {
+        if isConnected && !isDevelopmentMode {
+            // Use real Bluetooth data
+            let avgValue = calculateSignalValue()
+            feedbackValue = avgValue
+            return avgValue
+        } else {
+            // Development mode - generate simulated data
+            let simulatedValue = generateSimulatedValue(for: word)
+            feedbackValue = simulatedValue
+            return simulatedValue
+        }
+    }
+    
+    
+    private func calculateSignalValue() -> Double {
+        // Take last few samples from each channel and average them
+        let ch1Samples = eegChannel1.suffix(10)
+        let ch2Samples = eegChannel2.suffix(10)
+        
+        if ch1Samples.isEmpty && ch2Samples.isEmpty {
+            return 0.0 // Fallback if no data
+        }
+        
+        let ch1Avg = ch1Samples.isEmpty ? 0 : Double(ch1Samples.reduce(0, +)) / Double(ch1Samples.count)
+        let ch2Avg = ch2Samples.isEmpty ? 0 : Double(ch2Samples.reduce(0, +)) / Double(ch2Samples.count)
+        
+        let raw = (ch1Avg + ch2Avg)
+        return raw
+    }
+    
+    
+    private func generateSimulatedValue(for word: String) -> Double {
+        let raw = sin(simPhase)
+        
+        // [0..100]
+        let value = raw * 50 + 50
+        
+        simPhase += simStep
+        if simPhase > .pi * 2 { simPhase -= .pi * 2 }
+        
+        return value
+    }
+    
     // MARK: - Command and Response Handling
     
     // Helper method to build and send commands
@@ -651,6 +717,8 @@ extension BluetoothService: CBCentralManagerDelegate {
         DispatchQueue.main.async {
             self.connectedDevice = device
             self.saveConnectedDevice()
+            
+            self.isDevelopmentMode = false
         }
     }
     

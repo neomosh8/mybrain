@@ -12,9 +12,8 @@ struct ContentView: View {
     @State private var hasCheckedBLEStatus = false
     
     init() {
-        let service = BluetoothService()
-        let viewModel = OnboardingViewModel(bluetoothService: service)
-        _bluetoothService = StateObject(wrappedValue: service)
+        _bluetoothService = StateObject(wrappedValue: BluetoothService.shared)
+        let viewModel = OnboardingViewModel(bluetoothService: BluetoothService.shared)
         _onboardingViewModel = StateObject(wrappedValue: viewModel)
     }
     
