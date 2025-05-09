@@ -68,6 +68,7 @@ class OnboardingViewModel: ObservableObject {
     }
     
     func skipOnboarding() {
+        bluetoothService.isDevelopmentMode = true
         hasCompletedOnboarding = true
     }
     
