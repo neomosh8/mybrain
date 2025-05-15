@@ -23,7 +23,9 @@ struct StreamThoughtView: View {
     @State private var lastCheckTime: Double = 0.0
     @State private var startTime: Date?
     @State private var isPlaying = false
-    
+    @State private var lastChapterComplete = false
+    @State private var hasCompletedPlayback = false
+
     /// Time in seconds after which we request the next chapter.
     @State private var nextChapterTime: Double? = nil
     
@@ -46,29 +48,37 @@ struct StreamThoughtView: View {
             ZStack {
                 Color.clear.ignoresSafeArea()
                 
-                VStack {
-                    if isFetchingLinks {
-                        ProgressView("Fetching Streaming Links...")
-                    } else if let player = player {
-                        // Audio controls only
-                        audioPlayerControls
-                        
-                        // Show Subtitles
-                        SubtitleView(
-                            viewModel: subtitleViewModel,
-                            thoughtId: thought.id,
-                            chapterNumber: $currentChapterNumber,
-                            socketViewModel: socketViewModel
-                        )
-                    } else if let error = playerError {
-                        Text("Player Error: \(error.localizedDescription)")
-                            .foregroundColor(.red)
-                    } else {
-                        Text("Ready to Stream \(thought.name)")
-                            .foregroundColor(.black)
+                
+                if hasCompletedPlayback {
+                    ChapterCompletionView(
+                        socketViewModel: socketViewModel,
+                        thoughtId: thought.id
+                    )
+                } else {
+                    VStack {
+                        if isFetchingLinks {
+                            ProgressView("Fetching Streaming Links...")
+                        } else if let player = player {
+                            // Audio controls only
+                            audioPlayerControls
+                            
+                            // Show Subtitles
+                            SubtitleView(
+                                viewModel: subtitleViewModel,
+                                thoughtId: thought.id,
+                                chapterNumber: $currentChapterNumber,
+                                socketViewModel: socketViewModel
+                            )
+                        } else if let error = playerError {
+                            Text("Player Error: \(error.localizedDescription)")
+                                .foregroundColor(.red)
+                        } else {
+                            Text("Ready to Stream \(thought.name)")
+                                .foregroundColor(.black)
+                        }
                     }
+                    .padding()
                 }
-                .padding()
             }
         }
         // ------------------------------------------
@@ -140,6 +150,7 @@ struct StreamThoughtView: View {
     
     // MARK: - Fetch Streaming
     func fetchStreamingLinks() {
+        hasCompletedPlayback = false
         isFetchingLinks = true
         
         socketViewModel.configureForBackgroundOperation()
@@ -235,6 +246,27 @@ struct StreamThoughtView: View {
     func startPlaybackProgressObservation() {
         guard let player = player else { return }
         
+        player.publisher(for: \.currentItem?.status)
+            .compactMap { $0 }
+            .filter { $0 == .readyToPlay }
+            .sink { _ in
+                // Set up notification for when playback ends
+                NotificationCenter.default.addObserver(
+                    forName: .AVPlayerItemDidPlayToEndTime,
+                    object: self.player?.currentItem,
+                    queue: .main
+                ) { _ in
+                    // If this was the last chapter, show completion view
+                    if self.lastChapterComplete {
+                        withAnimation {
+                            self.hasCompletedPlayback = true
+                        }
+                    }
+                }
+            }
+            .store(in: &socketViewModel.cancellables)
+        
+        
         let interval = CMTime(seconds: 0.1, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
         playbackProgressObserver = player.addPeriodicTimeObserver(
             forInterval: interval,
@@ -265,7 +297,16 @@ struct StreamThoughtView: View {
         }
         if currentTime >= nextChapterTime {
             nextChapterRequested = true
-            requestNextChapter()
+            
+            if lastChapterComplete {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    withAnimation {
+                        self.hasCompletedPlayback = true
+                    }
+                }
+            } else {
+                requestNextChapter()
+            }
         }
     }
     
@@ -292,6 +333,7 @@ struct StreamThoughtView: View {
         let chapterNumber = data["chapter_number"] as? Int ?? 0
         let audioDuration = data["audio_duration"] as? Double ?? 0.0
         let generationTime = data["generation_time"] as? Double ?? 0.0
+        let isComplete = data["complete"] as? Bool ?? false
         
         currentChapterNumber = chapterNumber
         
@@ -300,6 +342,7 @@ struct StreamThoughtView: View {
         
         nextChapterRequested = false
         durations_so_far += audioDuration
+        lastChapterComplete = isComplete
         
         // Re‐fetch updated subtitles
         if let subsUrlStr = subsUrlStr {
