@@ -1,12 +1,13 @@
-// StreamThoughtView.swift
-
 import SwiftUI
 import AVKit
 import Combine
+import MediaPlayer
 
 struct StreamThoughtView: View {
     let thought: Thought
     @ObservedObject var socketViewModel: WebSocketViewModel
+    
+    @EnvironmentObject var backgroundManager: BackgroundManager
     
     @State private var player: AVPlayer?
     @State private var playerError: Error?
@@ -85,9 +86,28 @@ struct StreamThoughtView: View {
             nextChapterTime = nil
             fetchStreamingLinks()
         }
-        // Clean up player on disappear
+        .onAppear {
+            // Set up notification observer for playback state changes
+            NotificationCenter.default.addObserver(
+                forName: NSNotification.Name("PlaybackStateChanged"),
+                object: nil,
+                queue: .main
+            ) { [self] notification in
+                if let isPlaying = notification.userInfo?["isPlaying"] as? Bool {
+                    self.isPlaying = isPlaying
+                    if isPlaying {
+                        self.updateNowPlayingInfo()
+                    }
+                }
+            }
+            
+            
+            setupInterruptionHandlers()
+            setupRouteChangeHandlers()
+        }
         .onDisappear {
             player?.pause()
+            cleanupBackgroundPlayback()
             player = nil
             masterPlaylistURL = nil
             playerItemObservation?.cancel()
@@ -108,6 +128,8 @@ struct StreamThoughtView: View {
                     player?.play()
                 }
                 isPlaying.toggle()
+                
+                updateNowPlayingInfo()
             }) {
                 Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
                     .font(.system(size: 40))
@@ -119,6 +141,9 @@ struct StreamThoughtView: View {
     // MARK: - Fetch Streaming
     func fetchStreamingLinks() {
         isFetchingLinks = true
+        
+        socketViewModel.configureForBackgroundOperation()
+
         // Send the request for streaming links
         socketViewModel.sendMessage(action: "streaming_links", data: ["thought_id": thought.id])
         
@@ -187,6 +212,9 @@ struct StreamThoughtView: View {
     func setupPlayer(url: URL) {
         let playerItem = AVPlayerItem(url: url)
         player = AVPlayer(playerItem: playerItem)
+        
+        configurePlayerForBackground()
+        
         isPlaying = true
         player?.play()
         startTime = Date()
@@ -197,6 +225,8 @@ struct StreamThoughtView: View {
                 .sink { status in
                     if status == .readyToPlay {
                         self.startPlaybackProgressObservation()
+                        
+                        self.updateNowPlayingInfo()
                     }
                 }
         }
@@ -217,6 +247,13 @@ struct StreamThoughtView: View {
             // Adjust for segment boundary
             self.subtitleViewModel.checkSegmentBoundary { newIndex in
                 self.subtitleViewModel.loadSegment(at: newIndex)
+            }
+            
+            
+            
+            // Update now playing info every 5 seconds to keep it current
+            if Int(currentTime) % 5 == 0 {
+                self.updateNowPlayingInfo()
             }
         }
     }
@@ -257,7 +294,7 @@ struct StreamThoughtView: View {
         let generationTime = data["generation_time"] as? Double ?? 0.0
         
         currentChapterNumber = chapterNumber
-
+        
         let playableDuration = audioDuration - generationTime
         nextChapterTime = durations_so_far + (playableDuration * (1 - buffer))
         
@@ -341,6 +378,210 @@ struct StreamThoughtView: View {
         if self.subtitleViewModel.currentSegment == nil,
            !self.subtitleViewModel.segments.isEmpty {
             self.subtitleViewModel.loadSegment(at: 0)
+        }
+    }
+    
+    
+    // MARK: - Background Playback Support
+    
+    // Configure the player for background operation
+    func configurePlayerForBackground() {
+        guard let player = player else { return }
+        
+        // Enable background audio session
+        backgroundManager.activateAudioSession()
+        
+        // Make the player item background-friendly
+        player.currentItem?.canUseNetworkResourcesForLiveStreamingWhilePaused = true
+        
+        // Set up metadata for Now Playing info
+        setupNowPlayingInfo()
+        
+        // Set up remote control event handling
+        setupRemoteTransportControls()
+    }
+    
+    // Clean up resources when playback ends
+    func cleanupBackgroundPlayback() {
+        // Clear Now Playing info
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+        
+        // Remove command center targets
+        let commandCenter = MPRemoteCommandCenter.shared()
+        commandCenter.playCommand.removeTarget(nil)
+        commandCenter.pauseCommand.removeTarget(nil)
+        
+        // Deactivate audio session
+        backgroundManager.deactivateAudioSession()
+    }
+    
+    
+    
+    // Set up Now Playing info for the lock screen
+    private func setupNowPlayingInfo() {
+        guard let player = player else { return }
+        
+        // Create Now Playing info dictionary
+        var nowPlayingInfo = [String: Any]()
+        
+        // Add basic metadata
+        nowPlayingInfo[MPMediaItemPropertyTitle] = thought.name
+        nowPlayingInfo[MPMediaItemPropertyArtist] = "myBrain"
+        
+        // Add cover artwork if available
+        if let coverPath = thought.cover, !coverPath.isEmpty {
+            let baseURL = "https://brain.sorenapp.ir"
+            if let imageURL = URL(string: baseURL + coverPath),
+               let imageData = try? Data(contentsOf: imageURL),
+               let image = UIImage(data: imageData) {
+                let artwork = MPMediaItemArtwork(boundsSize: image.size) { _ in image }
+                nowPlayingInfo[MPMediaItemPropertyArtwork] = artwork
+            }
+        }
+        
+        // Add playback duration and position
+        if let currentItem = player.currentItem {
+            let duration = currentItem.duration.seconds
+            if !duration.isNaN && duration.isFinite {
+                nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = duration
+            }
+        }
+        
+        nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = player.currentTime().seconds
+        nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = player.rate
+        
+        // Set the info in the control center
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
+    }
+    
+    private func updateNowPlayingInfo() {
+        guard let player = player else { return }
+        
+        // Get current Now Playing info
+        guard var nowPlayingInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo else {
+            // If no info exists, set up from scratch
+            setupNowPlayingInfo()
+            return
+        }
+        
+        // Update playback position
+        nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = player.currentTime().seconds
+        nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = player.rate
+        
+        // Update Now Playing center
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
+    }
+    
+    // Set up remote transport controls
+    private func setupRemoteTransportControls() {
+        let commandCenter = MPRemoteCommandCenter.shared()
+        
+        // Handle play command
+        commandCenter.playCommand.addTarget { [unowned player = self.player, isPlaying = self.isPlaying] _ in
+            guard let player = player else { return .commandFailed }
+            
+            player.play()
+            // We need to update the main view's state through a different mechanism
+            DispatchQueue.main.async {
+                // We can't directly update self.isPlaying here
+                // Instead, post a notification that the view can observe
+                NotificationCenter.default.post(
+                    name: NSNotification.Name("PlaybackStateChanged"),
+                    object: nil,
+                    userInfo: ["isPlaying": true]
+                )
+            }
+            
+            // We also need to update the now playing info through a different mechanism
+            if let playingInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo {
+                var updatedInfo = playingInfo
+                updatedInfo[MPNowPlayingInfoPropertyPlaybackRate] = 1.0
+                MPNowPlayingInfoCenter.default().nowPlayingInfo = updatedInfo
+            }
+            
+            return .success
+        }
+        
+        // Handle pause command
+        commandCenter.pauseCommand.addTarget { [unowned player = self.player, isPlaying = self.isPlaying] _ in
+            guard let player = player else { return .commandFailed }
+            
+            player.pause()
+            // We need to update the main view's state through a different mechanism
+            DispatchQueue.main.async {
+                // We can't directly update self.isPlaying here
+                // Instead, post a notification that the view can observe
+                NotificationCenter.default.post(
+                    name: NSNotification.Name("PlaybackStateChanged"),
+                    object: nil,
+                    userInfo: ["isPlaying": false]
+                )
+            }
+            
+            // We also need to update the now playing info through a different mechanism
+            if let playingInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo {
+                var updatedInfo = playingInfo
+                updatedInfo[MPNowPlayingInfoPropertyPlaybackRate] = 0.0
+                MPNowPlayingInfoCenter.default().nowPlayingInfo = updatedInfo
+            }
+            
+            return .success
+        }
+    }
+    
+    
+    
+    // Set up handlers for audio interruptions and route changes
+    private func setupInterruptionHandlers() {
+        // Handle audio session interruptions (phone calls, etc.)
+        NotificationCenter.default.addObserver(
+            forName: Notification.Name("AudioInterruptionBegan"),
+            object: nil,
+            queue: .main
+        ) { [self] _ in
+            // Audio interrupted (e.g., phone call)
+            if isPlaying {
+                // Pause playback
+                player?.pause()
+                isPlaying = false
+                updateNowPlayingInfo()
+            }
+        }
+        
+        NotificationCenter.default.addObserver(
+            forName: Notification.Name("AudioInterruptionEnded"),
+            object: nil,
+            queue: .main
+        ) { [self] notification in
+            // Check if we should automatically resume
+            let shouldResume = notification.userInfo?["shouldResume"] as? Bool ?? false
+            
+            if shouldResume && !isPlaying {
+                // Automatically resume playback
+                player?.play()
+                isPlaying = true
+                updateNowPlayingInfo()
+            }
+        }
+    }
+    
+    // Handle audio route changes (headphones disconnected, etc.)
+    private func setupRouteChangeHandlers() {
+        NotificationCenter.default.addObserver(
+            forName: Notification.Name("AudioRouteChanged"),
+            object: nil,
+            queue: .main
+        ) { [self] notification in
+            if let reason = notification.userInfo?["reason"] as? String,
+               reason == "deviceDisconnected" {
+                // Headphones or other audio device was disconnected
+                // Pause playback to avoid startling the user with sudden audio from speakers
+                if isPlaying {
+                    player?.pause()
+                    isPlaying = false
+                    updateNowPlayingInfo()
+                }
+            }
         }
     }
 }

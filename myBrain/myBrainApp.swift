@@ -2,18 +2,26 @@ import SwiftUI
 import SwiftData
 import GoogleSignIn
 
+import MediaPlayer
 
 @main
 struct myBrainApp: App {
     @StateObject var authVM = AuthViewModel()
+    @StateObject var backgroundManager = BackgroundManager.shared
     
     @UIApplicationDelegateAdaptor private var appDelegate: AppDelegate
+    
+    
+    init() {
+        UIApplication.shared.beginReceivingRemoteControlEvents()
+    }
     
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(authVM)
-                .modelContainer(for: [AuthData.self]) // Ensure AuthData is included
+                .environmentObject(backgroundManager)
+                .modelContainer(for: [AuthData.self])
                 .onOpenURL { url in
                     GIDSignIn.sharedInstance.handle(url)
                 }
