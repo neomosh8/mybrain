@@ -33,7 +33,6 @@ struct ErrorResponse: Codable {
     let detail: String
 }
 
-// Example DeviceInfo (you can customize values)
 struct DeviceInfo: Codable {
     let device_name: String
     let os_name: String

@@ -7,7 +7,7 @@ struct LoginScreen: View {
     
     var body: some View {
         VStack(spacing: 30) {
-            Image("app_logo") // Add your app logo
+            Image("AppLogo")
                 .resizable()
                 .scaledToFit()
                 .frame(width: 100, height: 100)
