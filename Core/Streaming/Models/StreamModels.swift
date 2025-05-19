@@ -1,13 +1,7 @@
-//
-//  StreamModels.swift
-//  myBrain by neocore
-//
-//  Created by Mojtaba Rabiei on 2024-12-28.
-//
-
 import Foundation
-import SwiftUI
 import Swift
+import SwiftUI
+
 // MARK: - Models
 struct ThoughtStatus {
     let thought_id: Int
@@ -30,7 +24,6 @@ struct ChapterDataModel {
     let status: String
 }
 
-
 struct ChapterData: Equatable {
     let chapterNumber: Int
     let title: String
@@ -39,7 +32,6 @@ struct ChapterData: Equatable {
     let complete: Bool
 }
 
-
 // MARK: - NEW CODE
 
 /// A single link in the subtitles .m3u8, e.g. (vttURL, duration).
@@ -47,9 +39,8 @@ struct SubtitleSegmentLink {
     let urlString: String
     let duration: Double
     var minStart: Double  // or let
-    var maxEnd: Double    // or let
+    var maxEnd: Double  // or let
 }
-
 
 /// Each word in a single .vtt file.
 struct WordTimestamp: Identifiable {
@@ -65,11 +56,8 @@ struct SubtitleSegmentData {
     let words: [WordTimestamp]
     let minStart: Double
     let maxEnd: Double
-    
+
     var duration: Double {
         maxEnd - minStart
     }
 }
-
-
-

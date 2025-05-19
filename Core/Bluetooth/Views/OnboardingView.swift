@@ -1,11 +1,3 @@
-//
-//  OnboardingView.swift
-//  myBrain by neocore
-//
-//  Created by Mojtaba Rabiei on 2025-03-28.
-//
-
-
 import SwiftUI
 
 struct OnboardingView: View {
@@ -97,9 +89,11 @@ struct OnboardingView: View {
                 .aspectRatio(contentMode: .fit)
                 .frame(height: 150)
             
-            Text("To use all features of the app, you'll need to connect your Neocore headset.")
-                .multilineTextAlignment(.center)
-                .padding()
+            Text(
+                "To use all features of the app, you'll need to connect your Neocore headset."
+            )
+            .multilineTextAlignment(.center)
+            .padding()
             
             Button(action: {
                 viewModel.nextStep()
@@ -155,13 +149,15 @@ struct OnboardingView: View {
                         bluetoothService.startScanning()
                     }
                 }) {
-                    Text(bluetoothService.isScanning ? "Stop Scanning" : "Scan Again")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .frame(height: 50)
-                        .frame(maxWidth: .infinity)
-                        .background(Color.blue)
-                        .cornerRadius(10)
+                    Text(
+                        bluetoothService.isScanning ? "Stop Scanning" : "Scan Again"
+                    )
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(height: 50)
+                    .frame(maxWidth: .infinity)
+                    .background(Color.blue)
+                    .cornerRadius(10)
                 }
                 
                 Button(action: {

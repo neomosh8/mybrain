@@ -31,11 +31,17 @@ struct LoginScreen: View {
                 .font(.subheadline)
                 .foregroundColor(.secondary)
             
-            NavigationLink("Sign in with Email", destination: LoginView().environmentObject(authVM))
-                .padding()
+            NavigationLink(
+                "Sign in with Email",
+                destination: LoginView().environmentObject(authVM)
+            )
+            .padding()
             
-            NavigationLink("Create an Account", destination: RegisterView().environmentObject(authVM))
-                .padding()
+            NavigationLink(
+                "Create an Account",
+                destination: RegisterView().environmentObject(authVM)
+            )
+            .padding()
         }
         .padding()
     }

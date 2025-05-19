@@ -1,11 +1,3 @@
-//
-//  OnboardingViewModel.swift
-//  myBrain by neocore
-//
-//  Created by Mojtaba Rabiei on 2025-03-28.
-//
-
-
 import Foundation
 import Combine
 

@@ -1,12 +1,4 @@
-//
-//  DeviceDetailsView.swift
-//  myBrain by neocore
-//
-//  Created by Mojtaba Rabiei on 2025-03-28.
-//
-
-
-import SwiftUI // Add this import at the top of DeviceDetailsView.swift (already present, ensuring it's here)
+import SwiftUI
 
 struct DeviceDetailsView: View {
     @ObservedObject var bluetoothService: BluetoothService
@@ -52,7 +44,7 @@ struct DeviceDetailsView: View {
         .sheet(isPresented: $showTestSignalView) {
             TestSignalView(bluetoothService: bluetoothService)
         }
-
+        
     }
     
     private var deviceStatusCard: some View {
@@ -117,7 +109,7 @@ struct DeviceDetailsView: View {
                 Spacer()
             }
             .padding(.bottom, 5)
-
+            
             // Add this Button to deviceControlsView in DeviceDetailsView
             Button(action: {
                 showTestSignalView = true
@@ -134,7 +126,7 @@ struct DeviceDetailsView: View {
                 .cornerRadius(10)
             }
             .padding(.vertical, 8) // Added padding as specified in the snippet
-
+            
             // Existing Disconnect Button
             Button(action: {
                 bluetoothService.disconnect()

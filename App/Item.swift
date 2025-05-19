@@ -1,10 +1,3 @@
-//
-//  Item.swift
-//  myBrain
-//
-//  Created by Mojtaba Rabiei on 2024-12-18.
-//
-
 import Foundation
 import SwiftData
 
