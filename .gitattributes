@@ -1,0 +1,5 @@
+*.swift text=auto eol=lf
+*.xib text=auto eol=lf
+*.storyboard text=auto eol=lf
+*.strings text=auto eol=lf
+*.plist text=auto eol=lf
