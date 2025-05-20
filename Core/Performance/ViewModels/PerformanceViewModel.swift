@@ -4,12 +4,12 @@ import Combine
 class PerformanceViewModel: ObservableObject {
     @Published var batteryLevel: Int?
     var cancellables = Set<AnyCancellable>()
-
+    
     func fetchBatteryLevel() -> AnyPublisher<Int, Error> {
         guard let url = URL(string: "https://httpbin.org/get") else {
             return Fail(error: URLError(.badURL)).eraseToAnyPublisher()
         }
-
+        
         return URLSession.shared.dataTaskPublisher(for: url)
             .tryMap { (data, response) -> Data in
                 guard let httpResponse = response as? HTTPURLResponse,

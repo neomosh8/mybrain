@@ -9,7 +9,7 @@ struct AnimatedParagraphView: View {
     let chapterIndex: Int
     let thoughtId: Int
     let chapterNumber: Int
-    let socketViewModel: WebSocketViewModel
+    let webSocketService: WebSocketService & ThoughtWebSocketService
     let onHalfway: () -> Void
     let onFinished: () -> Void
     @State private var totalTextHeight: CGFloat = 0
@@ -74,15 +74,14 @@ struct AnimatedParagraphView: View {
         .onAppear {
             loadHTMLAndMeasure(containerWidth: containerWidth)
         }
-        .onChange(of: wordInterval) { _ in
+        .onChange(of: wordInterval) { _, _ in
             if shownWordsCount < wordInfo.count {
                 scheduledTask?.cancel()
                 scheduleNextWord()
             }
         }
-        .onChange(of: currentChapterIndex) { newIndex in
-            // Begin animation only if we are the currently visible chapter
-            if newIndex == chapterIndex && !animationFinished {
+        .onChange(of: currentChapterIndex) { _, newValue in
+            if newValue == chapterIndex && !animationFinished {
                 startAnimation()
             }
         }
@@ -217,11 +216,11 @@ extension AnimatedParagraphView {
         if let subAttr = fullAttributedString?.attributedSubstring(from: range) {
             let plainWord = subAttr.string.trimmingCharacters(in: .whitespacesAndNewlines)
 
-            socketViewModel.sendFeedbackWithBiometricData(
+            webSocketService.sendFeedback(
                 thoughtId: thoughtId,
                 chapterNumber: chapterNumber,
                 word: plainWord,
-                bluetoothService: BluetoothService.shared
+                value: BluetoothService.shared.processFeedback(word: plainWord)
             )
         }
     }
@@ -231,7 +230,7 @@ extension AnimatedParagraphView {
 extension AnimatedParagraphView {
     private func tokenRanges(for string: String) -> [NSRange] {
         var results: [NSRange] = []
-        let nsString = string as NSString
+        _ = string as NSString
 
         let tagger = NLTagger(tagSchemes: [.lexicalClass])
         tagger.string = string

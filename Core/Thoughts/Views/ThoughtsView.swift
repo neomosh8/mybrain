@@ -12,17 +12,16 @@ struct ThoughtsView: View {
     @EnvironmentObject var bluetoothService: BluetoothService
     @State private var showDeviceDetails = false
     @StateObject private var viewModel: ThoughtsViewModel
-    @StateObject private var socketViewModel: WebSocketViewModel
-
+    
     @State private var processingThoughtIDs = Set<Int>()
     @State private var lastSocketMessage: String?
     @State private var selectedThought: Thought?
     @State private var isRefreshing = false
     @State private var lastScenePhase: ScenePhase = .active
-
+    
     // Ear/Eye mode
     @State private var mode: Mode = .eye
-
+    
     // Battery/Performance
     @State private var batteryLevel: Int?
     @State private var showPerformanceView = false
@@ -32,15 +31,19 @@ struct ThoughtsView: View {
     @State private var showConnectedBanner = false
     
     // Timer for battery level
-    private var batteryLevelTimer: Timer.TimerPublisher = Timer.publish(every: 6, on: .main, in: .common)
+    private var batteryLevelTimer: Timer.TimerPublisher = Timer.publish(
+        every: 6,
+        on: .main,
+        in: .common
+    )
     @State private var batteryCancellable: AnyCancellable?
-
+    
     // MARK: - Init
-    init(accessToken: String) {
-        _viewModel = StateObject(wrappedValue: ThoughtsViewModel(accessToken: accessToken))
-        _socketViewModel = StateObject(wrappedValue: WebSocketViewModel(baseUrl: "brain.sorenapp.ir", token: accessToken))
+    init(viewModel: ThoughtsViewModel) {
+        _viewModel = StateObject(wrappedValue: viewModel)
+        _performanceVM = StateObject(wrappedValue: PerformanceViewModel())
     }
-
+    
     // MARK: - Body
     var body: some View {
         ZStack {
@@ -50,18 +53,18 @@ struct ThoughtsView: View {
             } else {
                 Color.white.ignoresSafeArea()
             }
-
+            
             VStack(spacing: 0) {
                 // MARK: - Top Section
                 topSection
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
-
+                
                 // MARK: - Second Row (list title + mode switch + gear + brain)
                 secondRow
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
-
+                
                 // MARK: - Content
                 if viewModel.isLoading {
                     loadingView
@@ -70,7 +73,7 @@ struct ThoughtsView: View {
                 } else {
                     scrollListView
                 }
-
+                
                 // MARK: - Logout button at bottom
                 Button(action: logoutAction) {
                     Text("Logout")
@@ -83,7 +86,7 @@ struct ThoughtsView: View {
                 .padding(.top, 16)
                 .padding(.bottom, 20)
             }
-
+            
             // MARK: - Overlays
             if isRefreshing {
                 refreshOverlay
@@ -107,42 +110,41 @@ struct ThoughtsView: View {
             refreshData()
             fetchBatteryLevel()
             startBatteryLevelTimer()
+            
+            // Subscribe to WebSocket connection state
+            let subscription = viewModel.observeConnectionState { state in
+                if case .connected = state {
+                    self.showConnectedBanner = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                        withAnimation {
+                            self.showConnectedBanner = false
+                        }
+                    }
+                }
+            }
+            
+            viewModel.storeSubscription(subscription)
+            
+            // Subscribe to WebSocket messages for processing state
+            let messageSubscription = viewModel.observeWebSocketMessages { message in
+                if let type = message["type"] as? String {
+                    if type == "thought_update",
+                       let data = message["data"] as? [String: Any],
+                       let thoughtData = data["thought"] as? [String: Any],
+                       let id = thoughtData["id"] as? Int,
+                       let status = thoughtData["status"] as? String {
+                        self.handleProcessingState(id: id, status: status)
+                    }
+                }
+            }
+            
+            viewModel.storeSubscription(messageSubscription)
         }
         .onDisappear {
             stopBatteryLevelTimer()
         }
-        // MARK: - Socket Observers
-        .onChange(of: socketViewModel.welcomeMessage) { newMessage in
-            if let message = newMessage {
-                print("Received welcome message from WS: \(message)")
-                // Show "Connected" banner for a moment
-                showConnectedBanner = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                    withAnimation {
-                        showConnectedBanner = false
-                    }
-                }
-            }
-        }
-        .onChange(of: socketViewModel.chapterData) { newChapterData in
-            if let chapterData = newChapterData {
-                print("new chapter data: \(chapterData)")
-            }
-        }
-        .onChange(of: lastSocketMessage) { newMessage in
-            if let message = newMessage {
-                handleSocketJSONMessage(jsonString: message)
-            }
-        }
-        .onReceive(socketViewModel.$incomingMessage) { message in
-            if let message = message,
-               let data = try? JSONSerialization.data(withJSONObject: message),
-               let string = String(data: data, encoding: .utf8) {
-                lastSocketMessage = string
-            }
-        }
         // Refresh on becoming active
-        .onChange(of: scenePhase) { newPhase in
+        .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active && lastScenePhase != .active {
                 refreshData()
             }
@@ -151,18 +153,24 @@ struct ThoughtsView: View {
         // Navigation Destinations
         .navigationDestination(item: $selectedThought) { thought in
             if mode == .eye {
-                ThoughtDetailView(thought: thought, socketViewModel: socketViewModel)
+                ThoughtDetailView(
+                    thought: thought,
+                    webSocketService: viewModel.getWebSocketService()
+                )
             } else {
-                StreamThoughtView(thought: thought, socketViewModel: socketViewModel)
+                StreamThoughtView(
+                    thought: thought,
+                    webSocketService: viewModel.getWebSocketService()
+                )
             }
         }
         .navigationDestination(isPresented: $showPerformanceView) {
             PerformanceView(viewModel: performanceVM)
         }
     }
-
+    
     // MARK: - Subviews
-
+    
     /// Top section with a bigger headphone + battery above it, and the app title "MyBrain" to the right.
     private var topSection: some View {
         HStack(alignment: .top, spacing: 16) {
@@ -186,7 +194,9 @@ struct ThoughtsView: View {
                         .frame(width: 44, height: 44)
                         .overlay(
                             Circle()
-                                .fill(bluetoothService.isConnected ? Color.green : Color.red)
+                                .fill(
+                                    bluetoothService.isConnected ? Color.green : Color.red
+                                )
                                 .frame(width: 12, height: 12)
                                 .offset(x: 15, y: 15)
                         )
@@ -208,7 +218,7 @@ struct ThoughtsView: View {
             }
         }
     }
-
+    
     /// Second row: "My Thoughts" on the left, and on the right a container for the mode switch + gear + brain icons (outside the container).
     private var secondRow: some View {
         HStack {
@@ -216,7 +226,7 @@ struct ThoughtsView: View {
             Text("My Thoughts")
                 .font(.title2)
                 .foregroundColor(.secondary)
-
+            
             Spacer()
             
             // Container with mode switch
@@ -227,14 +237,14 @@ struct ThoughtsView: View {
             .padding(.vertical, 4)
             .background(Color.secondary.opacity(0.2))
             .clipShape(RoundedRectangle(cornerRadius: 8))
-
+            
             // Gear icon (outside container)
             Image(systemName: "gearshape")
                 .font(.title3)
                 .onTapGesture {
                     print("Settings tapped")
                 }
-
+            
             // Brain icon (outside container)
             Image(systemName: "brain.head.profile")
                 .font(.title3)
@@ -243,7 +253,7 @@ struct ThoughtsView: View {
                 }
         }
     }
-
+    
     /// Scrollable list of `ThoughtCard`
     private var scrollListView: some View {
         ScrollView {
@@ -268,7 +278,7 @@ struct ThoughtsView: View {
             .foregroundColor(.white)
             .padding(.top, 40)
     }
-
+    
     private func errorView(message: String) -> some View {
         Text("Error: \(message)")
             .foregroundColor(.red)
@@ -307,21 +317,23 @@ struct ThoughtsView: View {
         .transition(.move(edge: .top).combined(with: .opacity))
         .animation(.easeInOut, value: showConnectedBanner)
     }
-
+    
     // MARK: - Functions
-
+    
     private func refreshData() {
         isRefreshing = true
-        fetchThoughts()
-        socketViewModel.sendMessage(action: "list_thoughts", data: [:])
+        viewModel.refreshData()
+        
+        // Auto-hide refresh overlay after delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            withAnimation {
+                self.isRefreshing = false
+            }
+        }
     }
-
-    private func fetchThoughts() {
-        viewModel.fetchThoughts()
-    }
-
+    
     private func logoutAction() {
-        authVM.logoutFromServer(context: modelContext) { result in
+        authVM.logout(context: modelContext) { result in
             switch result {
             case .success:
                 break
@@ -330,99 +342,16 @@ struct ThoughtsView: View {
             }
         }
     }
-
-    private func handleSocketJSONMessage(jsonString: String) {
-        guard let data = jsonString.data(using: .utf8) else { return }
-        do {
-            if let jsonObject = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
-                handleSocketMessage(message: jsonObject)
-            }
-        } catch {
-            print("Failed to decode incoming message: \(error)")
+    
+    // Handle processing state for thoughts
+    private func handleProcessingState(id: Int, status: String) {
+        if ["processing", "pending", "extracted", "enriched"].contains(status) {
+            processingThoughtIDs.insert(id)
+        } else {
+            processingThoughtIDs.remove(id)
         }
     }
-
-    private func handleSocketMessage(message: [String: Any]) {
-        guard let type = message["type"] as? String else {
-            print("Could not get type from socket message")
-            return
-        }
-        switch type {
-        case "thought_update":
-            handleThoughtUpdate(message: message)
-        case "thoughts_list":
-            handleThoughtsList(message: message)
-        default:
-            break
-        }
-        print("Incoming socket message : \(message)")
-    }
-
-    private func handleThoughtUpdate(message: [String: Any]) {
-        guard let data = message["data"] as? [String: Any],
-              let thoughtData = data["thought"] as? [String: Any],
-              let id = thoughtData["id"] as? Int,
-              let status = thoughtData["status"] as? String else {
-            print("Invalid data format in thought_update message")
-            return
-        }
-
-        if let index = viewModel.thoughts.firstIndex(where: { $0.id == id }) {
-            var updatedThought = viewModel.thoughts[index]
-            updatedThought.status = status
-            
-            var tempThoughts = viewModel.thoughts
-            tempThoughts[index] = updatedThought
-            viewModel.thoughts = tempThoughts
-
-            if ["processing", "pending", "extracted", "enriched"].contains(status) {
-                processingThoughtIDs.insert(id)
-            } else {
-                processingThoughtIDs.remove(id)
-            }
-        }
-    }
-
-    private func handleThoughtsList(message: [String: Any]) {
-        guard let data = message["data"] as? [String: Any],
-              let thoughtsData = data["thoughts"] as? [[String: Any]] else {
-            print("Invalid data format in thoughts_list message")
-            return
-        }
-
-        var tempThoughts: [Thought] = []
-        for thoughtData in thoughtsData {
-            if let id = thoughtData["id"] as? Int,
-               let name = thoughtData["name"] as? String,
-               let description = thoughtData["description"] as? String?,
-               let content_type = thoughtData["content_type"] as? String,
-               let cover = thoughtData["cover"] as? String?,
-               let status = thoughtData["status"] as? String,
-               let created_at = thoughtData["created_at"] as? String,
-               let updated_at = thoughtData["updated_at"] as? String {
-                
-                let model3D = thoughtData["model_3d"] as? String ?? "none"
-                let thought = Thought(
-                    id: id,
-                    name: name,
-                    description: description,
-                    content_type: content_type,
-                    cover: cover,
-                    status: status,
-                    created_at: created_at,
-                    updated_at: updated_at,
-                    model_3d: model3D
-                )
-                tempThoughts.append(thought)
-            }
-        }
-
-        DispatchQueue.main.async {
-            self.viewModel.thoughts = tempThoughts
-            self.isRefreshing = false
-        }
-    }
-
+    
     // MARK: - Battery & Performance
     private var batteryIconName: String {
         guard let batteryLevel = batteryLevel else {
@@ -470,12 +399,14 @@ struct ThoughtsView: View {
                 fetchBatteryLevel()
             }
     }
-
+    
     private func stopBatteryLevelTimer() {
         batteryCancellable?.cancel()
         batteryCancellable = nil
     }
 }
+
+
 
 // MARK: - Mode
 enum Mode {
@@ -500,7 +431,9 @@ struct ModeSwitch: View {
                     .foregroundColor(mode == .eye ? .white : .gray)
                     .padding(8)
                     .background(mode == .eye ? Color.gray : Color.clear)
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .clipShape(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    )
             }
         }
     }

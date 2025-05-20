@@ -91,8 +91,8 @@ class SignalProcessing {
             // Prepare input and output for in-place operation
             // Real part gets the windowed data, Imaginary part starts as zero
             // We will copy this into the output arrays for the vDSP_fft_zopD function
-            var realInput = windowedSamples
-            var imaginaryInput = [Double](repeating: 0.0, count: windowSize)
+            let realInput = windowedSamples
+            let imaginaryInput = [Double](repeating: 0.0, count: windowSize)
 
             // Output arrays that will hold the complex result (initially copy input for zop)
             var realOutput = realInput
@@ -156,7 +156,7 @@ class SignalProcessing {
         guard size > 1 else { return window } // Handle edge case
 
         let n = Double(size)
-        let m = Double(size - 1)
+        _ = Double(size - 1)
         let alphaN = alpha * n / 2.0 // Number of samples in taper
 
         for i in 0..<size {
@@ -322,7 +322,7 @@ class SignalProcessing {
         guard count > 1 else { return 0.0 }
 
         // Calculate sum of squared differences from the mean
-        var meanArray = [Double](repeating: mean, count: count)
+        let meanArray = [Double](repeating: mean, count: count)
         var diff = [Double](repeating: 0.0, count: count)
         vDSP_vsubD(meanArray, 1, data, 1, &diff, 1, vDSP_Length(count)) // diff = mean - data
 

@@ -10,19 +10,23 @@ struct VerifyLoginView: View {
         Form {
             TextField("Login Code", text: $code)
                 .keyboardType(.numberPad)
-
+            
             Button("Verify & Login") {
-                authVM.verifyLogin(email: email, code: code,context: modelContext) { result in
-                    switch result {
-                    case .success:
-                        // On success, navigate to main content
-                        break
-                    case .failure(let error):
-                        errorMessage = error.localizedDescription
+                authVM
+                    .verifyLogin(
+                        email: email,
+                        code: code,
+                        context: modelContext
+                    ) { result in
+                        switch result {
+                        case .success:
+                            break
+                        case .failure(let error):
+                            errorMessage = error.localizedDescription
+                        }
                     }
-                }
             }
-
+            
             if let errorMessage = errorMessage {
                 Text(errorMessage).foregroundColor(.red)
             }

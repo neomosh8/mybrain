@@ -27,8 +27,11 @@ struct TestSignalView: View {
                 Toggle("Use Test Signal", isOn: $useTestSignal)
                     .disabled(isRecording) // Can't change mode while recording
                 
-                Toggle("Enable Lead-Off Detection", isOn: $enableLeadOffDetection)
-                    .disabled(isRecording) // Can't change mode while recording
+                Toggle(
+                    "Enable Lead-Off Detection",
+                    isOn: $enableLeadOffDetection
+                )
+                .disabled(isRecording) // Can't change mode while recording
             }
             .padding(.horizontal)
             
@@ -160,7 +163,9 @@ struct TestSignalView: View {
             HStack(spacing: 30) {
                 Button(action: toggleRecording) {
                     HStack {
-                        Image(systemName: isRecording ? "stop.fill" : "play.fill")
+                        Image(
+                            systemName: isRecording ? "stop.fill" : "play.fill"
+                        )
                         Text(isRecording ? "Stop Recording" : "Start Recording")
                     }
                     .font(.headline)
@@ -193,11 +198,17 @@ struct TestSignalView: View {
                             Text("CH1:")
                                 .foregroundColor(.blue)
                                 .bold()
-                            Text("Samples: \(bluetoothService.eegChannel1.count)")
+                            Text(
+                                "Samples: \(bluetoothService.eegChannel1.count)"
+                            )
                             Spacer()
-                            Text("Min: \(bluetoothService.eegChannel1.min() ?? 0)")
+                            Text(
+                                "Min: \(bluetoothService.eegChannel1.min() ?? 0)"
+                            )
                             Spacer()
-                            Text("Max: \(bluetoothService.eegChannel1.max() ?? 0)")
+                            Text(
+                                "Max: \(bluetoothService.eegChannel1.max() ?? 0)"
+                            )
                         }
                         .font(.subheadline)
                         .foregroundColor(.secondary)
@@ -209,11 +220,17 @@ struct TestSignalView: View {
                             Text("CH2:")
                                 .foregroundColor(.green)
                                 .bold()
-                            Text("Samples: \(bluetoothService.eegChannel2.count)")
+                            Text(
+                                "Samples: \(bluetoothService.eegChannel2.count)"
+                            )
                             Spacer()
-                            Text("Min: \(bluetoothService.eegChannel2.min() ?? 0)")
+                            Text(
+                                "Min: \(bluetoothService.eegChannel2.min() ?? 0)"
+                            )
                             Spacer()
-                            Text("Max: \(bluetoothService.eegChannel2.max() ?? 0)")
+                            Text(
+                                "Max: \(bluetoothService.eegChannel2.max() ?? 0)"
+                            )
                         }
                         .font(.subheadline)
                         .foregroundColor(.secondary)
@@ -236,14 +253,30 @@ struct TestSignalView: View {
                         .font(.headline)
                     
                     Group {
-                        Text("Mode: \(useTestSignal ? "Test Signal" : "Normal")")
-                        Text("Lead-Off Detection: \(enableLeadOffDetection ? "Enabled" : "Disabled")")
-                        Text("Channel 1 Points: \(bluetoothService.eegChannel1.count)")
-                        Text("Channel 2 Points: \(bluetoothService.eegChannel2.count)")
-                        Text("Test Signal Active: \(bluetoothService.isTestSignalEnabled ? "Yes" : "No")")
-                        Text("Lead-Off Active: \(bluetoothService.isLeadOffDetectionEnabled ? "Yes" : "No")")
-                        Text("Streaming Enabled: \(bluetoothService.isStreamingEnabled ? "Yes" : "No")")
-                        Text("Receiving Data: \(bluetoothService.isReceivingTestData ? "Yes" : "No")")
+                        Text(
+                            "Mode: \(useTestSignal ? "Test Signal" : "Normal")"
+                        )
+                        Text(
+                            "Lead-Off Detection: \(enableLeadOffDetection ? "Enabled" : "Disabled")"
+                        )
+                        Text(
+                            "Channel 1 Points: \(bluetoothService.eegChannel1.count)"
+                        )
+                        Text(
+                            "Channel 2 Points: \(bluetoothService.eegChannel2.count)"
+                        )
+                        Text(
+                            "Test Signal Active: \(bluetoothService.isTestSignalEnabled ? "Yes" : "No")"
+                        )
+                        Text(
+                            "Lead-Off Active: \(bluetoothService.isLeadOffDetectionEnabled ? "Yes" : "No")"
+                        )
+                        Text(
+                            "Streaming Enabled: \(bluetoothService.isStreamingEnabled ? "Yes" : "No")"
+                        )
+                        Text(
+                            "Receiving Data: \(bluetoothService.isReceivingTestData ? "Yes" : "No")"
+                        )
                         if let device = bluetoothService.connectedDevice {
                             Text("Device: \(device.name)")
                         }
@@ -332,7 +365,10 @@ struct TestSignalView: View {
             }
         }
         .padding(.horizontal)
-        .animation(.easeInOut, value: bluetoothService.isLeadOffDetectionEnabled)
+        .animation(
+            .easeInOut,
+            value: bluetoothService.isLeadOffDetectionEnabled
+        )
     }
     
     private func connectionQualityBar(quality: Double, isConnected: Bool) -> some View {
@@ -345,8 +381,21 @@ struct TestSignalView: View {
                 
                 // Foreground (filled portion)
                 Rectangle()
-                    .fill(getQualityColor(quality: quality, isConnected: isConnected))
-                    .frame(width: max(0, min(geometry.size.width, CGFloat(quality / 100.0) * geometry.size.width)))
+                    .fill(
+                        getQualityColor(
+                            quality: quality,
+                            isConnected: isConnected
+                        )
+                    )
+                    .frame(
+                        width: max(
+                            0,
+                            min(
+                                geometry.size.width,
+                                CGFloat(quality / 100.0) * geometry.size.width
+                            )
+                        )
+                    )
                     .cornerRadius(4)
             }
         }
@@ -404,10 +453,11 @@ struct TestSignalView: View {
         startTime = Date()
         
         // Start the timer
-        timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
-            guard let startTime = startTime else { return }
-            recordingDuration = Date().timeIntervalSince(startTime)
-        }
+        timer = Timer
+            .scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+                guard let startTime = startTime else { return }
+                recordingDuration = Date().timeIntervalSince(startTime)
+            }
         
         // Start recording with current mode settings
         bluetoothService.startRecording(
@@ -441,7 +491,9 @@ struct WaveformView: View {
     
     var body: some View {
         GeometryReader { geo in
-            Canvas { context, size in
+            Canvas {
+ context,
+ size in
                 guard !dataPoints.isEmpty else { return }
                 
                 let width = size.width
@@ -466,14 +518,20 @@ struct WaveformView: View {
                     let step = width / CGFloat(dataPoints.count - 1)
                     
                     // Start path at first point
-                    let y1 = height - heightPadding - (CGFloat(dataPoints[0]) - minValue) * scaleFactor * drawingHeight
+                    let y1 = height - heightPadding - (
+                        CGFloat(dataPoints[0]) - minValue
+                    ) * scaleFactor * drawingHeight
                     path.move(to: CGPoint(x: 0, y: y1))
                     
                     // Add lines to all other points
                     for i in 1..<dataPoints.count {
                         let x = step * CGFloat(i)
-                        let normalizedValue = (CGFloat(dataPoints[i]) - minValue) * scaleFactor
-                        let y = height - heightPadding - (normalizedValue * drawingHeight)
+                        let normalizedValue = (
+                            CGFloat(dataPoints[i]) - minValue
+                        ) * scaleFactor
+                        let y = height - heightPadding - (
+                            normalizedValue * drawingHeight
+                        )
                         path.addLine(to: CGPoint(x: x, y: y))
                     }
                 } else {
@@ -489,13 +547,17 @@ struct WaveformView: View {
                     let step = width / CGFloat(dataPoints.count - 1)
                     
                     // Start path at first point
-                    let y1 = height - ((CGFloat(dataPoints[0]) - minValue) * scaleFactor)
+                    let y1 = height - (
+                        (CGFloat(dataPoints[0]) - minValue) * scaleFactor
+                    )
                     path.move(to: CGPoint(x: 0, y: y1))
                     
                     // Add lines to all other points
                     for i in 1..<dataPoints.count {
                         let x = step * CGFloat(i)
-                        let y = height - ((CGFloat(dataPoints[i]) - minValue) * scaleFactor)
+                        let y = height - (
+                            (CGFloat(dataPoints[i]) - minValue) * scaleFactor
+                        )
                         path.addLine(to: CGPoint(x: x, y: y))
                     }
                 }

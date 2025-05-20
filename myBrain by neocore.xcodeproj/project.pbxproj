@@ -20,11 +20,20 @@
 		6844272D2D13F09C002E9BC6 /* myBrain by neocoreShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 684427232D13F09C002E9BC6 /* myBrain by neocoreShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		684427382D13F22E002E9BC6 /*  SharedDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427372D13F22E002E9BC6 /*  SharedDataManager.swift */; };
 		684427392D13F22E002E9BC6 /*  SharedDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427372D13F22E002E9BC6 /*  SharedDataManager.swift */; };
-		684427612D14B96B002E9BC6 /* WebSocketViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684427602D14B96B002E9BC6 /* WebSocketViewModel.swift */; };
 		68ACE9C92D17C78C003BCC83 /* PerformanceViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68ACE9C82D17C78C003BCC83 /* PerformanceViewModel.swift */; };
 		68DF43FD2D20CE5F00A6E46C /* SubtitleViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68DF43FC2D20CE5F00A6E46C /* SubtitleViewModel.swift */; };
 		68DF43FF2D20CEA800A6E46C /* StreamModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68DF43FE2D20CEA800A6E46C /* StreamModels.swift */; };
 		68FE23132D43328F00FA59AA /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 68FE23122D43328F00FA59AA /* Lottie */; };
+		740925012DDB38EA00D62C25 /* ServerConnect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C7D2DDAF50100953598 /* ServerConnect.swift */; };
+		740925022DDB39C100D62C25 /* Foundation+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C852DDAF59900953598 /* Foundation+Extensions.swift */; };
+		740925032DDB39C500D62C25 /* SwiftUI+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C842DDAF59000953598 /* SwiftUI+Extensions.swift */; };
+		740925042DDB39C900D62C25 /* UIKit+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C832DDAF58000953598 /* UIKit+Extensions.swift */; };
+		740925052DDB39F600D62C25 /* TokenRefreshDecorator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C822DDAF53500953598 /* TokenRefreshDecorator.swift */; };
+		740925062DDB39FB00D62C25 /* TokenStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C812DDAF52F00953598 /* TokenStorage.swift */; };
+		740925072DDB39FF00D62C25 /* WebSocketService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C802DDAF52700953598 /* WebSocketService.swift */; };
+		740925082DDB3A0500D62C25 /* ServerConnectFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 745991D52DDB2016000C9359 /* ServerConnectFactory.swift */; };
+		740925092DDB3A0A00D62C25 /* NetworkProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C7F2DDAF51B00953598 /* NetworkProtocols.swift */; };
+		7409250A2DDB3A0E00D62C25 /* NetworkModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C7E2DDAF50C00953598 /* NetworkModels.swift */; };
 		74263C092DDADA3800953598 /* .gitattributes in Resources */ = {isa = PBXBuildFile; fileRef = 74263C082DDADA3400953598 /* .gitattributes */; };
 		74263C272DDADAE800953598 /* TrendView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C242DDADAE800953598 /* TrendView.swift */; };
 		74263C282DDADAE800953598 /* PerformanceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C172DDADAE800953598 /* PerformanceView.swift */; };
@@ -65,6 +74,7 @@
 		74263C872DDAF63500953598 /* AnimatedLineChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C862DDAF63500953598 /* AnimatedLineChartView.swift */; };
 		74263C892DDAF66400953598 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C882DDAF66200953598 /* Constants.swift */; };
 		74263C8F2DDAF6F700953598 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 74263C8E2DDAF6F400953598 /* Localizable.strings */; };
+		7468256F2DDCE58B0089AE37 /* ImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7468256E2DDCE5880089AE37 /* ImageLoader.swift */; };
 		74C2860B2DB4C31A00CF836B /* AppleAuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74C2860A2DB4C30E00CF836B /* AppleAuthManager.swift */; };
 		74C2860D2DB4C32400CF836B /* GoogleAuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74C2860C2DB4C32100CF836B /* GoogleAuthManager.swift */; };
 		74C286102DB4D0E900CF836B /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 74C2860F2DB4D0E900CF836B /* GoogleSignIn */; };
@@ -113,7 +123,6 @@
 		684427232D13F09C002E9BC6 /* myBrain by neocoreShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "myBrain by neocoreShare.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		684427332D13F189002E9BC6 /* myBrain.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = myBrain.entitlements; path = myBrain/myBrain.entitlements; sourceTree = "<group>"; };
 		684427372D13F22E002E9BC6 /*  SharedDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = " SharedDataManager.swift"; sourceTree = "<group>"; };
-		684427602D14B96B002E9BC6 /* WebSocketViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSocketViewModel.swift; sourceTree = "<group>"; };
 		68ACE9C82D17C78C003BCC83 /* PerformanceViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceViewModel.swift; sourceTree = "<group>"; };
 		68DF43FC2D20CE5F00A6E46C /* SubtitleViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleViewModel.swift; sourceTree = "<group>"; };
 		68DF43FE2D20CEA800A6E46C /* StreamModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamModels.swift; sourceTree = "<group>"; };
@@ -168,6 +177,8 @@
 		74263C862DDAF63500953598 /* AnimatedLineChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedLineChartView.swift; sourceTree = "<group>"; };
 		74263C882DDAF66200953598 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		74263C8E2DDAF6F400953598 /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = Localizable.strings; sourceTree = "<group>"; };
+		745991D52DDB2016000C9359 /* ServerConnectFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerConnectFactory.swift; sourceTree = "<group>"; };
+		7468256E2DDCE5880089AE37 /* ImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageLoader.swift; sourceTree = "<group>"; };
 		74C286092DB4C1E800CF836B /* myBrain-by-neocore-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "myBrain-by-neocore-Info.plist"; sourceTree = "<group>"; };
 		74C2860A2DB4C30E00CF836B /* AppleAuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleAuthManager.swift; sourceTree = "<group>"; };
 		74C2860C2DB4C32100CF836B /* GoogleAuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleAuthManager.swift; sourceTree = "<group>"; };
@@ -473,7 +484,6 @@
 		74263C6E2DDADEB200953598 /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
-				684427602D14B96B002E9BC6 /* WebSocketViewModel.swift */,
 				68DF43FC2D20CE5F00A6E46C /* SubtitleViewModel.swift */,
 			);
 			path = ViewModels;
@@ -548,6 +558,7 @@
 		74263C762DDADEED00953598 /* Base */ = {
 			isa = PBXGroup;
 			children = (
+				745991D52DDB2016000C9359 /* ServerConnectFactory.swift */,
 				74263C7F2DDAF51B00953598 /* NetworkProtocols.swift */,
 				74263C7E2DDAF50C00953598 /* NetworkModels.swift */,
 				74263C7D2DDAF50100953598 /* ServerConnect.swift */,
@@ -575,6 +586,7 @@
 		74263C792DDADF1C00953598 /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
+				7468256E2DDCE5880089AE37 /* ImageLoader.swift */,
 				74263C882DDAF66200953598 /* Constants.swift */,
 				684427372D13F22E002E9BC6 /*  SharedDataManager.swift */,
 				74EC8AA42DCE6588008DE8A9 /* BackgroundManager.swift */,
@@ -659,7 +671,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1620;
-				LastUpgradeCheck = 1620;
+				LastUpgradeCheck = 1630;
 				TargetAttributes = {
 					684426C72D13CF03002E9BC6 = {
 						CreatedOnToolsVersion = 16.2;
@@ -731,6 +743,7 @@
 				74263C2A2DDADAE800953598 /* CarouselView.swift in Sources */,
 				74263C2B2DDADAE800953598 /* SignalProcessing.swift in Sources */,
 				74263C2C2DDADAE800953598 /* LoginView.swift in Sources */,
+				740925062DDB39FB00D62C25 /* TokenStorage.swift in Sources */,
 				74263C2D2DDADAE800953598 /* FeedbackPlotView.swift in Sources */,
 				74263C2E2DDADAE800953598 /* ThoughtCard.swift in Sources */,
 				74263C2F2DDADAE800953598 /* DeviceDetailsView.swift in Sources */,
@@ -738,27 +751,35 @@
 				74263C312DDADAE800953598 /* OnboardingView.swift in Sources */,
 				74263C322DDADAE800953598 /* VerifyRegistrationView.swift in Sources */,
 				74263C332DDADAE800953598 /* VerifyLoginView.swift in Sources */,
+				740925092DDB3A0A00D62C25 /* NetworkProtocols.swift in Sources */,
 				74263C342DDADAE800953598 /* SocialLoginView.swift in Sources */,
 				74263C352DDADAE800953598 /* TestSignalView.swift in Sources */,
+				740925032DDB39C500D62C25 /* SwiftUI+Extensions.swift in Sources */,
 				74263C362DDADAE800953598 /* BluetoothService.swift in Sources */,
 				74263C372DDADAE800953598 /* ThoughtNavigationView.swift in Sources */,
+				7468256F2DDCE58B0089AE37 /* ImageLoader.swift in Sources */,
 				74263C382DDADAE800953598 /* OnboardingViewModel.swift in Sources */,
 				74263C392DDADAE800953598 /* SubtitleView.swift in Sources */,
 				74263C3A2DDADAE800953598 /* HistoryCard.swift in Sources */,
 				74263C3B2DDADAE800953598 /* InsightCard.swift in Sources */,
 				74263C3C2DDADAE800953598 /* LoginScreen.swift in Sources */,
+				7409250A2DDB3A0E00D62C25 /* NetworkModels.swift in Sources */,
 				74263C892DDAF66400953598 /* Constants.swift in Sources */,
 				74263C3D2DDADAE800953598 /* ThoughtDetailView.swift in Sources */,
 				74263C3E2DDADAE800953598 /* TestSignalViewModel.swift in Sources */,
+				740925012DDB38EA00D62C25 /* ServerConnect.swift in Sources */,
 				74263C3F2DDADAE800953598 /* SceneKitUSDZView.swift in Sources */,
+				740925022DDB39C100D62C25 /* Foundation+Extensions.swift in Sources */,
+				740925042DDB39C900D62C25 /* UIKit+Extensions.swift in Sources */,
 				74263C402DDADAE800953598 /* ChapterCompletionView.swift in Sources */,
 				74263C412DDADAE800953598 /* HistoryView.swift in Sources */,
 				74263C422DDADAE800953598 /* StreamThoughtView.swift in Sources */,
 				74263C432DDADAE800953598 /* ThoughtsView.swift in Sources */,
 				74C2860D2DB4C32400CF836B /* GoogleAuthManager.swift in Sources */,
+				740925052DDB39F600D62C25 /* TokenRefreshDecorator.swift in Sources */,
 				6844270E2D13D862002E9BC6 /* AuthViewModel.swift in Sources */,
 				684427032D13D580002E9BC6 /* myBrainApp.swift in Sources */,
-				684427612D14B96B002E9BC6 /* WebSocketViewModel.swift in Sources */,
+				740925072DDB39FF00D62C25 /* WebSocketService.swift in Sources */,
 				74263C7C2DDAF4AA00953598 /* BluetoothModels.swift in Sources */,
 				684427382D13F22E002E9BC6 /*  SharedDataManager.swift in Sources */,
 				68ACE9C92D17C78C003BCC83 /* PerformanceViewModel.swift in Sources */,
@@ -771,6 +792,7 @@
 				684427182D13E17B002E9BC6 /* AuthData.swift in Sources */,
 				684427052D13D580002E9BC6 /* Item.swift in Sources */,
 				74C2860B2DB4C31A00CF836B /* AppleAuthManager.swift in Sources */,
+				740925082DDB3A0500D62C25 /* ServerConnectFactory.swift in Sources */,
 				68DF43FF2D20CEA800A6E46C /* StreamModels.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -843,6 +865,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = MS7857L94F;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -906,6 +929,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = MS7857L94F;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -937,7 +961,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Resources/Preview Content\"";
-				DEVELOPMENT_TEAM = MS7857L94F;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "myBrain-by-neocore-Info.plist";
@@ -975,7 +998,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Resources/Preview Content\"";
-				DEVELOPMENT_TEAM = MS7857L94F;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "myBrain-by-neocore-Info.plist";
@@ -1008,7 +1030,6 @@
 				CODE_SIGN_ENTITLEMENTS = ShareExtension/myBrainShare.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = MS7857L94F;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ShareExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = myBrainShare;
@@ -1035,7 +1056,6 @@
 				CODE_SIGN_ENTITLEMENTS = ShareExtension/myBrainShare.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = MS7857L94F;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ShareExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = myBrainShare;

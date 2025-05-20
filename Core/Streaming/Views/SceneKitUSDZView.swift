@@ -3,7 +3,7 @@ import SceneKit
 
 struct SceneKitView: UIViewRepresentable {
     let localFileURL: URL
-
+    
     func makeUIView(context: Context) -> SCNView {
         let scnView = SCNView()
         
@@ -24,7 +24,11 @@ struct SceneKitView: UIViewRepresentable {
             
             // Position the light for good coverage
             directionalLight.position = SCNVector3(x: 5, y: 10, z: 5)
-            directionalLight.eulerAngles = SCNVector3(x: -Float.pi/4, y: Float.pi/4, z: 0)
+            directionalLight.eulerAngles = SCNVector3(
+                x: -Float.pi/4,
+                y: Float.pi/4,
+                z: 0
+            )
             scene.rootNode.addChildNode(directionalLight)
             
             // Add ambient light for better overall illumination
@@ -49,9 +53,11 @@ struct SceneKitView: UIViewRepresentable {
             
             scnView.scene = scene
         } catch {
-            print("Failed to load scene from \(localFileURL). Error: \(error.localizedDescription)")
+            print(
+                "Failed to load scene from \(localFileURL). Error: \(error.localizedDescription)"
+            )
         }
-
+        
         scnView.antialiasingMode = .multisampling4X
         scnView.rendersContinuously = true
         scnView.allowsCameraControl = true
@@ -60,7 +66,7 @@ struct SceneKitView: UIViewRepresentable {
         
         return scnView
     }
-
+    
     func updateUIView(_ uiView: SCNView, context: Context) {
         // Update logic if needed
     }

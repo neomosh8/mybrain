@@ -5,7 +5,7 @@ struct LoginView: View {
     @State private var email = ""
     @State private var errorMessage: String?
     @State private var showVerify = false
-
+    
     var body: some View {
         Form {
             TextField("Email", text: $email)
@@ -22,18 +22,14 @@ struct LoginView: View {
                     }
                 }
             }
-
+            
             if let errorMessage = errorMessage {
                 Text(errorMessage).foregroundColor(.red)
             }
-
-            NavigationLink(
-                destination: VerifyLoginView(email: email).environmentObject(authVM),
-                isActive: $showVerify
-            ) {
-                EmptyView()
-            }.hidden()
         }
         .navigationTitle("Login")
+        .navigationDestination(isPresented: $showVerify) {
+            VerifyLoginView(email: email).environmentObject(authVM)
+        }
     }
 }
