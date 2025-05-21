@@ -7,7 +7,7 @@ class ServerConnect: NetworkService, AuthNetworkService, ThoughtNetworkService, 
     // MARK: - Properties
     
     private let baseURL: URL
-    private let session: URLSession
+    private var session: URLSession
     private let tokenStorage: TokenStorage
     private let decoder: JSONDecoder
     private var cancellables = Set<AnyCancellable>()
@@ -47,6 +47,17 @@ class ServerConnect: NetworkService, AuthNetworkService, ThoughtNetworkService, 
     
     // MARK: - Initialization
     
+    private static func createNewSession() -> URLSession {
+        let configuration = URLSessionConfiguration.default
+        configuration.timeoutIntervalForRequest = 30
+        configuration.waitsForConnectivity = true
+        return URLSession(configuration: configuration)
+    }
+    
+    func resetSession() {
+        self.session = Self.createNewSession()
+    }
+    
     init(
         baseURLString: String,
         tokenStorage: TokenStorage,
@@ -57,8 +68,8 @@ class ServerConnect: NetworkService, AuthNetworkService, ThoughtNetworkService, 
         }
         self.baseURL = url
         self.tokenStorage = tokenStorage
-        self.session = session
-        
+        self.session = Self.createNewSession()
+
         self.decoder = JSONDecoder()
         self.decoder.keyDecodingStrategy = .convertFromSnakeCase
     }

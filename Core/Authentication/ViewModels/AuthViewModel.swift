@@ -115,6 +115,8 @@ class AuthViewModel: ObservableObject {
         email: String,
         completion: @escaping (Result<String, Error>) -> Void
     ) {
+        print("Starting auth code request for: \(email)")
+
         guard let serverConnect = serverConnect else {
             print("Server connect is nil! This will cause a NetworkError.invalidURL")
             completion(.failure(NSError(
@@ -128,11 +130,15 @@ class AuthViewModel: ObservableObject {
         serverConnect.requestAuthCode(email: email)
             .sink(
                 receiveCompletion: { result in
+                    print("Auth request completion: \(result)")
+                    
                     if case .failure(let error) = result {
                         completion(.failure(error))
                     }
                 },
                 receiveValue: { response in
+                    print("Auth request succeeded with: \(response.detail)")
+                    
                     completion(.success(response.detail))
                 }
             )

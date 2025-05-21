@@ -92,11 +92,14 @@ struct ContentView: View {
                 }
             }
         }
-        .onAppear {            
+        .onAppear {
             // Initialize AuthViewModel with ServerConnect if not already done
             if authVM.serverConnect == nil {
                 print("Initializing ServerConnect on app appear")
                 let serverConnect = serverConnectFactory.shared(with: modelContext)
+
+                serverConnect.resetSession()
+
                 authVM.initializeWithServerConnect(serverConnect)
             }
             
