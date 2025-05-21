@@ -9,6 +9,7 @@ class AuthViewModel: ObservableObject {
     @Published var accessToken: String?
     @Published var refreshToken: String?
     @Published var isAuthenticated = false
+    @Published var isProfileComplete: Bool = true
     
     @Published var appleAuthManager = AppleAuthManager()
     @Published var googleAuthManager = GoogleAuthManager()
@@ -109,27 +110,22 @@ class AuthViewModel: ObservableObject {
         }
     }
     
-    func register(
+    
+    func requestAuthCode(
         email: String,
-        firstName: String,
-        lastName: String,
         completion: @escaping (Result<String, Error>) -> Void
     ) {
         guard let serverConnect = serverConnect else {
-            completion(
-                .failure(
-                    NSError(
-                        domain: "AuthViewModel",
-                        code: 1001,
-                        userInfo: [NSLocalizedDescriptionKey: "Server connection not initialized"]
-                    )
-                )
-            )
+            print("Server connect is nil! This will cause a NetworkError.invalidURL")
+            completion(.failure(NSError(
+                domain: "AuthViewModel",
+                code: 1001,
+                userInfo: [NSLocalizedDescriptionKey: "Server connection not initialized"]
+            )))
             return
         }
         
-        serverConnect
-            .register(email: email, firstName: firstName, lastName: lastName)
+        serverConnect.requestAuthCode(email: email)
             .sink(
                 receiveCompletion: { result in
                     if case .failure(let error) = result {
@@ -143,33 +139,21 @@ class AuthViewModel: ObservableObject {
             .store(in: &cancellables)
     }
     
-    func verifyRegistration(
+    func verifyCode(
         email: String,
         code: String,
         context: ModelContext,
-        completion: @escaping (Result<Void, Error>) -> Void
+        completion: @escaping (Result<Bool, Error>) -> Void
     ) {
         let deviceInfo = createDeviceInfo()
         
         guard let serverConnect = serverConnect else {
-            completion(
-                .failure(
-                    NSError(
-                        domain: "AuthViewModel",
-                        code: 1001,
-                        userInfo: [NSLocalizedDescriptionKey: "Server connection not initialized"]
-                    )
-                )
-            )
+            completion(.failure(NSError(/* your error details */)))
             return
         }
         
         serverConnect
-            .verifyRegistration(
-                email: email,
-                code: code,
-                deviceInfo: deviceInfo
-            )
+            .verifyCode(email: email, code: code, deviceInfo: deviceInfo)
             .sink(
                 receiveCompletion: { result in
                     if case .failure(let error) = result {
@@ -180,86 +164,44 @@ class AuthViewModel: ObservableObject {
                     self.accessToken = tokenResponse.access
                     self.refreshToken = tokenResponse.refresh
                     self.isAuthenticated = true
+                    self.isProfileComplete = tokenResponse.profileComplete
                     
                     SharedDataManager.saveToken(tokenResponse.access)
                     
-                    completion(.success(()))
+                    completion(.success(tokenResponse.profileComplete))
                 }
             )
             .store(in: &cancellables)
     }
     
-    func requestLoginCode(
-        email: String,
-        completion: @escaping (Result<String, Error>) -> Void
-    ) {
+    
+    func updateProfile(firstName: String, lastName: String, completion: @escaping (Result<Void, Error>) -> Void) {
         guard let serverConnect = serverConnect else {
-            completion(
-                .failure(
-                    NSError(
-                        domain: "AuthViewModel",
-                        code: 1001,
-                        userInfo: [NSLocalizedDescriptionKey: "Server connection not initialized"]
-                    )
+            completion(.failure(
+                NSError(
+                    domain: "AuthViewModel",
+                    code: 1001,
+                    userInfo: [NSLocalizedDescriptionKey: "Server connection not initialized"]
                 )
-            )
+            ))
             return
         }
         
-        serverConnect.requestLoginCode(email: email)
+        serverConnect.updateProfile(firstName: firstName, lastName: lastName)
             .sink(
                 receiveCompletion: { result in
                     if case .failure(let error) = result {
                         completion(.failure(error))
                     }
                 },
-                receiveValue: { response in
-                    completion(.success(response.detail))
-                }
-            )
-            .store(in: &cancellables)
-    }
-    
-    func verifyLogin(
-        email: String,
-        code: String,
-        context: ModelContext,
-        completion: @escaping (Result<Void, Error>) -> Void
-    ) {
-        let deviceInfo = createDeviceInfo()
-        
-        guard let serverConnect = serverConnect else {
-            completion(
-                .failure(
-                    NSError(
-                        domain: "AuthViewModel",
-                        code: 1001,
-                        userInfo: [NSLocalizedDescriptionKey: "Server connection not initialized"]
-                    )
-                )
-            )
-            return
-        }
-        
-        serverConnect.login(email: email, code: code, deviceInfo: deviceInfo)
-            .sink(
-                receiveCompletion: { result in
-                    if case .failure(let error) = result {
-                        completion(.failure(error))
-                    }
-                },
-                receiveValue: { tokenResponse in
-                    self.accessToken = tokenResponse.access
-                    self.refreshToken = tokenResponse.refresh
-                    self.isAuthenticated = true
-                    
-                    SharedDataManager.saveToken(tokenResponse.access)
-                    
+                receiveValue: { _ in
+                    self.isProfileComplete = true
                     completion(.success(()))
                 }
             )
             .store(in: &cancellables)
     }
+    
     
     func logout(
         context: ModelContext,
@@ -335,7 +277,7 @@ class AuthViewModel: ObservableObject {
         firstName: String?,
         lastName: String?,
         email: String?,
-        completion: @escaping (Result<Void, Error>) -> Void
+        completion: @escaping (Result<Bool, Error>) -> Void
     ) {
         let deviceInfo = createDeviceInfo()
         
@@ -370,10 +312,11 @@ class AuthViewModel: ObservableObject {
                     self.accessToken = tokenResponse.access
                     self.refreshToken = tokenResponse.refresh
                     self.isAuthenticated = true
+                    self.isProfileComplete = tokenResponse.profileComplete
                     
                     SharedDataManager.saveToken(tokenResponse.access)
                     
-                    completion(.success(()))
+                    completion(.success(tokenResponse.profileComplete))
                 }
             )
             .store(in: &cancellables)
@@ -382,7 +325,7 @@ class AuthViewModel: ObservableObject {
     func authenticateWithGoogle(
         context: ModelContext,
         idToken: String,
-        completion: @escaping (Result<Void, Error>) -> Void
+        completion: @escaping (Result<Bool, Error>) -> Void
     ) {
         let deviceInfo = createDeviceInfo()
         
@@ -411,10 +354,11 @@ class AuthViewModel: ObservableObject {
                     self.accessToken = tokenResponse.access
                     self.refreshToken = tokenResponse.refresh
                     self.isAuthenticated = true
-                    
+                    self.isProfileComplete = tokenResponse.profileComplete
+
                     SharedDataManager.saveToken(tokenResponse.access)
                     
-                    completion(.success(()))
+                    completion(.success(tokenResponse.profileComplete))
                 }
             )
             .store(in: &cancellables)

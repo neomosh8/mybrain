@@ -14,6 +14,7 @@ struct Endpoint {
         case post = "POST"
         case put = "PUT"
         case delete = "DELETE"
+        case patch = "PATCH"
     }
     
     init(path: String,

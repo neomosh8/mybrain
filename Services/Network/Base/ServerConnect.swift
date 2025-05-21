@@ -89,13 +89,35 @@ class ServerConnect: NetworkService, AuthNetworkService, ThoughtNetworkService, 
         }
         
         return session.dataTaskPublisher(for: request)
-            .tryMap { [weak self] data, response -> Data in
+            .tryMap {
+ [weak self] data,
+ response -> Data in
                 guard let self = self else { throw NetworkError.unknown }
+                print(
+                    "Raw response: \(String(data: data, encoding: .utf8) ?? "Unable to decode response")"
+                )
+                
                 return try self.validateResponse(data: data, response: response)
             }
             .decode(type: T.self, decoder: decoder)
             .mapError { error -> NetworkError in
-                if let networkError = error as? NetworkError {
+                if let decodingError = error as? DecodingError {
+                    switch decodingError {
+                    case .keyNotFound(let key, let context):
+                        print("Key not found: \(key), context: \(context)")
+                    case .typeMismatch(let type, let context):
+                        print(
+                            "Type mismatch: expected \(type), context: \(context)"
+                        )
+                    case .valueNotFound(let type, let context):
+                        print("Value not found: \(type), context: \(context)")
+                    case .dataCorrupted(let context):
+                        print("Data corrupted: \(context)")
+                    @unknown default:
+                        print("Unknown decoding error: \(decodingError)")
+                    }
+                    return NetworkError.decodingFailed(decodingError)
+                }else if let networkError = error as? NetworkError {
                     return networkError
                 } else if let decodingError = error as? DecodingError {
                     return NetworkError.decodingFailed(decodingError)
@@ -198,70 +220,51 @@ class ServerConnect: NetworkService, AuthNetworkService, ThoughtNetworkService, 
     
     // MARK: - AuthNetworkService Implementation
     
-    func login(email: String, code: String, deviceInfo: DeviceInfo) -> AnyPublisher<TokenResponse, NetworkError> {
-        let loginRequest = VerifyLoginRequest(
+    func requestAuthCode(email: String) -> AnyPublisher<RegisterResponse, NetworkError> {
+        let authRequest = AuthCodeRequest(email: email)
+        
+        let endpoint = Endpoint(
+            path: "/api/v1/profiles/auth/request/",
+            method: .post,
+            body: authRequest
+        )
+        
+        return self.request(endpoint)
+    }
+    
+    func verifyCode(email: String, code: String, deviceInfo: DeviceInfo) -> AnyPublisher<TokenResponse, NetworkError> {
+        let verifyRequest = VerifyCodeRequest(
             email: email,
             code: code,
             device_info: deviceInfo
         )
         
         let endpoint = Endpoint(
-            path: "/api/v1/profiles/login/",
-            method: .post,
-            body: loginRequest
-        )
-        
-        return self.request(endpoint)
-            .handleEvents(
-                receiveOutput: { [weak self] response in
-                    self?.tokenStorage
-                        .saveTokens(
-                            accessToken: response.access,
-                            refreshToken: response.refresh
-                        )
-                })
-            .eraseToAnyPublisher()
-    }
-    
-    func register(email: String, firstName: String, lastName: String) -> AnyPublisher<RegisterResponse, NetworkError> {
-        let registerRequest = RegisterRequest(
-            email: email,
-            first_name: firstName,
-            last_name: lastName
-        )
-        
-        let endpoint = Endpoint(
-            path: "/api/v1/profiles/register/",
-            method: .post,
-            body: registerRequest
-        )
-        
-        return self.request(endpoint)
-    }
-    
-    func verifyRegistration(email: String, code: String, deviceInfo: DeviceInfo) -> AnyPublisher<TokenResponse, NetworkError> {
-        let verifyRequest = VerifyRequest(
-            email: email,
-            code: code,
-            device_info: deviceInfo
-        )
-        
-        let endpoint = Endpoint(
-            path: "/api/v1/profiles/verify/",
+            path: "/api/v1/profiles/auth/verify/",
             method: .post,
             body: verifyRequest
         )
         
         return self.request(endpoint)
-            .handleEvents(
-                receiveOutput: { [weak self] response in
-                    self?.tokenStorage
-                        .saveTokens(
-                            accessToken: response.access,
-                            refreshToken: response.refresh
-                        )
-                })
+            .handleEvents(receiveOutput: { [weak self] response in
+                self?.tokenStorage.saveTokens(
+                    accessToken: response.access,
+                    refreshToken: response.refresh
+                )
+            })
             .eraseToAnyPublisher()
+    }
+    
+    func updateProfile(firstName: String, lastName: String) -> AnyPublisher<EmptyResponse, NetworkError> {
+        let updateRequest = ["first_name": firstName, "last_name": lastName]
+        
+        let endpoint = Endpoint(
+            path: "/api/v1/profiles/profile/update/",
+            method: .patch,
+            body: updateRequest
+        )
+        
+        return self.request(endpoint)
     }
     
     func authenticateWithApple(userId: String, firstName: String?, lastName: String?, email: String?, deviceInfo: DeviceInfo) -> AnyPublisher<TokenResponse, NetworkError> {
@@ -375,7 +378,6 @@ class ServerConnect: NetworkService, AuthNetworkService, ThoughtNetworkService, 
             .eraseToAnyPublisher()
     }
     
-    
     func refreshToken(token: String) -> AnyPublisher<TokenResponse, NetworkError> {
         let refreshRequest = ["refresh": token]
         
@@ -416,17 +418,6 @@ class ServerConnect: NetworkService, AuthNetworkService, ThoughtNetworkService, 
             .eraseToAnyPublisher()
     }
     
-    func requestLoginCode(email: String) -> AnyPublisher<RegisterResponse, NetworkError> {
-        let loginRequest = LoginRequest(email: email)
-        
-        let endpoint = Endpoint(
-            path: "/api/v1/profiles/request/",
-            method: .post,
-            body: loginRequest
-        )
-        
-        return self.request(endpoint)
-    }
     
     // MARK: - ThoughtNetworkService Implementation
     
@@ -607,33 +598,48 @@ class ServerConnect: NetworkService, AuthNetworkService, ThoughtNetworkService, 
     
     private func validateResponse(data: Data, response: URLResponse) throws -> Data {
         guard let httpResponse = response as? HTTPURLResponse else {
+            print("Invalid response type")
+            
             throw NetworkError.invalidResponse
         }
         
         let statusCode = httpResponse.statusCode
+        print("Response status code: \(statusCode)")
         
         switch statusCode {
         case 200...299:
             return data
         case 401:
+            print(
+                "Unauthorized: \(String(data: data, encoding: .utf8) ?? "No data")"
+            )
             throw NetworkError.unauthorized
         case 400...499:
             if let errorResponse = try? JSONDecoder().decode(
                 ErrorResponse.self,
                 from: data
             ) {
-                throw NetworkError
-                    .serverError(
-                        statusCode: statusCode,
-                        message: errorResponse.detail
-                    )
+                print("Client error: \(errorResponse.detail)")
+                throw NetworkError.serverError(
+                    statusCode: statusCode,
+                    message: errorResponse.detail
+                )
             }
+            print(
+                "Client error with no detail: \(String(data: data, encoding: .utf8) ?? "No data")"
+            )
             throw NetworkError
                 .serverError(statusCode: statusCode, message: "Client error")
         case 500...599:
+            print(
+                "Server error: \(String(data: data, encoding: .utf8) ?? "No data")"
+            )
             throw NetworkError
                 .serverError(statusCode: statusCode, message: "Server error")
         default:
+            print(
+                "Invalid response with code \(statusCode): \(String(data: data, encoding: .utf8) ?? "No data")"
+            )
             throw NetworkError.invalidResponse
         }
     }

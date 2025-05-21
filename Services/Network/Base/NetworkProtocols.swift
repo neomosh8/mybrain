@@ -15,12 +15,12 @@ protocol NetworkService {
 
 /// Protocol for authentication operations
 protocol AuthNetworkService {
-    func login(email: String, code: String, deviceInfo: DeviceInfo) -> AnyPublisher<TokenResponse, NetworkError>
+    func requestAuthCode(email: String) -> AnyPublisher<RegisterResponse, NetworkError>
     
-    func register(email: String, firstName: String, lastName: String) -> AnyPublisher<RegisterResponse, NetworkError>
+    func verifyCode(email: String, code: String, deviceInfo: DeviceInfo) -> AnyPublisher<TokenResponse, NetworkError>
     
-    func verifyRegistration(email: String, code: String, deviceInfo: DeviceInfo) -> AnyPublisher<TokenResponse, NetworkError>
-    
+    func updateProfile(firstName: String, lastName: String) -> AnyPublisher<EmptyResponse, NetworkError>
+
     func authenticateWithApple(userId: String, firstName: String?, lastName: String?, email: String?, deviceInfo: DeviceInfo) -> AnyPublisher<TokenResponse, NetworkError>
     
     func authenticateWithGoogle(idToken: String, deviceInfo: DeviceInfo) -> AnyPublisher<TokenResponse, NetworkError>
@@ -28,8 +28,6 @@ protocol AuthNetworkService {
     func refreshToken(token: String) -> AnyPublisher<TokenResponse, NetworkError>
     
     func logout(refreshToken: String) -> AnyPublisher<EmptyResponse, NetworkError>
-    
-    func requestLoginCode(email: String) -> AnyPublisher<RegisterResponse, NetworkError>
 }
 
 /// Protocol for thought-related operations

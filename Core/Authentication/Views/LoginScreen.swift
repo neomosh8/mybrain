@@ -26,20 +26,13 @@ struct LoginScreen: View {
             Divider()
                 .padding(.vertical, 20)
             
-            // Your existing email login
             Text("or sign in with email")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
             
             NavigationLink(
-                "Sign in with Email",
-                destination: LoginView().environmentObject(authVM)
-            )
-            .padding()
-            
-            NavigationLink(
-                "Create an Account",
-                destination: RegisterView().environmentObject(authVM)
+                "Continue with Email",
+                destination: AuthenticationView().environmentObject(authVM)
             )
             .padding()
         }
