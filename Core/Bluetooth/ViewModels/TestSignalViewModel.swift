@@ -26,7 +26,9 @@ class TestSignalViewModel: ObservableObject {
                 guard let self = self else { return }
                 
                 // Print debug info
-                print("TestSignalViewModel: Received \(newData.count) data points")
+                print(
+                    "TestSignalViewModel: Received \(newData.count) data points"
+                )
                 
                 if self.isRecording && !newData.isEmpty {
                     // Process the new data for display
@@ -57,10 +59,13 @@ class TestSignalViewModel: ObservableObject {
         bluetoothService.startTestDrive()
         
         // Start timer to track duration
-        timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-            guard let self = self, let startTime = self.startTime else { return }
-            self.recordingDuration = Date().timeIntervalSince(startTime)
-        }
+        timer = Timer
+            .scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+                guard let self = self, let startTime = self.startTime else {
+                    return
+                }
+                self.recordingDuration = Date().timeIntervalSince(startTime)
+            }
         
         print("TestSignalViewModel: Recording started")
     }
@@ -110,7 +115,9 @@ class TestSignalViewModel: ObservableObject {
             let newMin = minY - padding
             let newMax = maxY + padding
             
-            print("TestSignalViewModel: Y Range - min: \(newMin), max: \(newMax)")
+            print(
+                "TestSignalViewModel: Y Range - min: \(newMin), max: \(newMax)"
+            )
             
             // Always update range for stats
             DispatchQueue.main.async {
@@ -149,10 +156,10 @@ class TestSignalViewModel: ObservableObject {
             // Simple downsampling - take every nth point
             let stride = dataPoints.count / maxPoints
             finalPoints = stride > 1 ?
-                dataPoints.enumerated()
-                    .filter { $0.offset % stride == 0 }
-                    .map { $0.element } :
-                dataPoints
+            dataPoints.enumerated()
+                .filter { $0.offset % stride == 0 }
+                .map { $0.element } :
+            dataPoints
         } else {
             finalPoints = dataPoints
         }
@@ -160,7 +167,9 @@ class TestSignalViewModel: ObservableObject {
         // Update display data on main thread
         DispatchQueue.main.async {
             self.displayData = finalPoints
-            print("TestSignalViewModel: Display data updated with \(finalPoints.count) points")
+            print(
+                "TestSignalViewModel: Display data updated with \(finalPoints.count) points"
+            )
         }
     }
 }

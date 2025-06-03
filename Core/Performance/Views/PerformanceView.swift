@@ -27,12 +27,16 @@ struct PerformanceView: View {
                     .padding(.top, 45)
                     
                     // Description after current battery level + separator
-                    Text("This is your current level of attention capacity, comparing to your best")
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
-                        .frame(width: 280)  // Adjust this width to match the width of the text above
-                        .multilineTextAlignment(.center)
-                        .padding(.bottom, 8)
+                    Text(
+                        "This is your current level of attention capacity, comparing to your best"
+                    )
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+                    .frame(
+                        width: 280
+                    )  // Adjust this width to match the width of the text above
+                    .multilineTextAlignment(.center)
+                    .padding(.bottom, 8)
                     
                     Divider()
                         .padding(.bottom, 50)
@@ -41,12 +45,14 @@ struct PerformanceView: View {
                         .font(.largeTitle)
                         .padding(.bottom, 2)
                     
-                    Text("Below is a representation your attention capacity for the first minute of typical listening.")
-                        .font(.body)
-                        .foregroundColor(.gray)
-                        .frame(width: 280)  // Adjust width as needed
-                        .multilineTextAlignment(.center)
-                        .padding(.bottom, 42)
+                    Text(
+                        "Below is a representation your attention capacity for the first minute of typical listening."
+                    )
+                    .font(.body)
+                    .foregroundColor(.gray)
+                    .frame(width: 280)  // Adjust width as needed
+                    .multilineTextAlignment(.center)
+                    .padding(.bottom, 42)
                     
                     
                     Text("Your Average Attention Capacity Per Minutes")
@@ -64,11 +70,15 @@ struct PerformanceView: View {
                     // Legend
                     HStack(spacing: 20) {
                         HStack {
-                            Circle().fill(Color.gray).frame(width: 10, height: 10)
+                            Circle()
+                                .fill(Color.gray)
+                                .frame(width: 10, height: 10)
                             Text("Your Usual Attention")
                         }
                         HStack {
-                            Circle().fill(Color.blue).frame(width: 10, height: 10)
+                            Circle()
+                                .fill(Color.blue)
+                                .frame(width: 10, height: 10)
                             Text("Your Utilized Attention")
                         }
                     }

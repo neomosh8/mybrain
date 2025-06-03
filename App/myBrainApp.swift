@@ -6,7 +6,7 @@ import MediaPlayer
 
 @main
 struct myBrainApp: App {
-    @StateObject var authVM = AuthViewModel()
+    @StateObject var authVM = AuthViewModel(serverConnect: nil)
     @StateObject var backgroundManager = BackgroundManager.shared
     
     @UIApplicationDelegateAdaptor private var appDelegate: AppDelegate

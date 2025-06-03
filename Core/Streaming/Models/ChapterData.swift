@@ -3,12 +3,21 @@ import Swift
 import SwiftUI
 
 // MARK: - Models
+
 struct ThoughtStatus {
     let thought_id: Int
     let thought_name: String
     let status: String
     let progress: ProgressData
     let chapters: [ChapterDataModel]
+    
+    enum CodingKeys: String, CodingKey {
+        case thoughtId = "thought_id"
+        case thoughtName = "thought_name"
+        case status
+        case progress
+        case chapters
+    }
 }
 
 struct ProgressData {
@@ -24,12 +33,21 @@ struct ChapterDataModel {
     let status: String
 }
 
-struct ChapterData: Equatable {
+
+struct ChapterData: Equatable, Codable {
     let chapterNumber: Int
     let title: String
     let content: String
     let status: String
     let complete: Bool
+    
+    enum CodingKeys: String, CodingKey {
+        case chapterNumber = "chapter_number"
+        case title
+        case content
+        case status
+        case complete
+    }
 }
 
 // MARK: - NEW CODE
@@ -38,8 +56,8 @@ struct ChapterData: Equatable {
 struct SubtitleSegmentLink {
     let urlString: String
     let duration: Double
-    var minStart: Double  // or let
-    var maxEnd: Double  // or let
+    var minStart: Double
+    var maxEnd: Double 
 }
 
 /// Each word in a single .vtt file.
@@ -56,7 +74,7 @@ struct SubtitleSegmentData {
     let words: [WordTimestamp]
     let minStart: Double
     let maxEnd: Double
-
+    
     var duration: Double {
         maxEnd - minStart
     }

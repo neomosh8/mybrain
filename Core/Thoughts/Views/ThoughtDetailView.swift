@@ -8,7 +8,7 @@ struct Paragraph {
 
 struct ThoughtDetailView: View {
     let thought: Thought
-    @ObservedObject var socketViewModel: WebSocketViewModel
+    let webSocketService: WebSocketService & ThoughtWebSocketService
     
     // Reading state
     @State private var paragraphs: [Paragraph] = []
@@ -23,59 +23,46 @@ struct ThoughtDetailView: View {
     @State private var wordInterval: Double = 0.15
     @State private var sliderPosition: CGPoint = CGPoint(x: 100, y: 200)
     
+    // Cancellables for subscriptions
+    @State private var cancellables = Set<AnyCancellable>()
+    
     var body: some View {
         // 1) Wrap in our ThoughtNavigationView (always overlay style)
         ThoughtNavigationView(
             thought: thought,
-            socketViewModel: socketViewModel
+            webSocketService: webSocketService
         ) {
             mainReadingContent
         }
-        // 2) If user picks “Resume,” just request next chapter
+        // 2) If user picks "Resume," just request next chapter
         .onResume {
             requestNextChapter()
         }
-        // 3) If user picks “Restart from beginning” and the server confirms,
+        // 3) If user picks "Restart from beginning" and the server confirms,
         // reset everything and fetch the first chapter:
         .onResetFinished {
             resetLocalReadingState()
             requestNextChapter()
         }
+        .onAppear {
+            // Create a local variable for cancellables
+            var localCancellables = Set<AnyCancellable>()
+            
+            // Subscribe to chapter data updates
+            webSocketService.chapterDataPublisher
+                .receive(on: DispatchQueue.main)
+                .sink { chapterData in
+                    // No need for weak self in a struct
+                    self.handleChapterData(chapterData)
+                }
+                .store(in: &localCancellables)
+            
+            // Store the cancellables in a property that's accessible from View
+            self.cancellables = localCancellables
+        }
         .onDisappear {
             // Cancel any ongoing processes if needed
-            socketViewModel.clearChapterData()
-        }
-        // 4) Observe incoming chapters
-        .onReceive(socketViewModel.$chapterData) { chapterData in
-            guard let chapter = chapterData else { return }
-            
-            if chapter.complete {
-                // Server says no more chapters
-                lastChapterComplete = true
-                // Optionally append final content
-                if !chapter.content.isEmpty && chapter.content != "No content" {
-                    paragraphs.append(Paragraph(
-                        chapterNumber: chapter.chapterNumber,
-                        content: chapter.content
-                    ))
-                    displayedParagraphsCount = paragraphs.count
-                    if displayedParagraphsCount == 1 {
-                        currentChapterIndex = 0
-                    }
-                }
-            } else {
-                // Normal chapter
-                paragraphs.append(
-                    Paragraph(chapterNumber: chapter.chapterNumber,
-                              content: chapter.content)
-                )
-                displayedParagraphsCount = paragraphs.count
-                
-                // If this is the first paragraph
-                if displayedParagraphsCount == 1 {
-                    currentChapterIndex = 0
-                }
-            }
+            self.cancellables = Set<AnyCancellable>()
         }
     }
     
@@ -86,8 +73,10 @@ struct ThoughtDetailView: View {
             
             if hasCompletedAllChapters {
                 // Show your final completion view
-                ChapterCompletionView(socketViewModel: socketViewModel,
-                                      thoughtId: thought.id)
+                ChapterCompletionView(
+                    webSocketService: webSocketService,
+                    thoughtId: thought.id
+                )
                 
             } else if displayedParagraphsCount == 0 {
                 // No paragraphs yet => loading
@@ -103,7 +92,10 @@ struct ThoughtDetailView: View {
                 // Normal reading
                 ScrollView {
                     LazyVStack(spacing: 1) {
-                        ForEach(0..<displayedParagraphsCount, id: \.self) { index in
+                        ForEach(
+                            0..<displayedParagraphsCount,
+                            id: \.self
+                        ) { index in
                             AnimatedParagraphView(
                                 paragraph: paragraphs[index].content,
                                 backgroundColor: Color("ParagraphBackground"),
@@ -111,7 +103,7 @@ struct ThoughtDetailView: View {
                                 chapterIndex: index,
                                 thoughtId: thought.id,
                                 chapterNumber: paragraphs[index].chapterNumber,
-                                socketViewModel: socketViewModel,
+                                webSocketService: webSocketService,
                                 onHalfway: {
                                     // If you want to auto-fetch next chapter at halfway:
                                     requestNextChapter()
@@ -183,11 +175,8 @@ struct ThoughtDetailView: View {
     
     // MARK: - Helper Methods
     private func requestNextChapter() {
-        let data: [String: Any] = [
-            "thought_id": thought.id,
-            "generate_audio": false
-        ]
-        socketViewModel.sendMessage(action: "next_chapter", data: data)
+        webSocketService
+            .requestNextChapter(thoughtId: thought.id, generateAudio: false)
     }
     
     private func resetLocalReadingState() {
@@ -196,5 +185,38 @@ struct ThoughtDetailView: View {
         currentChapterIndex = nil
         hasCompletedAllChapters = false
         lastChapterComplete = false
+    }
+    
+    // MARK: - Chapter Data Handling
+    private func handleChapterData(_ chapterData: ChapterData?) {
+        guard let chapter = chapterData else { return }
+        
+        if chapter.complete {
+            // Server says no more chapters
+            lastChapterComplete = true
+            // Optionally append final content
+            if !chapter.content.isEmpty && chapter.content != "No content" {
+                paragraphs.append(Paragraph(
+                    chapterNumber: chapter.chapterNumber,
+                    content: chapter.content
+                ))
+                displayedParagraphsCount = paragraphs.count
+                if displayedParagraphsCount == 1 {
+                    currentChapterIndex = 0
+                }
+            }
+        } else {
+            // Normal chapter
+            paragraphs.append(
+                Paragraph(chapterNumber: chapter.chapterNumber,
+                          content: chapter.content)
+            )
+            displayedParagraphsCount = paragraphs.count
+            
+            // If this is the first paragraph
+            if displayedParagraphsCount == 1 {
+                currentChapterIndex = 0
+            }
+        }
     }
 }

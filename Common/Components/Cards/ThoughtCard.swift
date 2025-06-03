@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 struct ThoughtCard: View {
     let thought: Thought
@@ -6,50 +7,36 @@ struct ThoughtCard: View {
     
     /// Called when user taps "Delete" - triggers a server call in your ViewModel
     var onDelete: (Thought) -> Void
-
+    
     /// Whether the red "Delete" bar is showing
     @State private var showDeleteUI = false
-
+    
+    /// Image loading state
+    @State private var coverImage: UIImage? = nil
+    @State private var isLoadingImage: Bool = false
+    @State private var imageLoadFailed: Bool = false
+    
+    @State private var cancellables = Set<AnyCancellable>()
+    
     @Environment(\.colorScheme) var colorScheme
-
+    
     var body: some View {
         ZStack {
             // MARK: - Main Card
             HStack(alignment: .center, spacing: 16) {
                 // 1) Cover Image
-                AsyncImage(url: URL(string: baseUrl + (thought.cover ?? ""))) { phase in
-                    switch phase {
-                    case .empty:
-                        ProgressView()
-                            .frame(width: 80, height: 80)
-                            .background(Color.gray.opacity(0.3))
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 80, height: 80)
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                    case .failure:
-                        Image(systemName: "photo")
-                            .resizable()
-                            .scaledToFit()
-                            .foregroundColor(.gray)
-                            .padding()
-                            .frame(width: 80, height: 80)
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                    @unknown default:
-                        EmptyView()
+                coverImageView
+                    .onAppear {
+                        loadCoverImage()
                     }
-                }
-
+                
                 // 2) Title & Subtitle
                 VStack(alignment: .leading, spacing: 8) {
                     Text(thought.name)
                         .font(.title3)
                         .fontWeight(.bold)
                         .foregroundColor(.primary)
-
+                    
                     Text(relativeDateString(for: thought.created_at))
                         .font(.body)
                         .foregroundColor(
@@ -69,7 +56,7 @@ struct ThoughtCard: View {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(.ultraThinMaterial)
             )
-
+            
             // MARK: - Status Overlay (If not processed)
             .overlay(
                 Group {
@@ -83,7 +70,7 @@ struct ThoughtCard: View {
                     }
                 }
             )
-
+            
             // MARK: - Delete Overlay & Button
             if showDeleteUI {
                 // (A) Clear overlay behind delete button
@@ -95,7 +82,7 @@ struct ThoughtCard: View {
                             showDeleteUI = false
                         }
                     }
-
+                
                 // (B) The actual delete button
                 VStack {
                     Spacer()
@@ -127,6 +114,55 @@ struct ThoughtCard: View {
                     }
                 }
         )
+    }
+    
+    private var coverImageView: some View {
+        Group {
+            if isLoadingImage {
+                ProgressView()
+                    .frame(width: 80, height: 80)
+                    .background(Color.gray.opacity(0.3))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+            } else if let image = coverImage {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 80, height: 80)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+            } else if imageLoadFailed {
+                Image(systemName: "photo")
+                    .resizable()
+                    .scaledToFit()
+                    .foregroundColor(.gray)
+                    .padding()
+                    .frame(width: 80, height: 80)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+            } else {
+                Color.gray.opacity(0.3)
+                    .frame(width: 80, height: 80)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+            }
+        }
+    }
+    
+    private func loadCoverImage() {
+        guard let coverPath = thought.cover, !coverPath.isEmpty, coverImage == nil, !isLoadingImage else {
+            return
+        }
+        
+        isLoadingImage = true
+        let fullUrl = baseUrl + coverPath
+        
+        ImageLoader.loadImage(from: fullUrl)
+            .sink(receiveValue: { receivedImage in
+                self.isLoadingImage = false
+                if let image = receivedImage {
+                    self.coverImage = image
+                } else {
+                    self.imageLoadFailed = true
+                }
+            })
+            .store(in: &cancellables)
     }
 }
 

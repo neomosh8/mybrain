@@ -5,7 +5,7 @@ import MediaPlayer
 
 struct StreamThoughtView: View {
     let thought: Thought
-    @ObservedObject var socketViewModel: WebSocketViewModel
+    let webSocketService: WebSocketService & ThoughtWebSocketService
     
     @EnvironmentObject var backgroundManager: BackgroundManager
     
@@ -25,7 +25,7 @@ struct StreamThoughtView: View {
     @State private var isPlaying = false
     @State private var lastChapterComplete = false
     @State private var hasCompletedPlayback = false
-
+    
     /// Time in seconds after which we request the next chapter.
     @State private var nextChapterTime: Double? = nil
     
@@ -36,22 +36,25 @@ struct StreamThoughtView: View {
     @StateObject private var subtitleViewModel = SubtitleViewModel()
     @State private var subsUrlStr: String?
     
+    // Cancellables for subscriptions
+    @State private var cancellables = Set<AnyCancellable>()
+    
     var body: some View {
         // ------------------------------------------
         // Wrap our main stream UI inside ThoughtNavigationView
         // ------------------------------------------
         ThoughtNavigationView(
             thought: thought,
-            socketViewModel: socketViewModel
+            webSocketService: webSocketService
         ) {
-            // The MAIN content for streaming, shown once user chooses “Resume” or if brand new
+            // The MAIN content for streaming, shown once user chooses "Resume" or if brand new
             ZStack {
                 Color.clear.ignoresSafeArea()
                 
                 
                 if hasCompletedPlayback {
                     ChapterCompletionView(
-                        socketViewModel: socketViewModel,
+                        webSocketService: webSocketService,
                         thoughtId: thought.id
                     )
                 } else {
@@ -67,7 +70,7 @@ struct StreamThoughtView: View {
                                 viewModel: subtitleViewModel,
                                 thoughtId: thought.id,
                                 chapterNumber: $currentChapterNumber,
-                                socketViewModel: socketViewModel
+                                webSocketService: webSocketService
                             )
                         } else if let error = playerError {
                             Text("Player Error: \(error.localizedDescription)")
@@ -85,12 +88,12 @@ struct StreamThoughtView: View {
         // Provide closures for resume and reset
         // ------------------------------------------
         .onResume {
-            // Called when user picks “Resume” in the overlay (if in_progress)
-            // or after “not_started” with no prompt needed.
+            // Called when user picks "Resume" in the overlay (if in_progress)
+            // or after "not_started" with no prompt needed.
             fetchStreamingLinks()
         }
         .onResetFinished {
-            // Called when user picks “Restart From Beginning” and server reset is successful
+            // Called when user picks "Restart From Beginning" and server reset is successful
             // We can clear out relevant local state, then fetch fresh streaming links:
             durations_so_far = 0
             nextChapterTime = nil
@@ -98,19 +101,36 @@ struct StreamThoughtView: View {
         }
         .onAppear {
             // Set up notification observer for playback state changes
-            NotificationCenter.default.addObserver(
-                forName: NSNotification.Name("PlaybackStateChanged"),
-                object: nil,
-                queue: .main
-            ) { [self] notification in
-                if let isPlaying = notification.userInfo?["isPlaying"] as? Bool {
-                    self.isPlaying = isPlaying
-                    if isPlaying {
-                        self.updateNowPlayingInfo()
+            let notificationPublisher = NotificationCenter.default.publisher(
+                for: NSNotification.Name("PlaybackStateChanged")
+            )
+            
+            notificationPublisher
+                .sink { notification in
+                    if let isPlaying = notification.userInfo?["isPlaying"] as? Bool {
+                        self.isPlaying = isPlaying
+                        if isPlaying {
+                            self.updateNowPlayingInfo()
+                        }
                     }
                 }
-            }
+                .store(in: &cancellables)
             
+            // Subscribe to chapter responses
+            webSocketService.messagePublisher
+                .filter { $0["type"] as? String == "chapter_response" }
+                .sink { message in
+                    self.handleNextChapterResponse(message: message)
+                }
+                .store(in: &cancellables)
+            
+            // Subscribe to streaming links responses
+            webSocketService.messagePublisher
+                .filter { $0["type"] as? String == "streaming_links" }
+                .sink { message in
+                    self.handleStreamingLinksResponse(message: message)
+                }
+                .store(in: &cancellables)
             
             setupInterruptionHandlers()
             setupRouteChangeHandlers()
@@ -125,6 +145,7 @@ struct StreamThoughtView: View {
                 player?.removeTimeObserver(observer)
             }
             playbackProgressObserver = nil
+            cancellables = Set<AnyCancellable>()
         }
     }
     
@@ -141,9 +162,11 @@ struct StreamThoughtView: View {
                 
                 updateNowPlayingInfo()
             }) {
-                Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                    .font(.system(size: 40))
-                    .foregroundColor(.blue)
+                Image(
+                    systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill"
+                )
+                .font(.system(size: 40))
+                .foregroundColor(.blue)
             }
         }
     }
@@ -153,37 +176,8 @@ struct StreamThoughtView: View {
         hasCompletedPlayback = false
         isFetchingLinks = true
         
-        socketViewModel.configureForBackgroundOperation()
-
-        // Send the request for streaming links
-        socketViewModel.sendMessage(action: "streaming_links", data: ["thought_id": thought.id])
-        
-        // Listen for streaming_links response
-        socketViewModel.$incomingMessage
-            .compactMap { $0 }
-            .filter { $0["type"] as? String == "streaming_links" }
-            .first()
-            .sink { message in
-                DispatchQueue.main.async {
-                    self.handleStreamingLinksResponse(message: message)
-                    // Clear the incoming message to avoid repeated triggers
-                    self.socketViewModel.incomingMessage = nil
-                }
-            }
-            .store(in: &socketViewModel.cancellables)
-        
-        // Listen for the initial chapter_response
-        socketViewModel.$incomingMessage
-            .compactMap { $0 }
-            .filter { $0["type"] as? String == "chapter_response" }
-            .first()
-            .sink { message in
-                DispatchQueue.main.async {
-                    self.handleNextChapterResponse(message: message)
-                    self.socketViewModel.incomingMessage = nil
-                }
-            }
-            .store(in: &socketViewModel.cancellables)
+        webSocketService.configureForBackgroundOperation()
+        webSocketService.requestStreamingLinks(thoughtId: thought.id)
     }
     
     private func handleStreamingLinksResponse(message: [String: Any]) {
@@ -195,16 +189,22 @@ struct StreamThoughtView: View {
               let masterPlaylistPath = data["master_playlist"] as? String
         else {
             let errorMessage = message["message"] as? String ?? "Failed to get the streaming URLs"
-            playerError = NSError(domain: "StreamingError", code: -1,
-                                  userInfo: [NSLocalizedDescriptionKey: errorMessage])
+            playerError = NSError(
+                domain: "StreamingError",
+                code: -1,
+                userInfo: [NSLocalizedDescriptionKey: errorMessage]
+            )
             return
         }
         
-        let baseURL = "https://\(socketViewModel.baseUrl)"
+        let baseURL = "https://\(baseUrlFromWebSocketService())"
         guard let url = URL(string: baseURL + masterPlaylistPath) else {
             let errorMessage = "Invalid URL: \(baseURL + masterPlaylistPath)"
-            playerError = NSError(domain: "StreamingError", code: -3,
-                                  userInfo: [NSLocalizedDescriptionKey: errorMessage])
+            playerError = NSError(
+                domain: "StreamingError",
+                code: -3,
+                userInfo: [NSLocalizedDescriptionKey: errorMessage]
+            )
             return
         }
         masterPlaylistURL = url
@@ -219,6 +219,13 @@ struct StreamThoughtView: View {
         setupPlayer(url: url)
     }
     
+    // Helper to extract base URL from the WebSocketService
+    private func baseUrlFromWebSocketService() -> String {
+        // Try to get the base URL from the service if it's a WebSocketManager or ServerConnect
+        // For now just return a default
+        return "brain.sorenapp.ir"
+    }
+    
     // MARK: - Setup Player
     func setupPlayer(url: URL) {
         let playerItem = AVPlayerItem(url: url)
@@ -231,7 +238,8 @@ struct StreamThoughtView: View {
         startTime = Date()
         
         if playerItemObservation == nil {
-            playerItemObservation = player?.publisher(for: \.currentItem?.status)
+            playerItemObservation = player?
+                .publisher(for: \.currentItem?.status)
                 .compactMap { $0 }
                 .sink { status in
                     if status == .readyToPlay {
@@ -264,10 +272,13 @@ struct StreamThoughtView: View {
                     }
                 }
             }
-            .store(in: &socketViewModel.cancellables)
+            .store(in: &cancellables)
         
         
-        let interval = CMTime(seconds: 0.1, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+        let interval = CMTime(
+            seconds: 0.1,
+            preferredTimescale: CMTimeScale(NSEC_PER_SEC)
+        )
         playbackProgressObserver = player.addPeriodicTimeObserver(
             forInterval: interval,
             queue: .main
@@ -311,19 +322,8 @@ struct StreamThoughtView: View {
     }
     
     func requestNextChapter() {
-        socketViewModel.incomingMessage = nil
-        let data: [String: Any] = ["thought_id": thought.id, "generate_audio": true]
-        socketViewModel.sendMessage(action: "next_chapter", data: data)
-        
-        socketViewModel.$incomingMessage
-            .compactMap { $0 }
-            .filter { $0["type"] as? String == "chapter_response" }
-            .first()
-            .sink { message in
-                self.handleNextChapterResponse(message: message)
-                self.socketViewModel.incomingMessage = nil
-            }
-            .store(in: &socketViewModel.cancellables)
+        webSocketService
+            .requestNextChapter(thoughtId: thought.id, generateAudio: true)
     }
     
     // MARK: - Handle Next Chapter
@@ -353,9 +353,14 @@ struct StreamThoughtView: View {
     // MARK: - Subtitles
     func fetchSubtitlePlaylist(playlistURL: String) {
         guard let url = URL(string: playlistURL) else { return }
-        URLSession.shared.dataTask(with: url) { data, response, error in
+        URLSession.shared.dataTask(with: url) {
+            data,
+            response,
+            error in
             if let e = error {
-                print("fetchSubtitlePlaylist => error: \(e.localizedDescription)")
+                print(
+                    "fetchSubtitlePlaylist => error: \(e.localizedDescription)"
+                )
                 return
             }
             guard let data = data,
@@ -373,9 +378,14 @@ struct StreamThoughtView: View {
                 if line.hasPrefix("#EXTINF:") {
                     let nextLineIndex = i + 1
                     if nextLineIndex < lines.count {
-                        let vttFile = lines[nextLineIndex].trimmingCharacters(in: .whitespaces)
+                        let vttFile = lines[nextLineIndex].trimmingCharacters(
+                            in: .whitespaces
+                        )
                         if !vttFile.isEmpty {
-                            let base = playlistURL.replacingOccurrences(of: "/subtitles.m3u8", with: "/")
+                            let base = playlistURL.replacingOccurrences(
+                                of: "/subtitles.m3u8",
+                                with: "/"
+                            )
                             let vttURL = base + vttFile
                             vttFiles.append(vttURL)
                         }
@@ -413,8 +423,12 @@ struct StreamThoughtView: View {
     }
     
     private func appendSegments(_ newSegments: [SubtitleSegmentLink]) {
-        let existingURLs = Set(self.subtitleViewModel.segments.map { $0.urlString })
-        let trulyNew = newSegments.filter { !existingURLs.contains($0.urlString) }
+        let existingURLs = Set(
+            self.subtitleViewModel.segments.map { $0.urlString
+            })
+        let trulyNew = newSegments.filter {
+            !existingURLs.contains($0.urlString)
+        }
         let sortedNew = trulyNew.sorted { $0.minStart < $1.minStart }
         self.subtitleViewModel.segments.append(contentsOf: sortedNew)
         
@@ -477,7 +491,9 @@ struct StreamThoughtView: View {
             if let imageURL = URL(string: baseURL + coverPath),
                let imageData = try? Data(contentsOf: imageURL),
                let image = UIImage(data: imageData) {
-                let artwork = MPMediaItemArtwork(boundsSize: image.size) { _ in image }
+                let artwork = MPMediaItemArtwork(boundsSize: image.size) {
+                    _ in image
+                }
                 nowPlayingInfo[MPMediaItemPropertyArtwork] = artwork
             }
         }
@@ -490,7 +506,8 @@ struct StreamThoughtView: View {
             }
         }
         
-        nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = player.currentTime().seconds
+        nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = player
+            .currentTime().seconds
         nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = player.rate
         
         // Set the info in the control center
@@ -508,7 +525,8 @@ struct StreamThoughtView: View {
         }
         
         // Update playback position
-        nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = player.currentTime().seconds
+        nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = player
+            .currentTime().seconds
         nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = player.rate
         
         // Update Now Playing center
@@ -520,7 +538,7 @@ struct StreamThoughtView: View {
         let commandCenter = MPRemoteCommandCenter.shared()
         
         // Handle play command
-        commandCenter.playCommand.addTarget { [unowned player = self.player, isPlaying = self.isPlaying] _ in
+        commandCenter.playCommand.addTarget { [player] _ in
             guard let player = player else { return .commandFailed }
             
             player.play()
@@ -546,7 +564,7 @@ struct StreamThoughtView: View {
         }
         
         // Handle pause command
-        commandCenter.pauseCommand.addTarget { [unowned player = self.player, isPlaying = self.isPlaying] _ in
+        commandCenter.pauseCommand.addTarget { [player] _ in
             guard let player = player else { return .commandFailed }
             
             player.pause()
@@ -577,67 +595,72 @@ struct StreamThoughtView: View {
     // Set up handlers for audio interruptions and route changes
     private func setupInterruptionHandlers() {
         // Handle audio session interruptions (phone calls, etc.)
-        NotificationCenter.default.addObserver(
-            forName: Notification.Name("AudioInterruptionBegan"),
-            object: nil,
-            queue: .main
-        ) { [self] _ in
-            // Audio interrupted (e.g., phone call)
-            if isPlaying {
-                // Pause playback
-                player?.pause()
-                isPlaying = false
-                updateNowPlayingInfo()
+        NotificationCenter.default
+            .publisher(for: Notification.Name("AudioInterruptionBegan"))
+            .sink { [player] _ in
+                // Audio interrupted (e.g., phone call)
+                if self.isPlaying {
+                    // Pause playback
+                    player?.pause()
+                    self.isPlaying = false
+                    self.updateNowPlayingInfo()
+                }
             }
-        }
+            .store(in: &cancellables)
         
-        NotificationCenter.default.addObserver(
-            forName: Notification.Name("AudioInterruptionEnded"),
-            object: nil,
-            queue: .main
-        ) { [self] notification in
-            // Check if we should automatically resume
-            let shouldResume = notification.userInfo?["shouldResume"] as? Bool ?? false
-            
-            if shouldResume && !isPlaying {
-                // Automatically resume playback
-                player?.play()
-                isPlaying = true
-                updateNowPlayingInfo()
+        NotificationCenter.default
+            .publisher(for: Notification.Name("AudioInterruptionEnded"))
+            .sink { [player] notification in
+                // Check if we should automatically resume
+                let shouldResume = notification.userInfo?["shouldResume"] as? Bool ?? false
+                
+                if shouldResume && !self.isPlaying {
+                    // Automatically resume playback
+                    player?.play()
+                    self.isPlaying = true
+                    self.updateNowPlayingInfo()
+                }
             }
-        }
+            .store(in: &cancellables)
     }
     
     // Handle audio route changes (headphones disconnected, etc.)
     private func setupRouteChangeHandlers() {
-        NotificationCenter.default.addObserver(
-            forName: Notification.Name("AudioRouteChanged"),
-            object: nil,
-            queue: .main
-        ) { [self] notification in
-            if let reason = notification.userInfo?["reason"] as? String,
-               reason == "deviceDisconnected" {
-                // Headphones or other audio device was disconnected
-                // Pause playback to avoid startling the user with sudden audio from speakers
-                if isPlaying {
-                    player?.pause()
-                    isPlaying = false
-                    updateNowPlayingInfo()
+        NotificationCenter.default
+            .publisher(for: Notification.Name("AudioRouteChanged"))
+            .sink { [player] notification in
+                if let reason = notification.userInfo?["reason"] as? String,
+                   reason == "deviceDisconnected" {
+                    // Headphones or other audio device was disconnected
+                    // Pause playback to avoid startling the user with sudden audio from speakers
+                    if self.isPlaying {
+                        player?.pause()
+                        self.isPlaying = false
+                        self.updateNowPlayingInfo()
+                    }
                 }
             }
-        }
+            .store(in: &cancellables)
     }
 }
 
+
 // MARK: - Helper for parsing time ranges in .vtt files
-private func determineSegmentTimes(vttURL: String,
-                                   completion: @escaping (SubtitleSegmentLink?) -> Void)
+private func determineSegmentTimes(
+    vttURL: String,
+    completion: @escaping (
+        SubtitleSegmentLink?
+    ) -> Void
+)
 {
     guard let url = URL(string: vttURL) else {
         completion(nil)
         return
     }
-    URLSession.shared.dataTask(with: url) { data, _, error in
+    URLSession.shared.dataTask(with: url) {
+        data,
+        _,
+        error in
         guard error == nil,
               let data = data,
               let content = String(data: data, encoding: .utf8)
@@ -661,9 +684,18 @@ private func determineSegmentTimes(vttURL: String,
                 options: [],
                 range: NSRange(location: 0, length: line.utf16.count)
             ) {
-                let startTime = parseTime(line: line, match: match, isStart: true)
-                let endTime   = parseTime(line: line, match: match, isStart: false)
-                if let s = startTime, let e = endTime {
+                let startTime = parseTime(
+                    line: line,
+                    match: match,
+                    isStart: true
+                )
+                let endTime   = parseTime(
+                    line: line,
+                    match: match,
+                    isStart: false
+                )
+                if let s = startTime,
+                   let e = endTime {
                     earliest = min(earliest, s)
                     latest   = max(latest, e)
                 }

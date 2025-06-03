@@ -4,44 +4,105 @@ import SwiftData
 
 @MainActor
 class AuthViewModel: ObservableObject {
+    // MARK: - Published Properties
+    
     @Published var accessToken: String?
     @Published var refreshToken: String?
     @Published var isAuthenticated = false
+    @Published var isProfileComplete: Bool = true
     
     @Published var appleAuthManager = AppleAuthManager()
     @Published var googleAuthManager = GoogleAuthManager()
     
+    // MARK: - Private Properties
+    
+    var serverConnect: ServerConnect?
     private var cancellables = Set<AnyCancellable>()
     
-    private let baseUrl = "https://brain.sorenapp.ir"
+    // MARK: - Initialization
     
-    
-    init() {
+    init(serverConnect: ServerConnect? = nil) {
+        self.serverConnect = serverConnect
+        
+        // Listen for tokens from social auth
         NotificationCenter.default.publisher(for: .didReceiveAuthTokens)
-            .receive(on: RunLoop.main)      // اطمینان از MainActor
+            .receive(on: RunLoop.main)
             .sink { [weak self] note in
-                guard let self else { return }
-                if let access  = note.userInfo?["access"]  as? String,
+                guard let self = self else { return }
+                if let access = note.userInfo?["access"] as? String,
                    let refresh = note.userInfo?["refresh"] as? String {
-                    self.accessToken  = access
+                    self.accessToken = access
                     self.refreshToken = refresh
                     self.isAuthenticated = true
                 }
             }
             .store(in: &cancellables)
+        
+        setupAppleAuthNotifications()
+        
+        setupGoogleAuthNotifications()
     }
     
-    private func request(for endpoint: String, method: String = "POST") -> URLRequest {
-        let url = URL(string: baseUrl + endpoint)!
-        var req = URLRequest(url: url)
-        req.httpMethod = method
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        return req
+    // MARK: - Private Methods
+    
+    
+    private func setupAppleAuthNotifications() {
+        NotificationCenter.default.publisher(for: .appleAuthSuccess)
+            .sink { [weak self] notification in
+                guard let self = self,
+                      let userId = notification.userInfo?["userId"] as? String,
+                      let firstName = notification.userInfo?["firstName"] as? String,
+                      let lastName = notification.userInfo?["lastName"] as? String,
+                      let email = notification.userInfo?["email"] as? String else {
+                    return
+                }
+                
+                print("Apple auth successful for \(firstName) \(lastName)")
+            }
+            .store(in: &cancellables)
+        
+        NotificationCenter.default.publisher(for: .appleAuthFailure)
+            .sink { notification in
+                if let error = notification.userInfo?["error"] as? Error {
+                    print("Apple Sign-In failed: \(error.localizedDescription)")
+                }
+            }
+            .store(in: &cancellables)
     }
     
-    // Load tokens from SwiftData when app starts
+    private func setupGoogleAuthNotifications() {
+        NotificationCenter.default.publisher(for: .googleAuthSuccess)
+            .sink { [weak self] notification in
+                guard let self = self,
+                      let idToken = notification.userInfo?["idToken"] as? String else {
+                    return
+                }
+                
+                print("Google auth successful with token")
+            }
+            .store(in: &cancellables)
+        
+        NotificationCenter.default.publisher(for: .googleAuthFailure)
+            .sink { notification in
+                if let error = notification.userInfo?["error"] as? Error {
+                    print(
+                        "Google Sign-In failed: \(error.localizedDescription)"
+                    )
+                }
+            }
+            .store(in: &cancellables)
+    }
+    
+    // MARK: - Public Methods
+    
+    func initializeWithServerConnect(_ serverConnect: ServerConnect) {
+        self.serverConnect = serverConnect
+    }
+    
     func loadFromSwiftData(context: ModelContext) {
-        let fetchDescriptor = FetchDescriptor<AuthData>(predicate: #Predicate { $0.id == "user_auth_data" })
+        let fetchDescriptor = FetchDescriptor<AuthData>(
+            predicate: #Predicate { $0.id == "user_auth_data"
+            })
         if let authData = try? context.fetch(fetchDescriptor).first {
             self.accessToken = authData.accessToken
             self.refreshToken = authData.refreshToken
@@ -49,274 +110,274 @@ class AuthViewModel: ObservableObject {
         }
     }
     
-    // Save tokens to SwiftData whenever you update them
-    private func saveToSwiftData(context: ModelContext) {
-        let fetchDescriptor = FetchDescriptor<AuthData>(predicate: #Predicate { $0.id == "user_auth_data" })
-        let existing = try? context.fetch(fetchDescriptor)
-        let authData = existing?.first ?? AuthData()
-        
-        authData.accessToken = self.accessToken
-        authData.refreshToken = self.refreshToken
-        authData.isLoggedIn = self.isAuthenticated
-        
-        context.insert(authData) // If it's new, otherwise this does nothing
-        try? context.save()
-    }
     
-    func register(email: String, firstName: String, lastName: String, completion: @escaping (Result<String, Error>) -> Void) {
-        var req = request(for: "/api/v1/profiles/register/")
-        let body = RegisterRequest(email: email, first_name: firstName, last_name: lastName)
-        req.httpBody = try? JSONEncoder().encode(body)
+    func requestAuthCode(
+        email: String,
+        completion: @escaping (Result<String, Error>) -> Void
+    ) {
+        print("Starting auth code request for: \(email)")
+
+        guard let serverConnect = serverConnect else {
+            print("Server connect is nil! This will cause a NetworkError.invalidURL")
+            completion(.failure(NSError(
+                domain: "AuthViewModel",
+                code: 1001,
+                userInfo: [NSLocalizedDescriptionKey: "Server connection not initialized"]
+            )))
+            return
+        }
         
-        URLSession.shared.dataTask(with: req) { data, response, error in
-            DispatchQueue.main.async {
-                if let error = error { return completion(.failure(error)) }
-                guard let data = data else { return completion(.failure(NSError(domain: "", code: -1, userInfo: nil))) }
-                if let resp = try? JSONDecoder().decode(RegisterResponse.self, from: data) {
-                    completion(.success(resp.detail))
-                } else if let errResp = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
-                    completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: errResp.detail])))
-                } else {
-                    completion(.failure(NSError(domain: "", code: -1, userInfo: nil)))
+        serverConnect.requestAuthCode(email: email)
+            .sink(
+                receiveCompletion: { result in
+                    print("Auth request completion: \(result)")
+                    
+                    if case .failure(let error) = result {
+                        completion(.failure(error))
+                    }
+                },
+                receiveValue: { response in
+                    print("Auth request succeeded with: \(response.detail)")
+                    
+                    completion(.success(response.detail))
                 }
-            }
-        }.resume()
+            )
+            .store(in: &cancellables)
     }
     
-    func verifyRegistration(email: String, code: String, context: ModelContext, completion: @escaping (Result<Void, Error>) -> Void) {
-        var req = request(for: "/api/v1/profiles/verify/")
-        let deviceInfo = DeviceInfo(device_name: "iPhone", os_name: "1.0.0", app_version: "1.0.0", unique_number: "unique_device_id_123")
-        let body = VerifyRequest(email: email, code: code, device_info: deviceInfo)
-        req.httpBody = try? JSONEncoder().encode(body)
+    func verifyCode(
+        email: String,
+        code: String,
+        context: ModelContext,
+        completion: @escaping (Result<Bool, Error>) -> Void
+    ) {
+        let deviceInfo = createDeviceInfo()
         
-        URLSession.shared.dataTask(with: req) { data, response, error in
-            DispatchQueue.main.async {
-                if let error = error { return completion(.failure(error)) }
-                guard let data = data else { return completion(.failure(NSError(domain: "", code: -1, userInfo: nil))) }
-                if let resp = try? JSONDecoder().decode(TokenResponse.self, from: data) {
-                    self.accessToken = resp.access
-                    self.refreshToken = resp.refresh
+        guard let serverConnect = serverConnect else {
+            completion(.failure(NSError(/* your error details */)))
+            return
+        }
+        
+        serverConnect
+            .verifyCode(email: email, code: code, deviceInfo: deviceInfo)
+            .sink(
+                receiveCompletion: { result in
+                    if case .failure(let error) = result {
+                        completion(.failure(error))
+                    }
+                },
+                receiveValue: { tokenResponse in
+                    self.accessToken = tokenResponse.access
+                    self.refreshToken = tokenResponse.refresh
                     self.isAuthenticated = true
-                    self.saveToSwiftData(context: context)
-                    completion(.success(()))
-                } else if let errResp = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
-                    completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: errResp.detail])))
-                } else {
-                    completion(.failure(NSError(domain: "", code: -1, userInfo: nil)))
+                    self.isProfileComplete = tokenResponse.profileComplete
+                    
+                    SharedDataManager.saveToken(tokenResponse.access)
+                    
+                    completion(.success(tokenResponse.profileComplete))
                 }
-            }
-        }.resume()
+            )
+            .store(in: &cancellables)
     }
     
-    func requestLoginCode(email: String, completion: @escaping (Result<String, Error>) -> Void) {
-        var req = request(for: "/api/v1/profiles/request/")
-        let body = LoginRequest(email: email)
-        req.httpBody = try? JSONEncoder().encode(body)
+    
+    func updateProfile(firstName: String, lastName: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        guard let serverConnect = serverConnect else {
+            completion(.failure(
+                NSError(
+                    domain: "AuthViewModel",
+                    code: 1001,
+                    userInfo: [NSLocalizedDescriptionKey: "Server connection not initialized"]
+                )
+            ))
+            return
+        }
         
-        URLSession.shared.dataTask(with: req) { data, response, error in
-            DispatchQueue.main.async {
-                if let error = error {
-                    print("Request error:", error.localizedDescription)
-                    return completion(.failure(error))
+        serverConnect.updateProfile(firstName: firstName, lastName: lastName)
+            .sink(
+                receiveCompletion: { result in
+                    if case .failure(let error) = result {
+                        completion(.failure(error))
+                    }
+                },
+                receiveValue: { _ in
+                    self.isProfileComplete = true
+                    completion(.success(()))
                 }
-                
-                guard let data = data else {
-                    print("No data received")
-                    return completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "No data received from server."])))
-                }
-                
-                if let httpResponse = response as? HTTPURLResponse {
-                    print("HTTP Status Code:", httpResponse.statusCode)
-                }
-                
-                if let responseString = String(data: data, encoding: .utf8) {
-                    print("Raw response:", responseString)
-                }
-                
-                if let resp = try? JSONDecoder().decode(RegisterResponse.self, from: data) {
-                    return completion(.success(resp.detail))
-                }
-                
-                if let errResp = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
-                    let errorDesc = errResp.detail
-                    print("Server Error:", errorDesc)
-                    return completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: errorDesc])))
-                }
-                
-                let genericError = "Unknown error occurred"
-                print(genericError)
-                return completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: genericError])))
-            }
-        }.resume()
+            )
+            .store(in: &cancellables)
     }
     
-    func verifyLogin(email: String, code: String, context: ModelContext, completion: @escaping (Result<Void, Error>) -> Void) {
-        var req = request(for: "/api/v1/profiles/login/")
-        let deviceInfo = DeviceInfo(device_name: "iPhone", os_name: "1.0.0", app_version: "1.0.0", unique_number: "unique_device_id_123")
-        let body = VerifyLoginRequest(email: email, code: code, device_info: deviceInfo)
-        req.httpBody = try? JSONEncoder().encode(body)
+    
+    func logout(
+        context: ModelContext,
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) {
+        guard let serverConnect = serverConnect else {
+            completion(
+                .failure(
+                    NSError(
+                        domain: "AuthViewModel",
+                        code: 1001,
+                        userInfo: [NSLocalizedDescriptionKey: "Server connection not initialized"]
+                    )
+                )
+            )
+            return
+        }
         
-        URLSession.shared.dataTask(with: req) { data, response, error in
-            DispatchQueue.main.async {
-                if let error = error {
-                    return completion(.failure(error))
-                }
-                guard let data = data else {
-                    return completion(.failure(NSError(domain: "", code: -1, userInfo: nil)))
-                }
-                
-                if let resp = try? JSONDecoder().decode(TokenResponse.self, from: data) {
-                    self.accessToken = resp.access
-                    print("AccessToken obtained: \(self.accessToken ?? "nil")")
+        guard let refreshToken = self.refreshToken else {
+            self.accessToken = nil
+            self.refreshToken = nil
+            self.isAuthenticated = false
+            
+            SharedDataManager.saveToken(nil)
+            
+            completion(.success(()))
+            return
+        }
+        
+        serverConnect.logout(refreshToken: refreshToken)
+            .sink(
+                receiveCompletion: { result in
+                    if case .failure(let error) = result {
+                        completion(.failure(error))
+                    }
+                },
+                receiveValue: { _ in
+                    self.accessToken = nil
+                    self.refreshToken = nil
+                    self.isAuthenticated = false
                     
-                    self.refreshToken = resp.refresh
-                    self.isAuthenticated = true
-                    
-                    // Save tokens to SwiftData
-                    self.saveToSwiftData(context: context)
-                    print("Token saved to SharedDataManager")
-                    
-                    // Also save the access token to SharedDataManager for the share extension
-                    SharedDataManager.saveToken(self.accessToken)
+                    SharedDataManager.saveToken(nil)
                     
                     completion(.success(()))
-                } else if let errResp = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
-                    completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: errResp.detail])))
-                } else {
-                    completion(.failure(NSError(domain: "", code: -1, userInfo: nil)))
                 }
-            }
-        }.resume()
+            )
+            .store(in: &cancellables)
     }
+    
+    /// Logout locally (without server communication)
     func logout(context: ModelContext) {
         self.accessToken = nil
         self.refreshToken = nil
         self.isAuthenticated = false
-        self.saveToSwiftData(context: context)
+        
+        SharedDataManager.saveToken(nil)
+        
+        let fetchDescriptor = FetchDescriptor<AuthData>(
+            predicate: #Predicate { $0.id == "user_auth_data"
+            })
+        if let authData = try? context.fetch(fetchDescriptor).first {
+            authData.accessToken = nil
+            authData.refreshToken = nil
+            authData.isLoggedIn = false
+            try? context.save()
+        }
     }
     
-    func logoutFromServer(context: ModelContext, completion: @escaping (Result<Void, Error>) -> Void) {
-        guard let refreshToken = self.refreshToken else {
-            // No refresh token means we can just treat as logged out locally
-            self.logout(context: context)
-            return completion(.success(()))
+    
+    func authenticateWithApple(
+        context: ModelContext,
+        userId: String,
+        firstName: String?,
+        lastName: String?,
+        email: String?,
+        completion: @escaping (Result<Bool, Error>) -> Void
+    ) {
+        let deviceInfo = createDeviceInfo()
+        
+        guard let serverConnect = serverConnect else {
+            completion(
+                .failure(
+                    NSError(
+                        domain: "AuthViewModel",
+                        code: 1001,
+                        userInfo: [NSLocalizedDescriptionKey: "Server connection not initialized"]
+                    )
+                )
+            )
+            return
         }
         
-        var req = request(for: "/api/v1/profiles/logout/", method: "POST")
-        let body: [String: Any] = [
-            "refresh": refreshToken,
-            "unique_device_id": "unique_device_id_123"
-        ]
-        req.httpBody = try? JSONSerialization.data(withJSONObject: body, options: [])
-        
-        URLSession.shared.dataTask(with: req) { data, response, error in
-            DispatchQueue.main.async {
-                if let error = error {
-                    return completion(.failure(error))
+        serverConnect
+            .authenticateWithApple(
+                userId: userId,
+                firstName: firstName,
+                lastName: lastName,
+                email: email,
+                deviceInfo: deviceInfo
+            )
+            .sink(
+                receiveCompletion: { result in
+                    if case .failure(let error) = result {
+                        completion(.failure(error))
+                    }
+                },
+                receiveValue: { tokenResponse in
+                    self.accessToken = tokenResponse.access
+                    self.refreshToken = tokenResponse.refresh
+                    self.isAuthenticated = true
+                    self.isProfileComplete = tokenResponse.profileComplete
+                    
+                    SharedDataManager.saveToken(tokenResponse.access)
+                    
+                    completion(.success(tokenResponse.profileComplete))
                 }
-                guard let data = data else {
-                    return completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey : "No data"])))
-                }
-                
-                if let httpResponse = response as? HTTPURLResponse {
-                    print("Logout Status Code:", httpResponse.statusCode)
-                }
-                
-                // Even if logout fails on server side, we can still clear local tokens
-                // Ideally, you handle errors more gracefully.
-                self.logout(context: context)
-                completion(.success(()))
-            }
-        }.resume()
+            )
+            .store(in: &cancellables)
     }
     
-    
-    func authenticateWithApple(context: ModelContext, userId: String, firstName: String?, lastName: String?, email: String?, completion: @escaping (Result<Void, Error>) -> Void) {
-        var req = request(for: "/api/v1/profiles/apple-login/")
+    func authenticateWithGoogle(
+        context: ModelContext,
+        idToken: String,
+        completion: @escaping (Result<Bool, Error>) -> Void
+    ) {
+        let deviceInfo = createDeviceInfo()
         
-        let deviceInfo = DeviceInfo(device_name: "iPhone", os_name: "1.0.0", app_version: "1.0.0", unique_number: "unique_device_id_123")
+        guard let serverConnect = serverConnect else {
+            completion(
+                .failure(
+                    NSError(
+                        domain: "AuthViewModel",
+                        code: 1001,
+                        userInfo: [NSLocalizedDescriptionKey: "Server connection not initialized"]
+                    )
+                )
+            )
+            return
+        }
         
-        let body: [String: Any] = [
-            "user_id": userId,
-            "first_name": firstName ?? "",
-            "last_name": lastName ?? "",
-            "email": email ?? "",
-            "device_info": [
-                "device_name": deviceInfo.device_name,
-                "os_name": deviceInfo.os_name,
-                "app_version": deviceInfo.app_version,
-                "unique_number": deviceInfo.unique_number
-            ]
-        ]
-        
-        req.httpBody = try? JSONSerialization.data(withJSONObject: body)
-        
-        URLSession.shared.dataTask(with: req) { data, response, error in
-            DispatchQueue.main.async {
-                if let error = error {
-                    return completion(.failure(error))
-                }
-                
-                guard let data = data else {
-                    return completion(.failure(NSError(domain: "", code: -1, userInfo: nil)))
-                }
-                
-                if let resp = try? JSONDecoder().decode(TokenResponse.self, from: data) {
-                    self.accessToken = resp.access
-                    self.refreshToken = resp.refresh
+        serverConnect
+            .authenticateWithGoogle(idToken: idToken, deviceInfo: deviceInfo)
+            .sink(
+                receiveCompletion: { result in
+                    if case .failure(let error) = result {
+                        completion(.failure(error))
+                    }
+                },
+                receiveValue: { tokenResponse in
+                    self.accessToken = tokenResponse.access
+                    self.refreshToken = tokenResponse.refresh
                     self.isAuthenticated = true
-                    self.saveToSwiftData(context: context)
-                    SharedDataManager.saveToken(self.accessToken)
-                    completion(.success(()))
-                } else if let errResp = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
-                    completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: errResp.detail])))
-                } else {
-                    completion(.failure(NSError(domain: "", code: -1, userInfo: nil)))
+                    self.isProfileComplete = tokenResponse.profileComplete
+
+                    SharedDataManager.saveToken(tokenResponse.access)
+                    
+                    completion(.success(tokenResponse.profileComplete))
                 }
-            }
-        }.resume()
+            )
+            .store(in: &cancellables)
     }
     
-    func authenticateWithGoogle(context: ModelContext, idToken: String, completion: @escaping (Result<Void, Error>) -> Void) {
-        var req = request(for: "/api/v1/profiles/google-login/")
-        
-        let deviceInfo = DeviceInfo(device_name: "iPhone", os_name: "1.0.0", app_version: "1.0.0", unique_number: "unique_device_id_123")
-        
-        let body: [String: Any] = [
-            "id_token": idToken,
-            "device_info": [
-                "device_name": deviceInfo.device_name,
-                "os_name": deviceInfo.os_name,
-                "app_version": deviceInfo.app_version,
-                "unique_number": deviceInfo.unique_number
-            ]
-        ]
-        
-        req.httpBody = try? JSONSerialization.data(withJSONObject: body)
-        
-        URLSession.shared.dataTask(with: req) { data, response, error in
-            DispatchQueue.main.async {
-                if let error = error {
-                    return completion(.failure(error))
-                }
-                
-                guard let data = data else {
-                    return completion(.failure(NSError(domain: "", code: -1, userInfo: nil)))
-                }
-                
-                if let resp = try? JSONDecoder().decode(TokenResponse.self, from: data) {
-                    self.accessToken = resp.access
-                    self.refreshToken = resp.refresh
-                    self.isAuthenticated = true
-                    self.saveToSwiftData(context: context)
-                    SharedDataManager.saveToken(self.accessToken)
-                    completion(.success(()))
-                } else if let errResp = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
-                    completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: errResp.detail])))
-                } else {
-                    completion(.failure(NSError(domain: "", code: -1, userInfo: nil)))
-                }
-            }
-        }.resume()
+    // MARK: - Helper Methods
+    
+    private func createDeviceInfo() -> DeviceInfo {
+        return DeviceInfo(
+            device_name: UIDevice.current.name,
+            os_name: UIDevice.current.systemName + " " + UIDevice.current.systemVersion,
+            app_version: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0",
+            unique_number: UIDevice.current.identifierForVendor?.uuidString ?? "unique_device_id_123"
+        )
     }
 }

@@ -11,8 +11,8 @@ import Combine
  */
 struct ThoughtNavigationView<Content: View>: View {
     let thought: Thought
-    @ObservedObject var socketViewModel: WebSocketViewModel
-    
+    let webSocketService: WebSocketService & ThoughtWebSocketService
+
     // The child content to show once user chooses “Resume” or if status is "not_started"
     @ViewBuilder let content: () -> Content
     
@@ -26,6 +26,9 @@ struct ThoughtNavigationView<Content: View>: View {
     // For showing "Reset successful" alert
     @State private var showResetSuccess = false
     
+    // State property for cancellables
+    @State private var cancellables = Set<AnyCancellable>()
+    
     // These are user-provided callbacks (injected via .onResume / .onResetFinished)
     var _onResume: (() -> Void)? = nil
     var _onResetFinished: (() -> Void)? = nil
@@ -38,7 +41,9 @@ struct ThoughtNavigationView<Content: View>: View {
             } else {
                 // The normal content
                 content()
-                    .blur(radius: showPrompt ? 3 : 0)  // Blur if prompt is active
+                    .blur(
+                        radius: showPrompt ? 3 : 0
+                    )  // Blur if prompt is active
                     .onAppear {
                         // If we already know the status is in_progress or finished,
                         // show the prompt. (E.g. navigate away and come back.)
@@ -61,7 +66,8 @@ struct ThoughtNavigationView<Content: View>: View {
             fetchThoughtStatus()
         }
         .onDisappear {
-            // (Optional) Cleanup
+            // Clear cancellables
+            cancellables = Set<AnyCancellable>()
         }
     }
 }
@@ -95,21 +101,18 @@ extension ThoughtNavigationView {
 extension ThoughtNavigationView {
     private func fetchThoughtStatus() {
         isFetchingStatus = true
-        socketViewModel.sendMessage(action: "thought_status", data: ["thought_id": thought.id])
+        webSocketService.requestThoughtStatus(thoughtId: thought.id)
         
-        socketViewModel.$incomingMessage
-            .compactMap { $0 }
+        // Store this subscription in a local variable first
+        let subscription = webSocketService.messagePublisher
             .filter { $0["type"] as? String == "thought_chapters" }
             .first()
             .sink { message in
-                DispatchQueue.main.async {
-                    self.isFetchingStatus = false
-                    self.handleThoughtStatusResponse(message)
-                    // Clear to avoid repeated triggers
-                    self.socketViewModel.incomingMessage = nil
-                }
+                self.isFetchingStatus = false
+                self.handleThoughtStatusResponse(message)
             }
-            .store(in: &socketViewModel.cancellables)
+        
+        cancellables.insert(subscription)
     }
     
     private func handleThoughtStatusResponse(_ message: [String: Any]) {
@@ -163,9 +166,11 @@ extension ThoughtNavigationView {
     private var resumeRestartOverlay: some View {
         VStack(spacing: 16) {
             if isInProgress {
-                Text("It seems you are in the middle of the stream / reading for \(thoughtStatus?.thought_name ?? thought.name).")
-                    .font(.headline)
-                    .padding()
+                Text(
+                    "It seems you are in the middle of the stream / reading for \(thoughtStatus?.thought_name ?? thought.name)."
+                )
+                .font(.headline)
+                .padding()
                 
                 HStack {
                     Button("Restart From Beginning") {
@@ -180,9 +185,11 @@ extension ThoughtNavigationView {
                 }
                 
             } else if isFinished {
-                Text("It seems you have finished \(thoughtStatus?.thought_name ?? thought.name).")
-                    .font(.headline)
-                    .padding()
+                Text(
+                    "It seems you have finished \(thoughtStatus?.thought_name ?? thought.name)."
+                )
+                .font(.headline)
+                .padding()
                 
                 Button("Restart From Beginning") {
                     resetReading()
@@ -204,19 +211,16 @@ extension ThoughtNavigationView {
     }
     
     private func resetReading() {
-        socketViewModel.sendMessage(action: "reset_reading", data: ["thought_id": thought.id])
+        webSocketService.resetReading(thoughtId: thought.id)
         
-        socketViewModel.$incomingMessage
-            .compactMap { $0 }
+        let subscription = webSocketService.messagePublisher
             .filter { $0["type"] as? String == "reset_response" }
             .first()
             .sink { message in
-                DispatchQueue.main.async {
-                    self.handleResetResponse(message)
-                    self.socketViewModel.incomingMessage = nil
-                }
+                self.handleResetResponse(message)
             }
-            .store(in: &socketViewModel.cancellables)
+            
+        cancellables.insert(subscription)
     }
     
     private func handleResetResponse(_ message: [String: Any]) {

@@ -17,18 +17,27 @@ struct CarouselView: View {
         GeometryReader { outerGeo in
             let screenWidth = outerGeo.size.width
             let totalSpacing = spacing * CGFloat(viewModel.thoughts.count - 1)
-            let contentWidth = CGFloat(viewModel.thoughts.count) * cardWidth + totalSpacing
+            let contentWidth = CGFloat(
+                viewModel.thoughts.count
+            ) * cardWidth + totalSpacing
             let initialOffset = (screenWidth - cardWidth) / 2
             
             HStack(spacing: spacing) {
-                ForEach(Array(viewModel.thoughts.enumerated()), id: \.element.id) { index, thought in
+                ForEach(
+                    Array(viewModel.thoughts.enumerated()),
+                    id: \.element.id
+                ) {
+ index,
+ thought in
                     GeometryReader { innerGeo in
                         let midX = innerGeo.frame(in: .global).midX
                         let centerX = screenWidth / 2
                         
                         let distance = abs(midX - centerX)
                         let scale = max(0.7, 1 - distance / 500)
-                        let opacity = distance <= 20 ? 1.0 : Double(max(0.7, 1 - distance / 500))
+                        let opacity = distance <= 20 ? 1.0 : Double(
+                            max(0.7, 1 - distance / 500)
+                        )
                         
                         ThoughtCard(
                             thought: thought,
@@ -49,7 +58,11 @@ struct CarouselView: View {
                     .frame(width: cardWidth, height: cardHeight)
                 }
             }
-            .frame(width: contentWidth, height: outerGeo.size.height, alignment: .leading)
+            .frame(
+                width: contentWidth,
+                height: outerGeo.size.height,
+                alignment: .leading
+            )
             .offset(x: offset + initialOffset)
             .gesture(
                 DragGesture(minimumDistance: 5)
@@ -70,9 +83,13 @@ struct CarouselView: View {
                         }
                         
                         let targetOffset = -CGFloat(currentIndex) * cardWidth
-                        let adjustedOffset = targetOffset + (screenWidth - cardWidth) / 2 - initialOffset
+                        let adjustedOffset = targetOffset + (
+                            screenWidth - cardWidth
+                        ) / 2 - initialOffset
                         
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        withAnimation(
+                            .spring(response: 0.3, dampingFraction: 0.7)
+                        ) {
                             offset = adjustedOffset
                         }
                         offsetAtDragStart = adjustedOffset

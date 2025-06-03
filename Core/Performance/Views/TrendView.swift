@@ -10,12 +10,15 @@ struct TrendView: View {
             HStack {
                 // Progress circle + percentage
                 ZStack {
-
+                    
                     Circle()
                         .trim(from: 0.0, to: 1.1)
                         .stroke(
                             LinearGradient(
-                                colors: [.green.opacity(0.8), .green.opacity(0.4)],
+                                colors: [
+                                    .green.opacity(0.8),
+                                    .green.opacity(0.4)
+                                ],
                                 startPoint: .top,
                                 endPoint: .bottom
                             ),
@@ -46,16 +49,20 @@ struct TrendView: View {
                 
                 // The text that slides in
                 if showDetailText {
-                    Text("You have reclaiming 30 minutes more out of every hour")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                        .transition(.move(edge: .trailing))
+                    Text(
+                        "You have reclaiming 30 minutes more out of every hour"
+                    )
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                    .transition(.move(edge: .trailing))
                 }
             }
-            .frame(height: 160) // Enough space to hold circle & text horizontally
-
+            .frame(
+                height: 160
+            ) // Enough space to hold circle & text horizontally
+            
             // Inside PerformanceView or a ViewModel
-
+            
             let insights: [Insight] = [
                 Insight(
                     title: "Enhanced Attention Span",
@@ -94,7 +101,7 @@ struct TrendView: View {
                     iconColor: .purple
                 )
             ]
-
+            
             
             // Horizontal scroll carousel of InsightCards
             ScrollView(.horizontal, showsIndicators: false) {
