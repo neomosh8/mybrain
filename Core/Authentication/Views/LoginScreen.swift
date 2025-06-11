@@ -11,6 +11,7 @@ struct LoginScreen: View {
     @State private var isRequestingCode = false
     @State private var showVerificationView = false
     @State private var showProfileCompletion = false
+    @State private var cancellables = Set<AnyCancellable>()
 
     var body: some View {
         Spacer()
@@ -199,5 +200,79 @@ struct LoginScreen: View {
                 }
             }, alignment: .topLeading
         )
+        .onAppear {
+            setupSocialAuthNotifications()
+        }
+    }
+    
+    private func setupSocialAuthNotifications() {
+        // Handle Apple Sign-In success
+        NotificationCenter.default.publisher(for: .appleAuthSuccess)
+            .sink { [self] notification in
+                guard let userId = notification.userInfo?["userId"] as? String,
+                      let firstName = notification.userInfo?["firstName"] as? String,
+                      let lastName = notification.userInfo?["lastName"] as? String,
+                      let email = notification.userInfo?["email"] as? String else {
+                    return
+                }
+                
+                authVM.authenticateWithApple(
+                    context: modelContext,
+                    userId: userId,
+                    firstName: firstName,
+                    lastName: lastName,
+                    email: email
+                ) { result in
+                    switch result {
+                    case .success(let isProfileComplete):
+                        if !isProfileComplete {
+                            // Handle profile completion if needed
+                        }
+                    case .failure(let error):
+                        errorMessage = error.localizedDescription
+                    }
+                }
+            }
+            .store(in: &cancellables)
+        
+        // Handle Google Sign-In success
+        NotificationCenter.default.publisher(for: .googleAuthSuccess)
+            .sink { [self] notification in
+                guard let idToken = notification.userInfo?["idToken"] as? String else {
+                    return
+                }
+                
+                authVM.authenticateWithGoogle(
+                    context: modelContext,
+                    idToken: idToken
+                ) { result in
+                    switch result {
+                    case .success(let isProfileComplete):
+                        if !isProfileComplete {
+                            // Handle profile completion if needed
+                        }
+                    case .failure(let error):
+                        errorMessage = error.localizedDescription
+                    }
+                }
+            }
+            .store(in: &cancellables)
+        
+        // Handle authentication failures
+        NotificationCenter.default.publisher(for: .appleAuthFailure)
+            .sink { notification in
+                if let error = notification.userInfo?["error"] as? Error {
+                    errorMessage = error.localizedDescription
+                }
+            }
+            .store(in: &cancellables)
+            
+        NotificationCenter.default.publisher(for: .googleAuthFailure)
+            .sink { notification in
+                if let error = notification.userInfo?["error"] as? Error {
+                    errorMessage = error.localizedDescription
+                }
+            }
+            .store(in: &cancellables)
     }
 }
