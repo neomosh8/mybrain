@@ -34,8 +34,8 @@ struct ContentView: View {
     
     var body: some View {
         Group {
-            if authVM.isAuthenticated {
-                // Show main content or ThoughtsView
+            if authVM.isAuthenticated && authVM.isProfileComplete {
+                // Show ThoughtsView
                 NavigationStack {
                     // Create dependencies for ThoughtsView
                     let serverConnect = serverConnectFactory.shared(
@@ -90,9 +90,9 @@ struct ContentView: View {
             if authVM.serverConnect == nil {
                 print("Initializing ServerConnect on app appear")
                 let serverConnect = serverConnectFactory.shared(with: modelContext)
-
+                
                 serverConnect.resetSession()
-
+                
                 authVM.initializeWithServerConnect(serverConnect)
             }
             
@@ -100,12 +100,17 @@ struct ContentView: View {
             authVM.loadFromSwiftData(context: modelContext)
             
             // Check BLE status when authenticated
-            if authVM.isAuthenticated && !hasCheckedBLEStatus {
+            if authVM.isAuthenticated && authVM.isProfileComplete && !hasCheckedBLEStatus {
                 checkBLEStatus()
             }
         }
         .onChange(of: authVM.isAuthenticated) { _, newValue in
-            if newValue && !hasCheckedBLEStatus {
+            if newValue && authVM.isProfileComplete && !hasCheckedBLEStatus {
+                checkBLEStatus()
+            }
+        }
+        .onChange(of: authVM.isProfileComplete) { _, newValue in
+            if newValue && authVM.isAuthenticated && !hasCheckedBLEStatus {
                 checkBLEStatus()
             }
         }

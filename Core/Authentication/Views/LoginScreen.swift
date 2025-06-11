@@ -366,72 +366,67 @@ struct LoginScreen: View {
             // Profile form inputs
             VStack(spacing: 16) {
                 // First Name
-                ZStack {
+                HStack {
+                    Image(systemName: "person")
+                        .foregroundColor(.white.opacity(0.6))
+                        .frame(width: 20)
+                    
+                    ZStack(alignment: .leading) {
+                        if firstName.isEmpty {
+                            Text("First name")
+                                .foregroundColor(.white.opacity(0.5))
+                                .font(.system(size: 16))
+                        }
+                        
+                        TextField("", text: $firstName)
+                            .autocapitalization(.words)
+                            .autocorrectionDisabled(true)
+                            .foregroundColor(.white)
+                            .font(.system(size: 16, weight: .medium))
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+                .background(
                     RoundedRectangle(cornerRadius: 16)
                         .fill(Color.white.opacity(0.08))
                         .overlay(
                             RoundedRectangle(cornerRadius: 16)
                                 .stroke(Color.white.opacity(0.2), lineWidth: 1)
                         )
-                    
-                    HStack {
-                        Image(systemName: "person")
-                            .foregroundColor(.white.opacity(0.6))
-                            .frame(width: 20)
-                        
-                        ZStack(alignment: .leading) {
-                            if firstName.isEmpty {
-                                Text("First name")
-                                    .foregroundColor(.white.opacity(0.5))
-                                    .font(.system(size: 16))
-                            }
-                            
-                            TextField("", text: $firstName)
-                                .autocapitalization(.words)
-                                .autocorrectionDisabled(true)
-                                .foregroundColor(.white)
-                                .font(.system(size: 16))
-                        }
-                        
-                        Spacer()
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 16)
-                }
+                )
                 
                 // Last Name
-                ZStack {
+                HStack {
+                    Image(systemName: "person.text.rectangle")
+                        .foregroundColor(.white.opacity(0.6))
+                        .frame(width: 20)
+                    
+                    ZStack(alignment: .leading) {
+                        if lastName.isEmpty {
+                            Text("Last name")
+                                .foregroundColor(.white.opacity(0.5))
+                                .font(.system(size: 16))
+                        }
+                        
+                        TextField("", text: $lastName)
+                            .autocapitalization(.words)
+                            .autocorrectionDisabled(true)
+                            .foregroundColor(.white)
+                            .font(.system(size: 16, weight: .medium))
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+                .background(
                     RoundedRectangle(cornerRadius: 16)
                         .fill(Color.white.opacity(0.08))
                         .overlay(
                             RoundedRectangle(cornerRadius: 16)
                                 .stroke(Color.white.opacity(0.2), lineWidth: 1)
                         )
-                    
-                    HStack {
-                        Image(systemName: "person.badge.plus")
-                            .foregroundColor(.white.opacity(0.6))
-                            .frame(width: 20)
-                        
-                        ZStack(alignment: .leading) {
-                            if lastName.isEmpty {
-                                Text("Last name")
-                                    .foregroundColor(.white.opacity(0.5))
-                                    .font(.system(size: 16))
-                            }
-                            
-                            TextField("", text: $lastName)
-                                .autocapitalization(.words)
-                                .autocorrectionDisabled(true)
-                                .foregroundColor(.white)
-                                .font(.system(size: 16))
-                        }
-                        
-                        Spacer()
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 16)
-                }
+                )
+                
                 
                 Button(action: updateProfile) {
                     Text("Complete Profile")
@@ -622,7 +617,7 @@ struct LoginScreen: View {
     }
     
     private func updateProfile() {
-        authVM.updateProfile(firstName: firstName, lastName: lastName) { result in
+        authVM.updateProfile(firstName: firstName, lastName: lastName, context: modelContext) { result in
             switch result {
             case .success:
                 authVM.isAuthenticated = true

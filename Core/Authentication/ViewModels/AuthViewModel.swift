@@ -100,16 +100,15 @@ class AuthViewModel: ObservableObject {
     
     func loadFromSwiftData(context: ModelContext) {
         let fetchDescriptor = FetchDescriptor<AuthData>(
-            predicate: #Predicate { $0.id == "user_auth_data"
-            })
+            predicate: #Predicate { $0.id == "user_auth_data" })
         if let authData = try? context.fetch(fetchDescriptor).first {
             self.accessToken = authData.accessToken
             self.refreshToken = authData.refreshToken
             self.isAuthenticated = authData.isLoggedIn
+            self.isProfileComplete = authData.profileComplete
         }
     }
-    
-    
+
     func requestAuthCode(
         email: String,
         completion: @escaping (Result<String, Error>) -> Void
@@ -173,14 +172,34 @@ class AuthViewModel: ObservableObject {
                     
                     SharedDataManager.saveToken(tokenResponse.access)
                     
+                    let fetchDescriptor = FetchDescriptor<AuthData>(
+                        predicate: #Predicate { $0.id == "user_auth_data" })
+                    
+                    do {
+                        let existing = try context.fetch(fetchDescriptor)
+                        let authData = existing.first ?? AuthData()
+                        
+                        authData.accessToken = tokenResponse.access
+                        authData.refreshToken = tokenResponse.refresh
+                        authData.isLoggedIn = true
+                        authData.profileComplete = tokenResponse.profileComplete
+                        
+                        if existing.isEmpty {
+                            context.insert(authData)
+                        }
+                        
+                        try context.save()
+                    } catch {
+                        print("Error saving auth data: \(error)")
+                    }
+                    
                     completion(.success(tokenResponse.profileComplete))
                 }
             )
             .store(in: &cancellables)
     }
     
-    
-    func updateProfile(firstName: String, lastName: String, completion: @escaping (Result<Void, Error>) -> Void) {
+    func updateProfile(firstName: String, lastName: String, context: ModelContext, completion: @escaping (Result<Void, Error>) -> Void) {
         guard let serverConnect = serverConnect else {
             completion(.failure(
                 NSError(
@@ -201,6 +220,26 @@ class AuthViewModel: ObservableObject {
                 },
                 receiveValue: { _ in
                     self.isProfileComplete = true
+                    
+                    // Save to SwiftData
+                    let fetchDescriptor = FetchDescriptor<AuthData>(
+                        predicate: #Predicate { $0.id == "user_auth_data" })
+                    
+                    do {
+                        let existing = try context.fetch(fetchDescriptor)
+                        let authData = existing.first ?? AuthData()
+                        
+                        authData.profileComplete = true
+                        
+                        if existing.isEmpty {
+                            context.insert(authData)
+                        }
+                        
+                        try context.save()
+                    } catch {
+                        print("Error updating profile complete status: \(error)")
+                    }
+                    
                     completion(.success(()))
                 }
             )
