@@ -67,7 +67,6 @@
 		74263C892DDAF66400953598 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C882DDAF66200953598 /* Constants.swift */; };
 		74263C8F2DDAF6F700953598 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 74263C8E2DDAF6F400953598 /* Localizable.strings */; };
 		742DCF822DDD8CBD00B17443 /* StreamingLinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 742DCF812DDD8CBD00B17443 /* StreamingLinks.swift */; };
-		742DCF882DDDA78000B17443 /* CompleteProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 742DCF872DDDA77D00B17443 /* CompleteProfileView.swift */; };
 		7468256F2DDCE58B0089AE37 /* ImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7468256E2DDCE5880089AE37 /* ImageLoader.swift */; };
 		74C2860B2DB4C31A00CF836B /* AppleAuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74C2860A2DB4C30E00CF836B /* AppleAuthManager.swift */; };
 		74C2860D2DB4C32400CF836B /* GoogleAuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74C2860C2DB4C32100CF836B /* GoogleAuthManager.swift */; };
@@ -164,7 +163,6 @@
 		74263C882DDAF66200953598 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		74263C8E2DDAF6F400953598 /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = Localizable.strings; sourceTree = "<group>"; };
 		742DCF812DDD8CBD00B17443 /* StreamingLinks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingLinks.swift; sourceTree = "<group>"; };
-		742DCF872DDDA77D00B17443 /* CompleteProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompleteProfileView.swift; sourceTree = "<group>"; };
 		745991D52DDB2016000C9359 /* ServerConnectFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerConnectFactory.swift; sourceTree = "<group>"; };
 		7468256E2DDCE5880089AE37 /* ImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageLoader.swift; sourceTree = "<group>"; };
 		74C286092DB4C1E800CF836B /* myBrain-by-neocore-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "myBrain-by-neocore-Info.plist"; sourceTree = "<group>"; };
@@ -512,7 +510,6 @@
 		74263C732DDADEC900953598 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				742DCF872DDDA77D00B17443 /* CompleteProfileView.swift */,
 				74263C132DDADAE800953598 /* LoginScreen.swift */,
 			);
 			path = Views;
@@ -763,7 +760,6 @@
 				6844270E2D13D862002E9BC6 /* AuthViewModel.swift in Sources */,
 				684427032D13D580002E9BC6 /* myBrainApp.swift in Sources */,
 				740925072DDB39FF00D62C25 /* WebSocketService.swift in Sources */,
-				742DCF882DDDA78000B17443 /* CompleteProfileView.swift in Sources */,
 				74263C7C2DDAF4AA00953598 /* BluetoothModels.swift in Sources */,
 				684427382D13F22E002E9BC6 /* SharedDataManager.swift in Sources */,
 				68ACE9C92D17C78C003BCC83 /* PerformanceViewModel.swift in Sources */,

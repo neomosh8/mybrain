@@ -45,7 +45,6 @@ class AuthViewModel: ObservableObject {
     
     // MARK: - Private Methods
     
-    
     private func setupAppleAuthNotifications() {
         NotificationCenter.default.publisher(for: .appleAuthSuccess)
             .sink { [weak self] notification in

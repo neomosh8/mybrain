@@ -35,54 +35,47 @@ struct ContentView: View {
     var body: some View {
         Group {
             if authVM.isAuthenticated {
-                if authVM.isProfileComplete {
-                    // Show main content or ThoughtsView
-                    NavigationStack {
-                        // Create dependencies for ThoughtsView
-                        let serverConnect = serverConnectFactory.shared(
-                            with: modelContext
+                // Show main content or ThoughtsView
+                NavigationStack {
+                    // Create dependencies for ThoughtsView
+                    let serverConnect = serverConnectFactory.shared(
+                        with: modelContext
+                    )
+                    
+                    // Create the token storage for WebSocketService
+                    let tokenStorage = SwiftDataTokenStorage(
+                        modelContext: modelContext
+                    )
+                    
+                    // Create base URL
+                    let baseURL = URL(string: "https://brain.sorenapp.ir")!
+                    
+                    // Create WebSocketService
+                    let webSocketService = WebSocketManager(
+                        baseURL: baseURL,
+                        tokenStorage: tokenStorage
+                    )
+                    
+                    // Create ThoughtsViewModel with services
+                    let thoughtsViewModel = ThoughtsViewModel(
+                        thoughtService: serverConnect,
+                        webSocketService: webSocketService
+                    )
+                    
+                    // Use the ViewModel with StateObject wrapper
+                    ThoughtsView(viewModel: thoughtsViewModel)
+                        .environmentObject(
+                            bluetoothService
+                        ) // Pass BLE service to ThoughtsView
+                }
+                .overlay {
+                    if showOnboarding {
+                        OnboardingView(
+                            viewModel: onboardingViewModel,
+                            bluetoothService: bluetoothService
                         )
-                        
-                        // Create the token storage for WebSocketService
-                        let tokenStorage = SwiftDataTokenStorage(
-                            modelContext: modelContext
-                        )
-                        
-                        // Create base URL
-                        let baseURL = URL(string: "https://brain.sorenapp.ir")!
-                        
-                        // Create WebSocketService
-                        let webSocketService = WebSocketManager(
-                            baseURL: baseURL,
-                            tokenStorage: tokenStorage
-                        )
-                        
-                        // Create ThoughtsViewModel with services
-                        let thoughtsViewModel = ThoughtsViewModel(
-                            thoughtService: serverConnect,
-                            webSocketService: webSocketService
-                        )
-                        
-                        // Use the ViewModel with StateObject wrapper
-                        ThoughtsView(viewModel: thoughtsViewModel)
-                            .environmentObject(
-                                bluetoothService
-                            ) // Pass BLE service to ThoughtsView
-                    }
-                    .overlay {
-                        if showOnboarding {
-                            OnboardingView(
-                                viewModel: onboardingViewModel,
-                                bluetoothService: bluetoothService
-                            )
-                            .transition(.opacity)
-                            .animation(.easeInOut, value: showOnboarding)
-                        }
-                    }
-                } else {
-                    // Need to complete profile first
-                    NavigationStack {
-                        CompleteProfileView().environmentObject(authVM)
+                        .transition(.opacity)
+                        .animation(.easeInOut, value: showOnboarding)
                     }
                 }
             } else {
