@@ -145,7 +145,7 @@ extension AppleAuthManager: ASAuthorizationControllerDelegate, ASAuthorizationCo
         
         NotificationCenter.default.post(
             name: .appleAuthSuccess,
-            object: nil,
+            object: credential,
             userInfo: [
                 "userId": userId ?? "",
                 "firstName": firstName ?? "",

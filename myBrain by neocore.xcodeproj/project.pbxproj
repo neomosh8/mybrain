@@ -25,9 +25,6 @@
 		68DF43FF2D20CEA800A6E46C /* ChapterData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68DF43FE2D20CEA800A6E46C /* ChapterData.swift */; };
 		68FE23132D43328F00FA59AA /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 68FE23122D43328F00FA59AA /* Lottie */; };
 		740925012DDB38EA00D62C25 /* ServerConnect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C7D2DDAF50100953598 /* ServerConnect.swift */; };
-		740925022DDB39C100D62C25 /* Foundation+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C852DDAF59900953598 /* Foundation+Extensions.swift */; };
-		740925032DDB39C500D62C25 /* SwiftUI+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C842DDAF59000953598 /* SwiftUI+Extensions.swift */; };
-		740925042DDB39C900D62C25 /* UIKit+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C832DDAF58000953598 /* UIKit+Extensions.swift */; };
 		740925052DDB39F600D62C25 /* TokenRefreshDecorator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C822DDAF53500953598 /* TokenRefreshDecorator.swift */; };
 		740925062DDB39FB00D62C25 /* TokenStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C812DDAF52F00953598 /* TokenStorage.swift */; };
 		740925072DDB39FF00D62C25 /* WebSocketService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C802DDAF52700953598 /* WebSocketService.swift */; };
@@ -163,9 +160,6 @@
 		74263C802DDAF52700953598 /* WebSocketService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSocketService.swift; sourceTree = "<group>"; };
 		74263C812DDAF52F00953598 /* TokenStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenStorage.swift; sourceTree = "<group>"; };
 		74263C822DDAF53500953598 /* TokenRefreshDecorator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenRefreshDecorator.swift; sourceTree = "<group>"; };
-		74263C832DDAF58000953598 /* UIKit+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIKit+Extensions.swift"; sourceTree = "<group>"; };
-		74263C842DDAF59000953598 /* SwiftUI+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SwiftUI+Extensions.swift"; sourceTree = "<group>"; };
-		74263C852DDAF59900953598 /* Foundation+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Foundation+Extensions.swift"; sourceTree = "<group>"; };
 		74263C862DDAF63500953598 /* AnimatedLineChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedLineChartView.swift; sourceTree = "<group>"; };
 		74263C882DDAF66200953598 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		74263C8E2DDAF6F400953598 /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = Localizable.strings; sourceTree = "<group>"; };
@@ -374,9 +368,6 @@
 		74263C612DDADDF500953598 /* Extensions */ = {
 			isa = PBXGroup;
 			children = (
-				74263C852DDAF59900953598 /* Foundation+Extensions.swift */,
-				74263C842DDAF59000953598 /* SwiftUI+Extensions.swift */,
-				74263C832DDAF58000953598 /* UIKit+Extensions.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -541,7 +532,6 @@
 			isa = PBXGroup;
 			children = (
 				6844270B2D13D802002E9BC6 /* AuthModels.swift */,
-				684427172D13E17B002E9BC6 /* AuthData.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -612,6 +602,7 @@
 			isa = PBXGroup;
 			children = (
 				684426FD2D13D580002E9BC6 /* AppItem.swift */,
+				684427172D13E17B002E9BC6 /* AuthData.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -748,7 +739,6 @@
 				74263C312DDADAE800953598 /* OnboardingView.swift in Sources */,
 				740925092DDB3A0A00D62C25 /* NetworkProtocols.swift in Sources */,
 				74263C352DDADAE800953598 /* TestSignalView.swift in Sources */,
-				740925032DDB39C500D62C25 /* SwiftUI+Extensions.swift in Sources */,
 				74263C362DDADAE800953598 /* BluetoothService.swift in Sources */,
 				742DCF822DDD8CBD00B17443 /* StreamingLinks.swift in Sources */,
 				74263C372DDADAE800953598 /* ThoughtNavigationView.swift in Sources */,
@@ -764,8 +754,6 @@
 				74263C3E2DDADAE800953598 /* TestSignalViewModel.swift in Sources */,
 				740925012DDB38EA00D62C25 /* ServerConnect.swift in Sources */,
 				74263C3F2DDADAE800953598 /* SceneKitUSDZView.swift in Sources */,
-				740925022DDB39C100D62C25 /* Foundation+Extensions.swift in Sources */,
-				740925042DDB39C900D62C25 /* UIKit+Extensions.swift in Sources */,
 				74263C402DDADAE800953598 /* ChapterCompletionView.swift in Sources */,
 				74263C412DDADAE800953598 /* HistoryView.swift in Sources */,
 				74263C422DDADAE800953598 /* StreamThoughtView.swift in Sources */,
