@@ -107,7 +107,6 @@
 		684426FD2D13D580002E9BC6 /* AppItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppItem.swift; sourceTree = "<group>"; };
 		684426FE2D13D580002E9BC6 /* myBrainApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = myBrainApp.swift; sourceTree = "<group>"; };
 		684426FF2D13D580002E9BC6 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
-		684427062D13D585002E9BC6 /* myBrain-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "myBrain-Bridging-Header.h"; sourceTree = "<group>"; };
 		6844270B2D13D802002E9BC6 /* AuthModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthModels.swift; sourceTree = "<group>"; };
 		6844270D2D13D862002E9BC6 /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
 		684427172D13E17B002E9BC6 /* AuthData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthData.swift; sourceTree = "<group>"; };
@@ -198,7 +197,6 @@
 			children = (
 				74263C082DDADA3400953598 /* .gitattributes */,
 				684427332D13F189002E9BC6 /* myBrain.entitlements */,
-				684427062D13D585002E9BC6 /* myBrain-Bridging-Header.h */,
 				74C286092DB4C1E800CF836B /* myBrain-by-neocore-Info.plist */,
 				74263C542DDADCB200953598 /* App */,
 				74263C552DDADCC100953598 /* Core */,
