@@ -12,7 +12,7 @@ struct DeviceDetailsView: View {
         ScrollView {
             VStack(alignment: .center, spacing: 20) {
                 // Header with device image
-                Image(colorScheme == .dark ? "headphone" : "headphone_b")
+                Image("Neurolink")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(height: 150)

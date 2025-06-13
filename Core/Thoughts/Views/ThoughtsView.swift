@@ -188,7 +188,7 @@ struct ThoughtsView: View {
                 Button(action: {
                     showDeviceDetails = true
                 }) {
-                    Image(colorScheme == .dark ? "headphone" : "headphone_b")
+                    Image("Neurolink")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 44, height: 44)
