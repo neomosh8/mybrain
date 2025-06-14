@@ -5,25 +5,59 @@ struct MainTabView: View {
     
     var body: some View {
         ZStack {
-            // Tab content
-            TabView(selection: $selectedTab) {
-                NavigationStack { HomeView() }
-                    .tag(0)
-                
-                NavigationStack { AnalyticsView() }
-                    .tag(1)
-                
-                NavigationStack { DeviceView() }
-                    .tag(2)
-                
-                NavigationStack { ProfileView() }
-                    .tag(3)
-            }
-            .tabViewStyle(.page(indexDisplayMode: .never))
+            currentTabContent
             
             VStack {
                 Spacer()
                 floatingTabBar
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var currentTabContent: some View {
+        switch selectedTab {
+        case 0:
+            NavigationStack {
+                HomeView(onNavigateToDevice: {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        selectedTab = 2
+                    }
+                })
+                .transition(.asymmetric(
+                    insertion: .move(edge: .leading).combined(with: .opacity),
+                    removal: .move(edge: .trailing).combined(with: .opacity)
+                ))
+            }
+        case 1:
+            NavigationStack {
+                AnalyticsView()
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .leading).combined(with: .opacity),
+                        removal: .move(edge: .trailing).combined(with: .opacity)
+                    ))
+            }
+        case 2:
+            NavigationStack {
+                DeviceView()
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .leading).combined(with: .opacity),
+                        removal: .move(edge: .trailing).combined(with: .opacity)
+                    ))
+            }
+        case 3:
+            NavigationStack {
+                ProfileView()
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .leading).combined(with: .opacity),
+                        removal: .move(edge: .trailing).combined(with: .opacity)
+                    ))
+            }
+        default:
+            NavigationStack {
+                HomeView(onNavigateToDevice: {
+                    selectedTab = 2
+                })
             }
         }
     }
@@ -37,7 +71,6 @@ struct MainTabView: View {
                     }
                 }) {
                     VStack(spacing: 4) {
-                        // Icon
                         Group {
                             if tab == .device {
                                 Image("Neurolink")
@@ -47,21 +80,18 @@ struct MainTabView: View {
                                     .frame(width: 24, height: 24)
                             } else {
                                 Image(systemName: tab.iconName)
-                                    .font(.system(size: 22, weight: .medium))
+                                    .font(.system(size: 20, weight: .medium))
                             }
                         }
                         .foregroundColor(selectedTab == tab.rawValue ? .white : .white.opacity(0.6))
-                        .frame(width: 26, height: 26)
-                        .padding(.bottom, 2)
+                        .frame(width: 24, height: 24)
                         .scaleEffect(selectedTab == tab.rawValue ? 1.1 : 1.0)
                         
-                        // Title
                         Text(tab.title)
                             .font(.system(size: 11, weight: .medium))
                             .foregroundColor(selectedTab == tab.rawValue ? .white : .white.opacity(0.6))
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
                 }
                 .buttonStyle(PlainButtonStyle())
             }
@@ -103,10 +133,10 @@ enum TabItem: Int, CaseIterable {
     
     var iconName: String {
         switch self {
-        case .home: return "house.fill"
-        case .analytics: return "chart.line.uptrend.xyaxis"
+        case .home: return "house"
+        case .analytics: return "chart.bar"
         case .device: return ""
-        case .profile: return "person.crop.circle.fill"
+        case .profile: return "person"
         }
     }
 }

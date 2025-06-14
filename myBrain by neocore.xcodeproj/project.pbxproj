@@ -73,6 +73,7 @@
 		743D5BBE2DFC464000C4F71E /* AnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 743D5BB42DFC464000C4F71E /* AnalyticsView.swift */; };
 		743D5BBF2DFC464000C4F71E /* DeviceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 743D5BB52DFC464000C4F71E /* DeviceView.swift */; };
 		7468256F2DDCE58B0089AE37 /* ImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7468256E2DDCE5880089AE37 /* ImageLoader.swift */; };
+		747A54B32DFDC0B400BD9541 /* HomeThoughtCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747A54B22DFDC0A900BD9541 /* HomeThoughtCard.swift */; };
 		74C2860B2DB4C31A00CF836B /* AppleAuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74C2860A2DB4C30E00CF836B /* AppleAuthManager.swift */; };
 		74C2860D2DB4C32400CF836B /* GoogleAuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74C2860C2DB4C32100CF836B /* GoogleAuthManager.swift */; };
 		74C286102DB4D0E900CF836B /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 74C2860F2DB4D0E900CF836B /* GoogleSignIn */; };
@@ -174,6 +175,7 @@
 		743D5BB82DFC464000C4F71E /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		745991D52DDB2016000C9359 /* ServerConnectFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerConnectFactory.swift; sourceTree = "<group>"; };
 		7468256E2DDCE5880089AE37 /* ImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageLoader.swift; sourceTree = "<group>"; };
+		747A54B22DFDC0A900BD9541 /* HomeThoughtCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeThoughtCard.swift; sourceTree = "<group>"; };
 		74C286092DB4C1E800CF836B /* myBrain-by-neocore-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "myBrain-by-neocore-Info.plist"; sourceTree = "<group>"; };
 		74C2860A2DB4C30E00CF836B /* AppleAuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleAuthManager.swift; sourceTree = "<group>"; };
 		74C2860C2DB4C32100CF836B /* GoogleAuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleAuthManager.swift; sourceTree = "<group>"; };
@@ -392,6 +394,7 @@
 		74263C632DDADE0E00953598 /* Cards */ = {
 			isa = PBXGroup;
 			children = (
+				747A54B22DFDC0A900BD9541 /* HomeThoughtCard.swift */,
 				74263C102DDADAE800953598 /* HistoryCard.swift */,
 				74263C122DDADAE800953598 /* InsightCard.swift */,
 				74263C202DDADAE800953598 /* ThoughtCard.swift */,
@@ -765,6 +768,7 @@
 				74263C362DDADAE800953598 /* BluetoothService.swift in Sources */,
 				742DCF822DDD8CBD00B17443 /* StreamingLinks.swift in Sources */,
 				74263C372DDADAE800953598 /* ThoughtNavigationView.swift in Sources */,
+				747A54B32DFDC0B400BD9541 /* HomeThoughtCard.swift in Sources */,
 				7468256F2DDCE58B0089AE37 /* ImageLoader.swift in Sources */,
 				74263C382DDADAE800953598 /* OnboardingViewModel.swift in Sources */,
 				74263C392DDADAE800953598 /* SubtitleView.swift in Sources */,
