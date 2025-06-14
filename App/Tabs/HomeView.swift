@@ -4,12 +4,30 @@ struct HomeView: View {
     @EnvironmentObject var bluetoothService: BluetoothService
     @State private var selectedMode: ContentMode = .reading
     @State private var showDeviceCard = true
+    @State private var isReconnecting = false
+    @State private var selectedThought: Thought?
     
     @State private var cardScale: CGFloat = 1.0
     @State private var cardOpacity: Double = 1.0
     @State private var cardOffset: CGSize = .zero
     
+    // Search/Filter states
+    @State private var showSearchField = false
+    @State private var searchText = ""
+    
+    // ThoughtsViewModel for real data
+    @StateObject private var thoughtsViewModel: ThoughtsViewModel
+    
     var onNavigateToDevice: (() -> Void)?
+    
+    // Initialize with ThoughtsViewModel
+    init(
+        thoughtsViewModel: ThoughtsViewModel,
+        onNavigateToDevice: (() -> Void)? = nil
+    ) {
+        self._thoughtsViewModel = StateObject(wrappedValue: thoughtsViewModel)
+        self.onNavigateToDevice = onNavigateToDevice
+    }
     
     var body: some View {
         ZStack {
@@ -29,7 +47,44 @@ struct HomeView: View {
                     VStack(spacing: 20) {
                         ModeSelectionView(selectedMode: $selectedMode)
                         
-                        Color.clear.frame(height: 200)
+                        // Thoughts Section
+                        if thoughtsViewModel.isLoading && thoughtsViewModel.thoughts.isEmpty {
+                            LoadingThoughtsView()
+                        } else if let errorMessage = thoughtsViewModel.errorMessage, thoughtsViewModel.thoughts.isEmpty {
+                            ErrorThoughtsView(message: errorMessage) {
+                                thoughtsViewModel.refreshData()
+                            }
+                        } else {
+                            VStack(spacing: 12) {
+                                // Show reconnection indicator if we have thoughts but are reconnecting
+                                if isReconnecting && !thoughtsViewModel.thoughts.isEmpty {
+                                    HStack {
+                                        ProgressView()
+                                            .scaleEffect(0.8)
+                                        Text("Reconnecting...")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                        Spacer()
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .background(Color(.systemGray6))
+                                    .cornerRadius(8)
+                                }
+                                
+                                ThoughtsListSection(
+                                    showSearchField: $showSearchField,
+                                    searchText: $searchText,
+                                    thoughts: filteredThoughts,
+                                    selectedMode: selectedMode,
+                                    onThoughtTap: { thought in
+                                        handleThoughtSelection(thought)
+                                    }
+                                )
+                            }
+                        }
+                        
+                        Color.clear.frame(height: 50)
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 20)
@@ -72,8 +127,61 @@ struct HomeView: View {
             bluetoothService.isConnected = true
             bluetoothService.batteryLevel = 78
             
+            // Use WebSocket-only approach for fetching thoughts
+            thoughtsViewModel.refreshData()
+            
+            // Subscribe to WebSocket connection state like the old ThoughtsView
+            let subscription = thoughtsViewModel.observeConnectionState { state in
+                switch state {
+                case .connected:
+                    print("✅ WebSocket connected successfully")
+                    isReconnecting = false
+                case .connecting:
+                    print("🔄 WebSocket connecting...")
+                    isReconnecting = true
+                case .disconnected:
+                    print("❌ WebSocket disconnected")
+                    isReconnecting = false
+                case .failed(let error):
+                    print("❌ WebSocket connection failed: \(error)")
+                    isReconnecting = false
+                }
+            }
+            thoughtsViewModel.storeSubscription(subscription)
+            
+            // Subscribe to WebSocket messages for processing state
+            let messageSubscription = thoughtsViewModel.observeWebSocketMessages { message in
+                if let type = message["type"] as? String {
+                    if type == "thought_update",
+                       let data = message["data"] as? [String: Any],
+                       let thoughtData = data["thought"] as? [String: Any],
+                       let id = thoughtData["id"] as? Int,
+                       let status = thoughtData["status"] as? String {
+                        print("Received thought update: ID \(id), Status: \(status)")
+                    }
+                }
+            }
+            thoughtsViewModel.storeSubscription(messageSubscription)
+            
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                 hideDeviceCardWithAnimation()
+            }
+        }
+        .refreshable {
+            // Pull to refresh functionality
+            thoughtsViewModel.refreshData()
+        }
+    }
+    
+    // MARK: - Computed Properties
+    
+    private var filteredThoughts: [Thought] {
+        if searchText.isEmpty {
+            return thoughtsViewModel.thoughts
+        } else {
+            return thoughtsViewModel.thoughts.filter { thought in
+                thought.name.localizedCaseInsensitiveContains(searchText) ||
+                (thought.description?.localizedCaseInsensitiveContains(searchText) ?? false)
             }
         }
     }
@@ -106,6 +214,75 @@ struct HomeView: View {
         withAnimation(.easeOut(duration: 0.2).delay(0.25)) {
             showDeviceCard = false
         }
+    }
+    
+    // MARK: - Functions
+    
+    private func handleThoughtSelection(_ thought: Thought) {
+        guard thought.status == "processed" else {
+            // Show alert or handle non-processed thoughts
+            print("Thought is not ready yet - Status: \(thought.status)")
+            return
+        }
+        
+        print("🎯 Navigating to thought: \(thought.name) in \(selectedMode.title) mode")
+        selectedThought = thought
+    }
+}
+
+// MARK: - Loading View
+struct LoadingThoughtsView: View {
+    var body: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+                .scaleEffect(1.2)
+            
+            Text("Loading your thoughts...")
+                .font(.headline)
+                .foregroundColor(.secondary)
+        }
+        .padding(.vertical, 40)
+    }
+}
+
+// MARK: - Error View
+struct ErrorThoughtsView: View {
+    let message: String
+    let onRetry: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "wifi.exclamationmark")
+                .font(.system(size: 48))
+                .foregroundColor(.orange)
+            
+            Text("Connection Error")
+                .font(.headline)
+                .foregroundColor(.primary)
+            
+            Text(message)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+            
+            VStack(spacing: 8) {
+                Button(action: onRetry) {
+                    Text("Retry Connection")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 12)
+                        .background(Color.blue)
+                        .cornerRadius(8)
+                }
+                
+                Text("Using WebSocket connection only")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(.vertical, 40)
     }
 }
 
@@ -194,7 +371,7 @@ struct ConnectionStatusIndicator: View {
     }
 }
 
-// MARK: - Device Status Card (Simplified)
+// MARK: - Device Status Card
 struct DeviceStatusCard: View {
     @EnvironmentObject var bluetoothService: BluetoothService
     let onCardTapped: () -> Void
@@ -377,12 +554,5 @@ enum ContentMode: CaseIterable {
         case .reading: return "eye"
         case .listening: return "headphones"
         }
-    }
-}
-
-#Preview {
-    NavigationStack {
-        HomeView()
-            .environmentObject(BluetoothService.shared)
     }
 }

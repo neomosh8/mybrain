@@ -7,21 +7,51 @@ struct HomeThoughtCard: View {
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 12) {
-                AsyncImage(url: URL(string: thought.cover ?? "")) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } placeholder: {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.gray.opacity(0.3))
-                        .overlay(
-                            Image(systemName: "doc.text")
-                                .foregroundColor(.gray)
-                                .font(.title2)
-                        )
+                AsyncImage(url: processedImageURL) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    case .failure(let error):
+                        // Show default icon on failure
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.gray.opacity(0.2))
+                            .overlay(
+                                VStack {
+                                    Image(systemName: "doc.text")
+                                        .foregroundColor(.gray)
+                                        .font(.title2)
+                                    Text("No Image")
+                                        .font(.caption2)
+                                        .foregroundColor(.gray)
+                                }
+                            )
+                    case .empty:
+                        // Show loading state
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.gray.opacity(0.1))
+                            .overlay(
+                                ProgressView()
+                                    .scaleEffect(0.7)
+                            )
+                    @unknown default:
+                        // Fallback
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.gray.opacity(0.2))
+                            .overlay(
+                                Image(systemName: "photo")
+                                    .foregroundColor(.gray)
+                                    .font(.title2)
+                            )
+                    }
                 }
                 .frame(width: 60, height: 60)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
+                .onAppear {
+                    print("📸 Loading image for '\(thought.name)' from URL: \(thought.cover ?? "nil")")
+                    print("📸 Processed URL: \(processedImageURL?.absoluteString ?? "nil")")
+                }
                 
                 // Thought Info
                 VStack(alignment: .leading, spacing: 4) {
@@ -66,6 +96,26 @@ struct HomeThoughtCard: View {
             )
         }
         .buttonStyle(PlainButtonStyle())
+    }
+    
+    // MARK: - Helper Properties
+    
+    private var processedImageURL: URL? {
+        guard let coverString = thought.cover, !coverString.isEmpty else {
+            print("📸 No cover URL for thought '\(thought.name)'")
+            return nil
+        }
+        
+        // Handle relative URLs by adding base URL
+        if coverString.hasPrefix("http://") || coverString.hasPrefix("https://") {
+            return URL(string: coverString)
+        } else {
+            // Assume it's a relative path and add the base URL
+            let baseURL = "https://brain.sorenapp.ir"
+            let fullURL = baseURL + (coverString.hasPrefix("/") ? coverString : "/" + coverString)
+            print("📸 Converting relative URL '\(coverString)' to '\(fullURL)'")
+            return URL(string: fullURL)
+        }
     }
     
     private func formatDate(_ dateString: String) -> String {

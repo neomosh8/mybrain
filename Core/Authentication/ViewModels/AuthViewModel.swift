@@ -419,3 +419,54 @@ class AuthViewModel: ObservableObject {
         )
     }
 }
+
+extension AuthViewModel {
+    /// Force logout when tokens are invalid/expired
+    func forceLogout(context: ModelContext) {
+        print("Force logout due to invalid tokens")
+        
+        // Clear all auth state
+        self.accessToken = nil
+        self.refreshToken = nil
+        self.isAuthenticated = false
+        self.isProfileComplete = false
+        
+        // Clear from shared data manager
+        SharedDataManager.saveToken(nil)
+        
+        // Clear from SwiftData
+        let fetchDescriptor = FetchDescriptor<AuthData>(
+            predicate: #Predicate { $0.id == "user_auth_data" }
+        )
+        
+        do {
+            let existing = try context.fetch(fetchDescriptor)
+            if let authData = existing.first {
+                authData.accessToken = nil
+                authData.refreshToken = nil
+                authData.isLoggedIn = false
+                authData.profileComplete = false
+                try context.save()
+            }
+        } catch {
+            print("Error clearing auth data during force logout: \(error)")
+        }
+        
+        // Disconnect any active connections
+        serverConnect?.disconnect()
+        
+        print("Force logout completed - user will see login screen")
+    }
+    
+    /// Check if we should force logout based on error
+    func shouldForceLogout(for error: NetworkError) -> Bool {
+        switch error {
+        case .unauthorized:
+            return true
+        case .serverError(let statusCode, _):
+            return statusCode == 401
+        default:
+            return false
+        }
+    }
+}

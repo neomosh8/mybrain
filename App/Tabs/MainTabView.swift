@@ -1,29 +1,61 @@
 import SwiftUI
 
 struct MainTabView: View {
+    @Environment(\.modelContext) private var modelContext
     @State private var selectedTab = 0
+    
+    // Create ThoughtsViewModel once we have modelContext
+    @State private var thoughtsViewModel: ThoughtsViewModel?
     
     var body: some View {
         ZStack {
-            currentTabContent
+            if let thoughtsViewModel = thoughtsViewModel {
+                currentTabContent(thoughtsViewModel: thoughtsViewModel)
+            } else {
+                // Show loading while initializing services
+                ProgressView("Initializing...")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
             
             VStack {
                 Spacer()
                 floatingTabBar
             }
         }
+        .onAppear {
+            if thoughtsViewModel == nil {
+                setupServices()
+            }
+        }
+    }
+    
+    private func setupServices() {
+        // Create services with proper modelContext
+        let serverConnectFactory = ServerConnectFactory()
+        let serverConnect = serverConnectFactory.shared(with: modelContext)
+        
+        // Create ThoughtsViewModel
+        let viewModel = ThoughtsViewModel(
+            thoughtService: serverConnect,
+            webSocketService: serverConnect
+        )
+        
+        self.thoughtsViewModel = viewModel
     }
     
     @ViewBuilder
-    private var currentTabContent: some View {
+    private func currentTabContent(thoughtsViewModel: ThoughtsViewModel) -> some View {
         switch selectedTab {
         case 0:
             NavigationStack {
-                HomeView(onNavigateToDevice: {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        selectedTab = 2
+                HomeView(
+                    thoughtsViewModel: thoughtsViewModel,
+                    onNavigateToDevice: {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            selectedTab = 2
+                        }
                     }
-                })
+                )
                 .transition(.asymmetric(
                     insertion: .move(edge: .leading).combined(with: .opacity),
                     removal: .move(edge: .trailing).combined(with: .opacity)
@@ -55,9 +87,12 @@ struct MainTabView: View {
             }
         default:
             NavigationStack {
-                HomeView(onNavigateToDevice: {
-                    selectedTab = 2
-                })
+                HomeView(
+                    thoughtsViewModel: thoughtsViewModel,
+                    onNavigateToDevice: {
+                        selectedTab = 2
+                    }
+                )
             }
         }
     }

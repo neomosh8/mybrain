@@ -74,6 +74,7 @@
 		743D5BBF2DFC464000C4F71E /* DeviceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 743D5BB52DFC464000C4F71E /* DeviceView.swift */; };
 		7468256F2DDCE58B0089AE37 /* ImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7468256E2DDCE5880089AE37 /* ImageLoader.swift */; };
 		747A54B32DFDC0B400BD9541 /* HomeThoughtCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747A54B22DFDC0A900BD9541 /* HomeThoughtCard.swift */; };
+		747A54B82DFDC33700BD9541 /* ThoughtsListSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747A54B72DFDC33500BD9541 /* ThoughtsListSection.swift */; };
 		74C2860B2DB4C31A00CF836B /* AppleAuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74C2860A2DB4C30E00CF836B /* AppleAuthManager.swift */; };
 		74C2860D2DB4C32400CF836B /* GoogleAuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74C2860C2DB4C32100CF836B /* GoogleAuthManager.swift */; };
 		74C286102DB4D0E900CF836B /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 74C2860F2DB4D0E900CF836B /* GoogleSignIn */; };
@@ -176,6 +177,7 @@
 		745991D52DDB2016000C9359 /* ServerConnectFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerConnectFactory.swift; sourceTree = "<group>"; };
 		7468256E2DDCE5880089AE37 /* ImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageLoader.swift; sourceTree = "<group>"; };
 		747A54B22DFDC0A900BD9541 /* HomeThoughtCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeThoughtCard.swift; sourceTree = "<group>"; };
+		747A54B72DFDC33500BD9541 /* ThoughtsListSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtsListSection.swift; sourceTree = "<group>"; };
 		74C286092DB4C1E800CF836B /* myBrain-by-neocore-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "myBrain-by-neocore-Info.plist"; sourceTree = "<group>"; };
 		74C2860A2DB4C30E00CF836B /* AppleAuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleAuthManager.swift; sourceTree = "<group>"; };
 		74C2860C2DB4C32100CF836B /* GoogleAuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleAuthManager.swift; sourceTree = "<group>"; };
@@ -384,6 +386,7 @@
 		74263C622DDADDFC00953598 /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				747A54B62DFDC32E00BD9541 /* Sections */,
 				74263C652DDADE2300953598 /* Misc */,
 				74263C642DDADE1D00953598 /* Charts */,
 				74263C632DDADE0E00953598 /* Cards */,
@@ -628,6 +631,14 @@
 			path = Tabs;
 			sourceTree = "<group>";
 		};
+		747A54B62DFDC32E00BD9541 /* Sections */ = {
+			isa = PBXGroup;
+			children = (
+				747A54B72DFDC33500BD9541 /* ThoughtsListSection.swift */,
+			);
+			path = Sections;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -751,6 +762,7 @@
 				74263C272DDADAE800953598 /* TrendView.swift in Sources */,
 				74263C282DDADAE800953598 /* PerformanceView.swift in Sources */,
 				743D5BBA2DFC464000C4F71E /* MainTabView.swift in Sources */,
+				747A54B82DFDC33700BD9541 /* ThoughtsListSection.swift in Sources */,
 				743D5BBB2DFC464000C4F71E /* ProfileView.swift in Sources */,
 				743D5BBC2DFC464000C4F71E /* HomeView.swift in Sources */,
 				743D5BBE2DFC464000C4F71E /* AnalyticsView.swift in Sources */,

@@ -26,7 +26,7 @@ struct ContentView: View {
         )
         _onboardingViewModel = StateObject(wrappedValue: viewModel)
         
-        // Initialize the ServerConnectFactory (don't create actual ServerConnect yet)
+        // Initialize the ServerConnectFactory
         serverConnectFactory = ServerConnectFactory()
     }
     
@@ -36,7 +36,7 @@ struct ContentView: View {
                 // Show MainTabView instead of ThoughtsView
                 NavigationStack {
                     MainTabView()
-                        .environmentObject(bluetoothService) // Pass BluetoothService to MainTabView
+                        .environmentObject(bluetoothService)
                 }
                 .overlay {
                     if showOnboarding {
@@ -56,15 +56,7 @@ struct ContentView: View {
             }
         }
         .onAppear {
-            // Initialize AuthViewModel with ServerConnect if not already done
-            if authVM.serverConnect == nil {
-                print("Initializing ServerConnect on app appear")
-                let serverConnect = serverConnectFactory.shared(with: modelContext)
-                
-                serverConnect.resetSession()
-                
-                authVM.initializeWithServerConnect(serverConnect)
-            }
+            setupServices()
             
             // Load tokens from SwiftData when the view appears
             authVM.loadFromSwiftData(context: modelContext)
@@ -90,6 +82,26 @@ struct ContentView: View {
             if completed {
                 withAnimation {
                     showOnboarding = false
+                }
+            }
+        }
+    }
+    
+    private func setupServices() {
+        // Initialize AuthViewModel with ServerConnect if not already done
+        if authVM.serverConnect == nil {
+            print("Initializing ServerConnect on app appear")
+            let serverConnect = serverConnectFactory.shared(with: modelContext)
+            
+            serverConnect.resetSession()
+            
+            authVM.initializeWithServerConnect(serverConnect)
+            
+            // Set up the token expiration callback
+            serverConnectFactory.onTokensInvalid = { [weak authVM] in
+                print("Received tokens invalid callback - forcing logout")
+                DispatchQueue.main.async {
+                    authVM?.forceLogout(context: modelContext)
                 }
             }
         }

@@ -43,15 +43,15 @@ class ThoughtsViewModel: ObservableObject {
             .sink { [weak self] state in
                 switch state {
                 case .connected:
-                    self?.webSocketService
-                        .sendMessage(action: "list_thoughts", data: [:])
+                    print("WebSocket connected - requesting thoughts list")
+                    self?.webSocketService.sendMessage(action: "list_thoughts", data: [:])
                 case .failed(let error):
                     self?.errorMessage = "WebSocket connection failed: \(error.localizedDescription)"
                     self?.isLoading = false
                 case .disconnected:
-                    break
+                    print("WebSocket disconnected")
                 case .connecting:
-                    break
+                    print("WebSocket connecting...")
                 }
             }
             .store(in: &cancellables)
@@ -76,23 +76,21 @@ class ThoughtsViewModel: ObservableObject {
     
     func fetchThoughts() {
         isLoading = true
+        errorMessage = nil
         
-        thoughtService.fetchThoughts()
-            .receive(on: DispatchQueue.main)
-            .sink(
-                receiveCompletion: { [weak self] completion in
-                    if case .failure(let error) = completion {
-                        self?.errorMessage = error.localizedDescription
-                    }
-                    self?.isLoading = false
-                },
-                receiveValue: { [weak self] thoughts in
-                    self?.thoughts = thoughts
-                }
-            )
-            .store(in: &cancellables)
+        print("=== Fetching thoughts via WebSocket only ===")
         
+        // Connect WebSocket and request thoughts
         webSocketService.connect()
+        
+        // Add a timeout fallback
+        DispatchQueue.main.asyncAfter(deadline: .now() + 10.0) {
+            if self.isLoading {
+                print("WebSocket thoughts request timed out")
+                self.errorMessage = "Request timed out. Please try again."
+                self.isLoading = false
+            }
+        }
     }
     
     func observeWebSocketMessages(onMessageReceived: @escaping ([String: Any]) -> Void) -> AnyCancellable {
@@ -104,31 +102,58 @@ class ThoughtsViewModel: ObservableObject {
     }
     
     func deleteThought(_ thought: Thought) {
-        thoughtService.deleteThought(id: thought.id)
-            .receive(on: DispatchQueue.main)
-            .sink(
-                receiveCompletion: { [weak self] completion in
-                    if case .failure(let error) = completion {
-                        self?.errorMessage = error.localizedDescription
-                    }
-                },
-                receiveValue: { [weak self] _ in
-                    self?.thoughts.removeAll { $0.id == thought.id }
-                }
-            )
-            .store(in: &cancellables)
+        // Use WebSocket for deletion too
+        webSocketService.sendMessage(action: "delete_thought", data: ["thought_id": thought.id])
+        
+        // Optimistically remove from local array
+        thoughts.removeAll { $0.id == thought.id }
     }
     
     func refreshData() {
-        fetchThoughts()
-        webSocketService.sendMessage(action: "list_thoughts", data: [:])
+        print("=== Refreshing thoughts data via WebSocket ===")
+        
+        // Reset state
+        errorMessage = nil
+        isLoading = true
+        
+        // Connect and request fresh data
+        webSocketService.connect()
+        
+        // Small delay to ensure connection is established before sending message
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            print("Sending list_thoughts message")
+            self.webSocketService.sendMessage(action: "list_thoughts", data: [:])
+        }
     }
     
     // MARK: - WebSocket Message Handlers
     private func handleThoughtsList(_ message: [String: Any]) {
+        print("=== Handling thoughts_list message ===")
+        print("Raw message: \(message)")
+        
         guard let data = message["data"] as? [String: Any],
               let thoughtsData = data["thoughts"] as? [[String: Any]] else {
-            print("Invalid data format in thoughts_list message")
+            print("❌ Invalid data format in thoughts_list message")
+            print("Message data: \(message["data"] ?? "nil")")
+            
+            // Check if it's a different format
+            if let thoughtsArray = message["data"] as? [[String: Any]] {
+                // Data is directly an array
+                print("✅ Found thoughts array directly in data")
+                let thoughts = thoughtsArray.compactMap { parseThought(from: $0) }
+                DispatchQueue.main.async {
+                    self.thoughts = thoughts
+                    self.isLoading = false
+                    self.errorMessage = nil
+                }
+                return
+            }
+            
+            // If we can't parse, show error
+            DispatchQueue.main.async {
+                self.errorMessage = "Invalid response format from server"
+                self.isLoading = false
+            }
             return
         }
         
@@ -139,9 +164,12 @@ class ThoughtsViewModel: ObservableObject {
             }
         }
         
+        print("✅ Successfully parsed \(tempThoughts.count) thoughts")
+        
         DispatchQueue.main.async {
             self.thoughts = tempThoughts
             self.isLoading = false
+            self.errorMessage = nil
         }
     }
     
@@ -163,6 +191,8 @@ class ThoughtsViewModel: ObservableObject {
                 tempThoughts[index] = updatedThought
                 self.thoughts = tempThoughts
             }
+            
+            print("✅ Updated thought \(id) status to \(status)")
         }
     }
     
@@ -173,12 +203,17 @@ class ThoughtsViewModel: ObservableObject {
               let status = data["status"] as? String,
               let created_at = data["created_at"] as? String,
               let updated_at = data["updated_at"] as? String else {
+            print("❌ Failed to parse thought - missing required fields")
+            print("Available fields: \(data.keys)")
             return nil
         }
         
         let description = data["description"] as? String
         let cover = data["cover"] as? String
         let model3D = data["model_3d"] as? String
+        
+        // DEBUG: Print the cover URL to see what we're getting
+        print("📸 Parsing thought '\(name)' with cover URL: '\(cover ?? "nil")'")
         
         return Thought(
             id: id,
