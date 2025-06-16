@@ -4,7 +4,6 @@ struct HomeView: View {
     @EnvironmentObject var bluetoothService: BluetoothService
     @State private var selectedMode: ContentMode = .reading
     @State private var showDeviceCard = true
-    @State private var isReconnecting = false
     @State private var selectedThought: Thought?
     
     @State private var cardScale: CGFloat = 1.0
@@ -15,17 +14,11 @@ struct HomeView: View {
     @State private var showSearchField = false
     @State private var searchText = ""
     
-    // ThoughtsViewModel for real data
-    @StateObject private var thoughtsViewModel: ThoughtsViewModel
-    
+    @StateObject private var thoughtsViewModel = ThoughtsViewModel()
+        
     var onNavigateToDevice: (() -> Void)?
     
-    // Initialize with ThoughtsViewModel
-    init(
-        thoughtsViewModel: ThoughtsViewModel,
-        onNavigateToDevice: (() -> Void)? = nil
-    ) {
-        self._thoughtsViewModel = StateObject(wrappedValue: thoughtsViewModel)
+    init(onNavigateToDevice: (() -> Void)? = nil) {
         self.onNavigateToDevice = onNavigateToDevice
     }
     
@@ -56,22 +49,6 @@ struct HomeView: View {
                             }
                         } else {
                             VStack(spacing: 12) {
-                                // Show reconnection indicator if we have thoughts but are reconnecting
-                                if isReconnecting && !thoughtsViewModel.thoughts.isEmpty {
-                                    HStack {
-                                        ProgressView()
-                                            .scaleEffect(0.8)
-                                        Text("Reconnecting...")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                        Spacer()
-                                    }
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 8)
-                                    .background(Color(.systemGray6))
-                                    .cornerRadius(8)
-                                }
-                                
                                 ThoughtsListSection(
                                     showSearchField: $showSearchField,
                                     searchText: $searchText,
@@ -127,41 +104,8 @@ struct HomeView: View {
             bluetoothService.isConnected = true
             bluetoothService.batteryLevel = 78
             
-            // Use WebSocket-only approach for fetching thoughts
             thoughtsViewModel.refreshData()
             
-            // Subscribe to WebSocket connection state like the old ThoughtsView
-            let subscription = thoughtsViewModel.observeConnectionState { state in
-                switch state {
-                case .connected:
-                    print("✅ WebSocket connected successfully")
-                    isReconnecting = false
-                case .connecting:
-                    print("🔄 WebSocket connecting...")
-                    isReconnecting = true
-                case .disconnected:
-                    print("❌ WebSocket disconnected")
-                    isReconnecting = false
-                case .failed(let error):
-                    print("❌ WebSocket connection failed: \(error)")
-                    isReconnecting = false
-                }
-            }
-            thoughtsViewModel.storeSubscription(subscription)
-            
-            // Subscribe to WebSocket messages for processing state
-            let messageSubscription = thoughtsViewModel.observeWebSocketMessages { message in
-                if let type = message["type"] as? String {
-                    if type == "thought_update",
-                       let data = message["data"] as? [String: Any],
-                       let thoughtData = data["thought"] as? [String: Any],
-                       let id = thoughtData["id"] as? Int,
-                       let status = thoughtData["status"] as? String {
-                        print("Received thought update: ID \(id), Status: \(status)")
-                    }
-                }
-            }
-            thoughtsViewModel.storeSubscription(messageSubscription)
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                 hideDeviceCardWithAnimation()
@@ -276,10 +220,6 @@ struct ErrorThoughtsView: View {
                         .background(Color.blue)
                         .cornerRadius(8)
                 }
-                
-                Text("Using WebSocket connection only")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
             }
         }
         .padding(.vertical, 40)

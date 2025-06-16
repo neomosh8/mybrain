@@ -4,22 +4,6 @@ import SwiftUI
 
 // MARK: - Models
 
-struct ThoughtStatus {
-    let thought_id: Int
-    let thought_name: String
-    let status: String
-    let progress: ProgressData
-    let chapters: [ChapterDataModel]
-    
-    enum CodingKeys: String, CodingKey {
-        case thoughtId = "thought_id"
-        case thoughtName = "thought_name"
-        case status
-        case progress
-        case chapters
-    }
-}
-
 struct ProgressData {
     let total: Int
     let completed: Int

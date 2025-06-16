@@ -6,7 +6,7 @@ import MediaPlayer
 
 @main
 struct myBrainApp: App {
-    @StateObject var authVM = AuthViewModel(serverConnect: nil)
+    @StateObject var authVM = AuthViewModel()
     @StateObject var backgroundManager = BackgroundManager.shared
     
     @UIApplicationDelegateAdaptor private var appDelegate: AppDelegate
@@ -14,6 +14,7 @@ struct myBrainApp: App {
     
     init() {
         UIApplication.shared.beginReceivingRemoteControlEvents()
+        _ = NetworkServiceManager.shared
     }
     
     var body: some Scene {

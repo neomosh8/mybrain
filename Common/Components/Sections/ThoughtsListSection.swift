@@ -37,7 +37,7 @@ struct ThoughtsListSection: View {
             } else {
                 LazyVStack(spacing: 12) {
                     ForEach(thoughts) { thought in
-                        HomeThoughtCard(thought: thought) {
+                        ThoughtCard(thought: thought) {
                             onThoughtTap(thought)
                         }
                     }

@@ -9,7 +9,8 @@ struct AnimatedParagraphView: View {
     let chapterIndex: Int
     let thoughtId: Int
     let chapterNumber: Int
-    let webSocketService: WebSocketService & ThoughtWebSocketService
+    private let networkService = NetworkServiceManager.shared
+    
     let onHalfway: () -> Void
     let onFinished: () -> Void
     @State private var totalTextHeight: CGFloat = 0
@@ -31,7 +32,7 @@ struct AnimatedParagraphView: View {
         ZStack(alignment: .topLeading) {
             // 1) Invisible text for layout
             Text(fullAttributedString?.string ?? "")
-                // Make sure the “invisible” text uses same font metrics
+                // Make sure the "invisible" text uses same font metrics
                 .font(.system(size: 18, weight: .regular))
                 .foregroundColor(.clear)
                 .frame(width: containerWidth, alignment: .leading)
@@ -216,7 +217,7 @@ extension AnimatedParagraphView {
         if let subAttr = fullAttributedString?.attributedSubstring(from: range) {
             let plainWord = subAttr.string.trimmingCharacters(in: .whitespacesAndNewlines)
 
-            webSocketService.sendFeedback(
+            networkService.webSocket.sendFeedback(
                 thoughtId: thoughtId,
                 chapterNumber: chapterNumber,
                 word: plainWord,

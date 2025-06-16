@@ -30,17 +30,7 @@ struct MainTabView: View {
     }
     
     private func setupServices() {
-        // Create services with proper modelContext
-        let serverConnectFactory = ServerConnectFactory()
-        let serverConnect = serverConnectFactory.shared(with: modelContext)
-        
-        // Create ThoughtsViewModel
-        let viewModel = ThoughtsViewModel(
-            thoughtService: serverConnect,
-            webSocketService: serverConnect
-        )
-        
-        self.thoughtsViewModel = viewModel
+        self.thoughtsViewModel = ThoughtsViewModel()
     }
     
     @ViewBuilder
@@ -49,7 +39,6 @@ struct MainTabView: View {
         case 0:
             NavigationStack {
                 HomeView(
-                    thoughtsViewModel: thoughtsViewModel,
                     onNavigateToDevice: {
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                             selectedTab = 2
@@ -88,7 +77,6 @@ struct MainTabView: View {
         default:
             NavigationStack {
                 HomeView(
-                    thoughtsViewModel: thoughtsViewModel,
                     onNavigateToDevice: {
                         selectedTab = 2
                     }

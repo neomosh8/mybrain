@@ -13,9 +13,6 @@ struct ContentView: View {
     @State private var showOnboarding = false
     @State private var hasCheckedBLEStatus = false
     
-    // Services
-    private let serverConnectFactory: ServerConnectFactory
-    
     init() {
         // Initialize BluetoothService
         _bluetoothService = StateObject(wrappedValue: BluetoothService.shared)
@@ -25,15 +22,11 @@ struct ContentView: View {
             bluetoothService: BluetoothService.shared
         )
         _onboardingViewModel = StateObject(wrappedValue: viewModel)
-        
-        // Initialize the ServerConnectFactory
-        serverConnectFactory = ServerConnectFactory()
     }
     
     var body: some View {
         Group {
             if authVM.isAuthenticated && authVM.isProfileComplete {
-                // Show MainTabView instead of ThoughtsView
                 NavigationStack {
                     MainTabView()
                         .environmentObject(bluetoothService)
@@ -56,8 +49,6 @@ struct ContentView: View {
             }
         }
         .onAppear {
-            setupServices()
-            
             // Load tokens from SwiftData when the view appears
             authVM.loadFromSwiftData(context: modelContext)
             
@@ -87,32 +78,10 @@ struct ContentView: View {
         }
     }
     
-    private func setupServices() {
-        // Initialize AuthViewModel with ServerConnect if not already done
-        if authVM.serverConnect == nil {
-            print("Initializing ServerConnect on app appear")
-            let serverConnect = serverConnectFactory.shared(with: modelContext)
-            
-            serverConnect.resetSession()
-            
-            authVM.initializeWithServerConnect(serverConnect)
-            
-            // Set up the token expiration callback
-            serverConnectFactory.onTokensInvalid = { [weak authVM] in
-                print("Received tokens invalid callback - forcing logout")
-                DispatchQueue.main.async {
-                    authVM?.forceLogout(context: modelContext)
-                }
-            }
-        }
-    }
-    
     private func checkBLEStatus() {
         hasCheckedBLEStatus = true
         
-        // If not connected, try to auto-reconnect first
         if !bluetoothService.isConnected {
-            // Show the reconnecting UI
             withAnimation {
                 showOnboarding = true
                 onboardingViewModel.checkForPreviousDevice()

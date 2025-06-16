@@ -5,7 +5,7 @@ import MediaPlayer
 
 struct StreamThoughtView: View {
     let thought: Thought
-    let webSocketService: WebSocketService & ThoughtWebSocketService
+    private let networkService = NetworkServiceManager.shared
     
     @EnvironmentObject var backgroundManager: BackgroundManager
     
@@ -43,46 +43,37 @@ struct StreamThoughtView: View {
         // ------------------------------------------
         // Wrap our main stream UI inside ThoughtNavigationView
         // ------------------------------------------
-        ThoughtNavigationView(
-            thought: thought,
-            webSocketService: webSocketService
-        ) {
-            // The MAIN content for streaming, shown once user chooses "Resume" or if brand new
-            ZStack {
-                Color.clear.ignoresSafeArea()
-                
-                
-                if hasCompletedPlayback {
-                    ChapterCompletionView(
-                        webSocketService: webSocketService,
-                        thoughtId: thought.id
-                    )
-                } else {
-                    VStack {
-                        if isFetchingLinks {
-                            ProgressView("Fetching Streaming Links...")
-                        } else if let player = player {
-                            // Audio controls only
-                            audioPlayerControls
-                            
-                            // Show Subtitles
-                            SubtitleView(
-                                viewModel: subtitleViewModel,
-                                thoughtId: thought.id,
-                                chapterNumber: $currentChapterNumber,
-                                webSocketService: webSocketService
-                            )
-                        } else if let error = playerError {
-                            Text("Player Error: \(error.localizedDescription)")
-                                .foregroundColor(.red)
-                        } else {
-                            Text("Ready to Stream \(thought.name)")
-                                .foregroundColor(.black)
+        ThoughtNavigationView(thought: thought) {
+            AnyView(
+                ZStack {
+                    Color.clear.ignoresSafeArea()
+                    
+                    if hasCompletedPlayback {
+                        ChapterCompletionView(thoughtId: thought.id)
+                    } else {
+                        VStack {
+                            if isFetchingLinks {
+                                ProgressView("Fetching Streaming Links...")
+                            } else if let player = player {
+                                audioPlayerControls
+                                
+                                SubtitleView(
+                                    viewModel: subtitleViewModel,
+                                    thoughtId: thought.id,
+                                    chapterNumber: $currentChapterNumber
+                                )
+                            } else if let error = playerError {
+                                Text("Player Error: \(error.localizedDescription)")
+                                    .foregroundColor(.red)
+                            } else {
+                                Text("Ready to Stream \(thought.name)")
+                                    .foregroundColor(.black)
+                            }
                         }
+                        .padding()
                     }
-                    .padding()
                 }
-            }
+            )
         }
         // ------------------------------------------
         // Provide closures for resume and reset
@@ -116,24 +107,48 @@ struct StreamThoughtView: View {
                 }
                 .store(in: &cancellables)
             
-            // Subscribe to chapter responses
-            webSocketService.messagePublisher
-                .filter { $0["type"] as? String == "chapter_response" }
+            
+            networkService.webSocket.messages
+                .filter { message in
+                    switch message {
+                    case .response(let action, _):
+                        return action == "chapter_response"
+                    default:
+                        return false
+                    }
+                }
                 .sink { message in
-                    self.handleNextChapterResponse(message: message)
+                    switch message {
+                    case .response(_, let data):
+                        self.handleNextChapterResponse(message: data)
+                    default:
+                        break
+                    }
                 }
                 .store(in: &cancellables)
             
-            // Subscribe to streaming links responses
-            webSocketService.messagePublisher
-                .filter { $0["type"] as? String == "streaming_links" }
+            networkService.webSocket.messages
+                .filter { message in
+                    switch message {
+                    case .response(let action, _):
+                        return action == "streaming_links"
+                    default:
+                        return false
+                    }
+                }
                 .sink { message in
-                    self.handleStreamingLinksResponse(message: message)
+                    switch message {
+                    case .response(_, let data):
+                        self.handleStreamingLinksResponse(message: data)
+                    default:
+                        break
+                    }
                 }
                 .store(in: &cancellables)
             
             setupInterruptionHandlers()
             setupRouteChangeHandlers()
+            
         }
         .onDisappear {
             player?.pause()
@@ -176,8 +191,11 @@ struct StreamThoughtView: View {
         hasCompletedPlayback = false
         isFetchingLinks = true
         
-        webSocketService.configureForBackgroundOperation()
-        webSocketService.requestStreamingLinks(thoughtId: thought.id)
+        networkService.webSocket.sendStreamingLinks(thoughtId: thought.id)
+    }
+    
+    func requestNextChapter() {
+        networkService.webSocket.sendNextChapter(thoughtId: thought.id, generateAudio: true)
     }
     
     private func handleStreamingLinksResponse(message: [String: Any]) {
@@ -321,13 +339,8 @@ struct StreamThoughtView: View {
         }
     }
     
-    func requestNextChapter() {
-        webSocketService
-            .requestNextChapter(thoughtId: thought.id, generateAudio: true)
-    }
-    
     // MARK: - Handle Next Chapter
-    func handleNextChapterResponse(message: [String: Any]) {
+    private func handleNextChapterResponse(message: [String: Any]) {
         guard let data = message["data"] as? [String: Any] else { return }
         
         let chapterNumber = data["chapter_number"] as? Int ?? 0

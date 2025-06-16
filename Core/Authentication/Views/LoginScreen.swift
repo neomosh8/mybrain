@@ -319,8 +319,15 @@ struct LoginScreen: View {
             // Back button
             HStack {
                 Button(action: {
-                    // Reset all authentication state and go back to email login
-                    authVM.logout(context: modelContext)
+                    authVM.logout(context: modelContext) { result in
+                        switch result {
+                        case .success:
+                            print("Logout successful")
+                        case .failure(let error):
+                            print("Logout failed: \(error)")
+                        }
+                    }
+                    
                     email = ""
                     verificationCode = ""
                     firstName = ""
@@ -582,6 +589,7 @@ struct LoginScreen: View {
     
     private func verifyCode() {
         authVM.verifyCode(email: email, code: verificationCode, context: modelContext) { result in
+
             switch result {
             case .success(let isProfileComplete):
                 if !isProfileComplete {
@@ -599,7 +607,6 @@ struct LoginScreen: View {
                         }
                     }
                 } else {
-                    // Profile is complete, user will be automatically redirected
                     authVM.isAuthenticated = true
                 }
             case .failure(let error):
@@ -639,39 +646,43 @@ struct LoginScreen: View {
         // Handle Apple Sign-In success
         NotificationCenter.default.publisher(for: .appleAuthSuccess)
             .sink { [self] notification in
-                guard let userId = notification.userInfo?["userId"] as? String,
-                      let firstName = notification.userInfo?["firstName"] as? String,
-                      let lastName = notification.userInfo?["lastName"] as? String,
-                      let email = notification.userInfo?["email"] as? String else {
+                guard let userId = notification.userInfo?["userId"] as? String else {
                     return
                 }
                 
-                authVM.authenticateWithApple(
-                    context: modelContext,
+                // Apple Sign-In sometimes doesn't provide name/email on subsequent logins
+                let firstName = notification.userInfo?["firstName"] as? String
+                let lastName = notification.userInfo?["lastName"] as? String
+                let email = notification.userInfo?["email"] as? String
+                
+                self.authVM.authenticateWithApple(
+                    context: self.modelContext,
                     userId: userId,
                     firstName: firstName,
                     lastName: lastName,
                     email: email
                 ) { result in
-                    switch result {
-                    case .success(let isProfileComplete):
-                        if !isProfileComplete {
-                            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                                showProfileCompletion = true
-                                formOffset = -30
-                                contentOpacity = 0
-                            }
-                            
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    DispatchQueue.main.async {  // Ensure UI updates on main thread
+                        switch result {
+                        case .success(let isProfileComplete):
+                            if !isProfileComplete {
                                 withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                                    formOffset = 0
-                                    contentOpacity = 1
+                                    self.showProfileCompletion = true
+                                    self.formOffset = -30
+                                    self.contentOpacity = 0
+                                }
+                                
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                    withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                                        self.formOffset = 0
+                                        self.contentOpacity = 1
+                                    }
                                 }
                             }
-                        }
-                    case .failure(let error):
-                        withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                            errorMessage = error.localizedDescription
+                        case .failure(let error):
+                            withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                                self.errorMessage = error.localizedDescription
+                            }
                         }
                     }
                 }
@@ -684,30 +695,32 @@ struct LoginScreen: View {
                 guard let idToken = notification.userInfo?["idToken"] as? String else {
                     return
                 }
-                
-                authVM.authenticateWithGoogle(
-                    context: modelContext,
+                                
+                self.authVM.authenticateWithGoogle(
+                    context: self.modelContext,
                     idToken: idToken
                 ) { result in
-                    switch result {
-                    case .success(let isProfileComplete):
-                        if !isProfileComplete {
-                            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                                showProfileCompletion = true
-                                formOffset = -30
-                                contentOpacity = 0
-                            }
-                            
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    DispatchQueue.main.async {  // Ensure UI updates on main thread
+                        switch result {
+                        case .success(let isProfileComplete):
+                            if !isProfileComplete {
                                 withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                                    formOffset = 0
-                                    contentOpacity = 1
+                                    self.showProfileCompletion = true
+                                    self.formOffset = -30
+                                    self.contentOpacity = 0
+                                }
+                                
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                    withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                                        self.formOffset = 0
+                                        self.contentOpacity = 1
+                                    }
                                 }
                             }
-                        }
-                    case .failure(let error):
-                        withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                            errorMessage = error.localizedDescription
+                        case .failure(let error):
+                            withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                                self.errorMessage = error.localizedDescription
+                            }
                         }
                     }
                 }
@@ -716,20 +729,23 @@ struct LoginScreen: View {
         
         // Handle authentication failures
         NotificationCenter.default.publisher(for: .appleAuthFailure)
-            .sink { notification in
+            .sink { [self] notification in
                 if let error = notification.userInfo?["error"] as? Error {
-                    withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                        errorMessage = error.localizedDescription
+                    DispatchQueue.main.async {
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                            self.errorMessage = error.localizedDescription
+                        }
                     }
                 }
             }
             .store(in: &cancellables)
-            
+        
         NotificationCenter.default.publisher(for: .googleAuthFailure)
-            .sink { notification in
-                if let error = notification.userInfo?["error"] as? Error {
-                    withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                        errorMessage = error.localizedDescription
+            .sink { [self] notification in                if let error = notification.userInfo?["error"] as? Error {
+                    DispatchQueue.main.async {
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                            self.errorMessage = error.localizedDescription
+                        }
                     }
                 }
             }
