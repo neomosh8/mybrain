@@ -10,11 +10,7 @@ class ThoughtsViewModel: ObservableObject {
     // MARK: - Private Properties
     private let networkService = NetworkServiceManager.shared
     private var cancellables = Set<AnyCancellable>()
-    
-    // MARK: - Initialization
-    init() {
-    }
-    
+        
     // MARK: - Public Methods
     
     func fetchThoughts() {
@@ -26,12 +22,10 @@ class ThoughtsViewModel: ObservableObject {
             .sink { result in
                 switch result {
                 case .success(let thoughts):
-                    print("✅ Successfully fetched \(thoughts.count) thoughts")
                     self.thoughts = thoughts
                     self.isLoading = false
                     self.errorMessage = nil
                 case .failure(let error):
-                    print("❌ Failed to fetch thoughts: \(error)")
                     self.errorMessage = error.localizedDescription
                     self.isLoading = false
                 }
@@ -44,11 +38,8 @@ class ThoughtsViewModel: ObservableObject {
             .sink { result in
                 switch result {
                 case .success:
-                    print("✅ Successfully deleted thought: \(thought.name)")
-                    // Remove from local array
                     self.thoughts.removeAll { $0.id == thought.id }
                 case .failure(let error):
-                    print("❌ Failed to delete thought: \(error)")
                     self.errorMessage = "Failed to delete thought: \(error.localizedDescription)"
                 }
             }
@@ -56,7 +47,6 @@ class ThoughtsViewModel: ObservableObject {
     }
     
     func refreshData() {
-        print("=== Refreshing thoughts data ===")
         fetchThoughts()
     }
     
