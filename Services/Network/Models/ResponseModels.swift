@@ -132,11 +132,12 @@ struct Thought: Codable, Identifiable {
     let cover: String?
     let model3d: String?
     let status: String
+    let progress: ThoughtProgress?
     let createdAt: String
     let updatedAt: String
     
     enum CodingKeys: String, CodingKey {
-        case id, name, description, cover, status
+        case id, name, description, cover, status, progress
         case contentType = "content_type"
         case model3d = "model_3d"
         case createdAt = "created_at"
