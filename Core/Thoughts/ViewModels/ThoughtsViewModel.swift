@@ -1,5 +1,3 @@
-// Core/Thoughts/ViewModels/ThoughtsViewModel.swift
-
 import SwiftUI
 import Combine
 
@@ -10,186 +8,77 @@ class ThoughtsViewModel: ObservableObject {
     @Published var errorMessage: String?
     
     // MARK: - Private Properties
-    private let thoughtService: ThoughtNetworkService
-    private let webSocketService: WebSocketService & ThoughtWebSocketService
+    private let networkService = NetworkServiceManager.shared
     private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Initialization
-    init(
-        thoughtService: ThoughtNetworkService,
-        webSocketService: WebSocketService & ThoughtWebSocketService
-    ) {
-        self.thoughtService = thoughtService
-        self.webSocketService = webSocketService
+    init() {
+    }
+    
+    // MARK: - Public Methods
+    
+    func fetchThoughts() {
+        isLoading = true
+        errorMessage = nil
         
-        webSocketService.messagePublisher
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] message in
-                if let type = message["type"] as? String {
-                    switch type {
-                    case "thoughts_list":
-                        self?.handleThoughtsList(message)
-                    case "thought_update":
-                        self?.handleThoughtUpdate(message)
-                    default:
-                        break
-                    }
-                }
-            }
-            .store(in: &cancellables)
         
-        webSocketService.connectionStatePublisher
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] state in
-                switch state {
-                case .connected:
-                    self?.webSocketService
-                        .sendMessage(action: "list_thoughts", data: [:])
-                case .failed(let error):
-                    self?.errorMessage = "WebSocket connection failed: \(error.localizedDescription)"
-                    self?.isLoading = false
-                case .disconnected:
-                    break
-                case .connecting:
-                    break
+        networkService.thoughts.getAllThoughts()
+            .sink { result in
+                switch result {
+                case .success(let thoughts):
+                    print("✅ Successfully fetched \(thoughts.count) thoughts")
+                    self.thoughts = thoughts
+                    self.isLoading = false
+                    self.errorMessage = nil
+                case .failure(let error):
+                    print("❌ Failed to fetch thoughts: \(error)")
+                    self.errorMessage = error.localizedDescription
+                    self.isLoading = false
                 }
             }
             .store(in: &cancellables)
     }
     
-    // MARK: - Public Methods
+    func deleteThought(_ thought: Thought) {
+        networkService.thoughts.archiveThought(thoughtId: thought.id)
+            .sink { result in
+                switch result {
+                case .success:
+                    print("✅ Successfully deleted thought: \(thought.name)")
+                    // Remove from local array
+                    self.thoughts.removeAll { $0.id == thought.id }
+                case .failure(let error):
+                    print("❌ Failed to delete thought: \(error)")
+                    self.errorMessage = "Failed to delete thought: \(error.localizedDescription)"
+                }
+            }
+            .store(in: &cancellables)
+    }
+    
+    func refreshData() {
+        print("=== Refreshing thoughts data ===")
+        fetchThoughts()
+    }
+    
+    // MARK: - WebSocket Methods (for other features that still use WebSocket)
+    
     func observeConnectionState(onStateChange: @escaping (WebSocketConnectionState) -> Void) -> AnyCancellable {
-        return webSocketService.connectionStatePublisher
+        return networkService.webSocket.connectionState
             .receive(on: DispatchQueue.main)
             .sink { state in
                 onStateChange(state)
             }
     }
     
-    func storeSubscription(_ subscription: AnyCancellable) {
-        cancellables.insert(subscription)
-    }
-    
-    func getWebSocketService() -> WebSocketService & ThoughtWebSocketService {
-        return webSocketService
-    }
-    
-    func fetchThoughts() {
-        isLoading = true
-        
-        thoughtService.fetchThoughts()
-            .receive(on: DispatchQueue.main)
-            .sink(
-                receiveCompletion: { [weak self] completion in
-                    if case .failure(let error) = completion {
-                        self?.errorMessage = error.localizedDescription
-                    }
-                    self?.isLoading = false
-                },
-                receiveValue: { [weak self] thoughts in
-                    self?.thoughts = thoughts
-                }
-            )
-            .store(in: &cancellables)
-        
-        webSocketService.connect()
-    }
-    
-    func observeWebSocketMessages(onMessageReceived: @escaping ([String: Any]) -> Void) -> AnyCancellable {
-        return webSocketService.messagePublisher
+    func observeWebSocketMessages(onMessageReceived: @escaping (WebSocketMessage) -> Void) -> AnyCancellable {
+        return networkService.webSocket.messages
             .receive(on: DispatchQueue.main)
             .sink { message in
                 onMessageReceived(message)
             }
     }
     
-    func deleteThought(_ thought: Thought) {
-        thoughtService.deleteThought(id: thought.id)
-            .receive(on: DispatchQueue.main)
-            .sink(
-                receiveCompletion: { [weak self] completion in
-                    if case .failure(let error) = completion {
-                        self?.errorMessage = error.localizedDescription
-                    }
-                },
-                receiveValue: { [weak self] _ in
-                    self?.thoughts.removeAll { $0.id == thought.id }
-                }
-            )
-            .store(in: &cancellables)
-    }
-    
-    func refreshData() {
-        fetchThoughts()
-        webSocketService.sendMessage(action: "list_thoughts", data: [:])
-    }
-    
-    // MARK: - WebSocket Message Handlers
-    private func handleThoughtsList(_ message: [String: Any]) {
-        guard let data = message["data"] as? [String: Any],
-              let thoughtsData = data["thoughts"] as? [[String: Any]] else {
-            print("Invalid data format in thoughts_list message")
-            return
-        }
-        
-        var tempThoughts: [Thought] = []
-        for thoughtData in thoughtsData {
-            if let thought = parseThought(from: thoughtData) {
-                tempThoughts.append(thought)
-            }
-        }
-        
-        DispatchQueue.main.async {
-            self.thoughts = tempThoughts
-            self.isLoading = false
-        }
-    }
-    
-    private func handleThoughtUpdate(_ message: [String: Any]) {
-        guard let data = message["data"] as? [String: Any],
-              let thoughtData = data["thought"] as? [String: Any],
-              let id = thoughtData["id"] as? Int,
-              let status = thoughtData["status"] as? String else {
-            print("Invalid data format in thought_update message")
-            return
-        }
-        
-        if let index = thoughts.firstIndex(where: { $0.id == id }) {
-            var updatedThought = thoughts[index]
-            updatedThought.status = status
-            
-            DispatchQueue.main.async {
-                var tempThoughts = self.thoughts
-                tempThoughts[index] = updatedThought
-                self.thoughts = tempThoughts
-            }
-        }
-    }
-    
-    private func parseThought(from data: [String: Any]) -> Thought? {
-        guard let id = data["id"] as? Int,
-              let name = data["name"] as? String,
-              let content_type = data["content_type"] as? String,
-              let status = data["status"] as? String,
-              let created_at = data["created_at"] as? String,
-              let updated_at = data["updated_at"] as? String else {
-            return nil
-        }
-        
-        let description = data["description"] as? String
-        let cover = data["cover"] as? String
-        let model3D = data["model_3d"] as? String
-        
-        return Thought(
-            id: id,
-            name: name,
-            description: description,
-            content_type: content_type,
-            cover: cover,
-            status: status,
-            created_at: created_at,
-            updated_at: updated_at,
-            model_3d: model3D
-        )
+    func storeSubscription(_ subscription: AnyCancellable) {
+        cancellables.insert(subscription)
     }
 }

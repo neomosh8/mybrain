@@ -11,9 +11,10 @@ import Combine
  */
 struct ThoughtNavigationView<Content: View>: View {
     let thought: Thought
-    let webSocketService: WebSocketService & ThoughtWebSocketService
 
-    // The child content to show once user chooses “Resume” or if status is "not_started"
+    private let networkService = NetworkServiceManager.shared
+
+    // The child content to show once user chooses "Resume" or if status is "not_started"
     @ViewBuilder let content: () -> Content
     
     // Internal states
@@ -91,7 +92,7 @@ extension ThoughtNavigationView {
         if isInProgress || isFinished {
             showPrompt = true
         } else {
-            showPrompt = false
+            showPrompt = false
             resetReading()
         }
     }
@@ -101,44 +102,75 @@ extension ThoughtNavigationView {
 extension ThoughtNavigationView {
     private func fetchThoughtStatus() {
         isFetchingStatus = true
-        webSocketService.requestThoughtStatus(thoughtId: thought.id)
         
-        // Store this subscription in a local variable first
-        let subscription = webSocketService.messagePublisher
-            .filter { $0["type"] as? String == "thought_chapters" }
-            .first()
-            .sink { message in
-                self.isFetchingStatus = false
-                self.handleThoughtStatusResponse(message)
+        // Try HTTP API first, fallback to WebSocket
+        networkService.thoughts.getThoughtStatus(thoughtId: thought.id)
+            .sink { result in
+                switch result {
+                case .success(let status):
+                    self.isFetchingStatus = false
+                    self.thoughtStatus = status
+                    self.presentPromptIfNeeded()
+                case .failure:
+                    // Fallback to WebSocket
+                    self.fetchStatusViaWebSocket()
+                }
             }
-        
-        cancellables.insert(subscription)
+            .store(in: &cancellables)
     }
     
-    private func handleThoughtStatusResponse(_ message: [String: Any]) {
+    private func fetchStatusViaWebSocket() {
+        // For WebSocket, you'd need to implement a custom message sender
+        // Since this isn't in the standard 3 message types
+        print("Fetching status via WebSocket - custom implementation needed")
+        
+        // Subscribe to WebSocket messages for status response
+        networkService.webSocket.messages
+            .filter { message in
+                switch message {
+                case .response(let action, _):
+                    return action == "thought_chapters"
+                default:
+                    return false
+                }
+            }
+            .first()
+            .sink { message in
+                switch message {
+                case .response(_, let data):
+                    self.isFetchingStatus = false
+                    self.handleThoughtStatusResponse(data)
+                default:
+                    break
+                }
+            }
+            .store(in: &cancellables)
+    }
+    
+    private func handleThoughtStatusResponse(_ data: [String: Any]) {
         guard
-            let status = message["status"] as? String, status == "success",
-            let data   = message["data"] as? [String: Any]
+            let status = data["status"] as? String, status == "success",
+            let responseData = data["data"] as? [String: Any]
         else {
             // Could show an error message
             return
         }
         
-        let statusString  = data["status"] as? String ?? "not_started"
-        let thoughtId     = data["thought_id"] as? Int ?? thought.id
-        let thoughtName   = data["thought_name"] as? String ?? thought.name
-        let progressDict  = data["progress"] as? [String: Any] ?? [:]
-        let chaptersArray = data["chapters"] as? [[String: Any]] ?? []
+        let statusString = responseData["status"] as? String ?? "not_started"
+        let thoughtId = responseData["thought_id"] as? Int ?? thought.id
+        let thoughtName = responseData["thought_name"] as? String ?? thought.name
+        let progressDict = responseData["progress"] as? [String: Any] ?? [:]
+        let chaptersArray = responseData["chapters"] as? [[String: Any]] ?? []
         
-        let progressData = ProgressData(
+        let progressData = ThoughtProgress(
             total: progressDict["total"] as? Int ?? 0,
             completed: progressDict["completed"] as? Int ?? 0,
             remaining: progressDict["remaining"] as? Int ?? 0
         )
         
-        let chapters = chaptersArray.map { ch -> ChapterDataModel in
-            ChapterDataModel(
-                chapter_number: ch["chapter_number"] as? Int ?? 0,
+        let chapters = chaptersArray.map { ch -> Chapter in
+            Chapter(
+                chapterNumber: ch["chapter_number"] as? Int ?? 0,
                 title: ch["title"] as? String ?? "",
                 content: ch["content"] as? String ?? "",
                 status: ch["status"] as? String ?? ""
@@ -146,8 +178,8 @@ extension ThoughtNavigationView {
         }
         
         let newStatus = ThoughtStatus(
-            thought_id: thoughtId,
-            thought_name: thoughtName,
+            thoughtId: thoughtId,
+            thoughtName: thoughtName,
             status: statusString,
             progress: progressData,
             chapters: chapters
@@ -167,7 +199,7 @@ extension ThoughtNavigationView {
         VStack(spacing: 16) {
             if isInProgress {
                 Text(
-                    "It seems you are in the middle of the stream / reading for \(thoughtStatus?.thought_name ?? thought.name)."
+                    "It seems you are in the middle of the stream / reading for \(thoughtStatus?.thoughtName ?? thought.name)."
                 )
                 .font(.headline)
                 .padding()
@@ -186,7 +218,7 @@ extension ThoughtNavigationView {
                 
             } else if isFinished {
                 Text(
-                    "It seems you have finished \(thoughtStatus?.thought_name ?? thought.name)."
+                    "It seems you have finished \(thoughtStatus?.thoughtName ?? thought.name)."
                 )
                 .font(.headline)
                 .padding()
@@ -211,23 +243,21 @@ extension ThoughtNavigationView {
     }
     
     private func resetReading() {
-        webSocketService.resetReading(thoughtId: thought.id)
-        
-        let subscription = webSocketService.messagePublisher
-            .filter { $0["type"] as? String == "reset_response" }
-            .first()
-            .sink { message in
-                self.handleResetResponse(message)
+        // Use HTTP API for reset
+        networkService.thoughts.resetThoughtProgress(thoughtId: thought.id)
+            .sink { result in
+                switch result {
+                case .success:
+                    self.handleResetSuccess()
+                case .failure(let error):
+                    print("Reset failed: \(error)")
+                    // Could show error alert
+                }
             }
-            
-        cancellables.insert(subscription)
+            .store(in: &cancellables)
     }
     
-    private func handleResetResponse(_ message: [String: Any]) {
-        guard let status = message["status"] as? String, status == "success" else {
-            // handle error
-            return
-        }
+    private func handleResetSuccess() {
         showPrompt = false
         showResetSuccess = true
         

@@ -7,7 +7,7 @@ struct SubtitleView: View {
     @ObservedObject var viewModel: SubtitleViewModel
     let thoughtId: Int
     @Binding var chapterNumber: Int
-    let webSocketService: WebSocketService & ThoughtWebSocketService
+    private let networkService = NetworkServiceManager.shared
     
     /// Track the last highlighted index so we only send feedback once per word.
     @State private var lastHighlightedIndex: Int?
@@ -82,8 +82,8 @@ struct SubtitleView: View {
             word: plainWord
         )
         
-        // Send feedback via WebSocketService
-        webSocketService.sendFeedback(
+        // Send feedback via the new NetworkService
+        networkService.webSocket.sendFeedback(
             thoughtId: thoughtId,
             chapterNumber: chapterNumber,
             word: plainWord,

@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 /// A simple struct to store each feedback data point for plotting.
 struct FeedbackPoint: Identifiable {
@@ -9,7 +10,7 @@ struct FeedbackPoint: Identifiable {
 }
 
 struct ChapterCompletionView: View {
-    let webSocketService: WebSocketService & ThoughtWebSocketService
+    private let networkService = NetworkServiceManager.shared
     
     let thoughtId: Int
     
@@ -25,6 +26,8 @@ struct ChapterCompletionView: View {
     @State private var feedbackPoints: [FeedbackPoint] = []
     @State private var selectedPoint: FeedbackPoint? = nil
     
+    @State private var cancellables = Set<AnyCancellable>()
+
     var body: some View {
         ZStack {
             // EInkBackground
@@ -122,9 +125,16 @@ struct ChapterCompletionView: View {
                 }
             }
         }
-        .onReceive(webSocketService.messagePublisher) { message in
-            if let type = message["type"] as? String, type == "feedbacks_response" {
-                parseFeedbackResponse(message)
+
+        .onReceive(networkService.webSocket.messages) { message in
+            // Handle the new WebSocketMessage enum
+            switch message {
+            case .response(let action, let data):
+                if action == "feedbacks_response" {
+                    parseFeedbackResponse(data)
+                }
+            default:
+                break
             }
         }
     }
@@ -166,8 +176,44 @@ extension ChapterCompletionView {
     
     private func requestFeedbacks() {
         isLoadingFeedback = true
-        webSocketService.getFeedbacks(thoughtId: thoughtId)
+        networkService.thoughts.getThoughtFeedbacks(thoughtId: thoughtId)
+            .sink { result in
+                self.isLoadingFeedback = false
+                switch result {
+                case .success(let response):
+                    self.parseFeedbackFromHTTP(response)
+                case .failure(let error):
+                    print("Failed to get feedbacks: \(error)")
+                }
+            }
+            .store(in: &cancellables)
     }
+    
+    private func parseFeedbackFromHTTP(_ response: ThoughtFeedbacksResponse) {
+        var tempPoints: [FeedbackPoint] = []
+        let sortedKeys = response.feedbacks.keys.sorted {
+            (Int($0) ?? 0) < (Int($1) ?? 0)
+        }
+        
+        for k in sortedKeys {
+            if let anyCodable = response.feedbacks[k],
+               let itemDict = anyCodable.value as? [String: Double],
+               let label = itemDict.keys.first,
+               let value = itemDict.values.first,
+               let index = Int(k) {
+                
+                let point = FeedbackPoint(
+                    index: index,
+                    label: label,
+                    value: value
+                )
+                tempPoints.append(point)
+            }
+        }
+        
+        feedbackPoints = tempPoints
+    }
+    
     
     private func parseFeedbackResponse(_ jsonObject: [String: Any]) {
         isLoadingFeedback = false
