@@ -17,7 +17,6 @@ class ThoughtsViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         
-        
         networkService.thoughts.getAllThoughts()
             .sink { result in
                 switch result {

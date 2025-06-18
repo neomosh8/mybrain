@@ -29,7 +29,6 @@ final class NetworkServiceManager {
     var auth: AuthenticationAPI { httpService }
     var profile: ProfileAPI { httpService }
     var thoughts: ThoughtsAPI { httpService }
-    var entertainment: EntertainmentAPI { httpService }
     
     // MARK: - WebSocket Access
     var webSocket: WebSocketAPI { webSocketService }

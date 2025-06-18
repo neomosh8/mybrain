@@ -3,7 +3,7 @@ import Combine
 
 // MARK: - Core Protocols
 
-protocol HTTPNetworkServiceProtocol: AuthenticationAPI, ProfileAPI, ThoughtsAPI, EntertainmentAPI {}
+protocol HTTPNetworkServiceProtocol: AuthenticationAPI, ProfileAPI, ThoughtsAPI {}
 
 protocol AuthenticationAPI {
     func requestAuthCode(email: String) -> AnyPublisher<NetworkResult<RegisterResponse>, Never>
@@ -25,7 +25,6 @@ protocol ProfileAPI {
 protocol ThoughtsAPI {
     func createThoughtFromURL(url: String) -> AnyPublisher<NetworkResult<ThoughtCreationResponse>, Never>
     func createThoughtFromText(text: String) -> AnyPublisher<NetworkResult<ThoughtCreationResponse>, Never>
-    func createThoughtFromPodcast(url: String) -> AnyPublisher<NetworkResult<ThoughtCreationResponse>, Never>
     func createThoughtFromFile(fileData: Data, contentType: String, fileName: String) -> AnyPublisher<NetworkResult<ThoughtCreationResponse>, Never>
     func getAllThoughts() -> AnyPublisher<NetworkResult<[Thought]>, Never>
     func getThoughtStatus(thoughtId: Int) -> AnyPublisher<NetworkResult<ThoughtStatus>, Never>
@@ -37,14 +36,6 @@ protocol ThoughtsAPI {
     func getThoughtFeedbacks(thoughtId: Int) -> AnyPublisher<NetworkResult<ThoughtFeedbacksResponse>, Never>
     func getThoughtBookmarks(thoughtId: Int) -> AnyPublisher<NetworkResult<ThoughtBookmarksResponse>, Never>
     func getRetentionIssues(thoughtId: Int) -> AnyPublisher<NetworkResult<RetentionIssuesResponse>, Never>
-}
-
-
-protocol EntertainmentAPI {
-    func getEntertainmentTypes() -> AnyPublisher<NetworkResult<[EntertainmentType]>, Never>
-    func getEntertainmentGenres() -> AnyPublisher<NetworkResult<[EntertainmentGenre]>, Never>
-    func getEntertainmentContexts() -> AnyPublisher<NetworkResult<[EntertainmentContext]>, Never>
-    func getAllEntertainmentOptions() -> AnyPublisher<NetworkResult<EntertainmentOptions>, Never>
 }
 
 protocol TokenStorage {

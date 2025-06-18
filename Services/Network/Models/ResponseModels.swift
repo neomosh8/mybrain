@@ -70,41 +70,6 @@ struct DeviceTerminationResponse: Codable {
     let detail: String
 }
 
-// MARK: - Entertainment Responses
-
-struct EntertainmentType: Codable {
-    let id: Int
-    let name: String
-    let description: String?
-    let image: String?
-}
-
-struct EntertainmentGenre: Codable {
-    let id: Int
-    let name: String
-    let description: String?
-    let image: String?
-}
-
-struct EntertainmentContext: Codable {
-    let id: Int
-    let name: String
-    let description: String?
-    let image: String?
-}
-
-struct EntertainmentOptions: Codable {
-    let entertainmentTypes: [EntertainmentType]
-    let entertainmentGenres: [EntertainmentGenre]
-    let entertainmentContexts: [EntertainmentContext]
-    
-    enum CodingKeys: String, CodingKey {
-        case entertainmentTypes = "entertainment_types"
-        case entertainmentGenres = "entertainment_genres"
-        case entertainmentContexts = "entertainment_contexts"
-    }
-}
-
 // MARK: - Thought Management Responses
 
 struct ThoughtCreationResponse: Codable {

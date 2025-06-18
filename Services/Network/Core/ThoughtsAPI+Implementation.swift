@@ -14,6 +14,15 @@ extension HTTPNetworkService: ThoughtsAPI {
             body: try? JSONSerialization.data(withJSONObject: body)
         )
         return request(endpoint, responseType: ThoughtCreationResponse.self)
+            .map { result in
+                switch result {
+                case .success(let response):
+                    return .success(response.withProcessedURLs())
+                case .failure(let error):
+                    return .failure(error)
+                }
+            }
+            .eraseToAnyPublisher()
     }
     
     func createThoughtFromText(text: String) -> AnyPublisher<NetworkResult<ThoughtCreationResponse>, Never> {
@@ -27,19 +36,15 @@ extension HTTPNetworkService: ThoughtsAPI {
             body: try? JSONSerialization.data(withJSONObject: body)
         )
         return request(endpoint, responseType: ThoughtCreationResponse.self)
-    }
-    
-    func createThoughtFromPodcast(url: String) -> AnyPublisher<NetworkResult<ThoughtCreationResponse>, Never> {
-        let body = [
-            "content_type": "podcast",
-            "source": url
-        ]
-        let endpoint = APIEndpoint(
-            path: NetworkConstants.Paths.createThought,
-            method: .POST,
-            body: try? JSONSerialization.data(withJSONObject: body)
-        )
-        return request(endpoint, responseType: ThoughtCreationResponse.self)
+            .map { result in
+                switch result {
+                case .success(let response):
+                    return .success(response.withProcessedURLs())
+                case .failure(let error):
+                    return .failure(error)
+                }
+            }
+            .eraseToAnyPublisher()
     }
     
     func createThoughtFromFile(
@@ -71,6 +76,15 @@ extension HTTPNetworkService: ThoughtsAPI {
             body: body
         )
         return request(endpoint, responseType: ThoughtCreationResponse.self)
+            .map { result in
+                switch result {
+                case .success(let response):
+                    return .success(response.withProcessedURLs())
+                case .failure(let error):
+                    return .failure(error)
+                }
+            }
+            .eraseToAnyPublisher()
     }
     
     func getAllThoughts() -> AnyPublisher<NetworkResult<[Thought]>, Never> {
@@ -79,6 +93,15 @@ extension HTTPNetworkService: ThoughtsAPI {
             method: .GET
         )
         return request(endpoint, responseType: [Thought].self)
+            .map { result in
+                switch result {
+                case .success(let thoughts):
+                    return .success(thoughts.map { $0.withProcessedURLs() })
+                case .failure(let error):
+                    return .failure(error)
+                }
+            }
+            .eraseToAnyPublisher()
     }
     
     func getThoughtStatus(thoughtId: Int) -> AnyPublisher<NetworkResult<ThoughtStatus>, Never> {

@@ -62,6 +62,7 @@
 		7468256F2DDCE58B0089AE37 /* ImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7468256E2DDCE5880089AE37 /* ImageLoader.swift */; };
 		747A54B32DFDC0B400BD9541 /* ThoughtCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747A54B22DFDC0A900BD9541 /* ThoughtCard.swift */; };
 		747A54B82DFDC33700BD9541 /* ThoughtsListSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747A54B72DFDC33500BD9541 /* ThoughtsListSection.swift */; };
+		7499D9082E02A652007E8C92 /* Thought+URLProcessing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7499D9072E02A64E007E8C92 /* Thought+URLProcessing.swift */; };
 		74BC7E582E000DB400A9C2F4 /* NetworkServiceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74BC7E572E000DAD00A9C2F4 /* NetworkServiceManager.swift */; };
 		74BC7E5A2E000DB900A9C2F4 /* HTTPNetworkService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74BC7E592E000DB700A9C2F4 /* HTTPNetworkService.swift */; };
 		74BC7E5C2E000DC100A9C2F4 /* WebSocketNetworkService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74BC7E5B2E000DBE00A9C2F4 /* WebSocketNetworkService.swift */; };
@@ -76,7 +77,6 @@
 		74BC7E6E2E000E1F00A9C2F4 /* NetworkConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74BC7E6D2E000E1E00A9C2F4 /* NetworkConstants.swift */; };
 		74BC7E702E00109800A9C2F4 /* AuthenticationAPI+Implementation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74BC7E6F2E00109300A9C2F4 /* AuthenticationAPI+Implementation.swift */; };
 		74BC7E722E0010D200A9C2F4 /* ProfileAPI+Implementation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74BC7E712E0010D000A9C2F4 /* ProfileAPI+Implementation.swift */; };
-		74BC7E742E0010EC00A9C2F4 /* EntertainmentAPI+Implementation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74BC7E732E0010EB00A9C2F4 /* EntertainmentAPI+Implementation.swift */; };
 		74BC7E762E0013B300A9C2F4 /* UsageExample.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74BC7E752E0013B100A9C2F4 /* UsageExample.swift */; };
 		74BC7E782E0013D500A9C2F4 /* ThoughtsAPI+Implementation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74BC7E772E0013D300A9C2F4 /* ThoughtsAPI+Implementation.swift */; };
 		74BC7E7A2E0027DB00A9C2F4 /* GlobalServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74BC7E792E0027D600A9C2F4 /* GlobalServices.swift */; };
@@ -170,6 +170,7 @@
 		7468256E2DDCE5880089AE37 /* ImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageLoader.swift; sourceTree = "<group>"; };
 		747A54B22DFDC0A900BD9541 /* ThoughtCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtCard.swift; sourceTree = "<group>"; };
 		747A54B72DFDC33500BD9541 /* ThoughtsListSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtsListSection.swift; sourceTree = "<group>"; };
+		7499D9072E02A64E007E8C92 /* Thought+URLProcessing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Thought+URLProcessing.swift"; sourceTree = "<group>"; };
 		74BC7E572E000DAD00A9C2F4 /* NetworkServiceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkServiceManager.swift; sourceTree = "<group>"; };
 		74BC7E592E000DB700A9C2F4 /* HTTPNetworkService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPNetworkService.swift; sourceTree = "<group>"; };
 		74BC7E5B2E000DBE00A9C2F4 /* WebSocketNetworkService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSocketNetworkService.swift; sourceTree = "<group>"; };
@@ -184,7 +185,6 @@
 		74BC7E6D2E000E1E00A9C2F4 /* NetworkConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkConstants.swift; sourceTree = "<group>"; };
 		74BC7E6F2E00109300A9C2F4 /* AuthenticationAPI+Implementation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AuthenticationAPI+Implementation.swift"; sourceTree = "<group>"; };
 		74BC7E712E0010D000A9C2F4 /* ProfileAPI+Implementation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProfileAPI+Implementation.swift"; sourceTree = "<group>"; };
-		74BC7E732E0010EB00A9C2F4 /* EntertainmentAPI+Implementation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EntertainmentAPI+Implementation.swift"; sourceTree = "<group>"; };
 		74BC7E752E0013B100A9C2F4 /* UsageExample.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageExample.swift; sourceTree = "<group>"; };
 		74BC7E772E0013D300A9C2F4 /* ThoughtsAPI+Implementation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ThoughtsAPI+Implementation.swift"; sourceTree = "<group>"; };
 		74BC7E792E0027D600A9C2F4 /* GlobalServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalServices.swift; sourceTree = "<group>"; };
@@ -605,8 +605,8 @@
 		74BC7E532E000D6900A9C2F4 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				7499D9072E02A64E007E8C92 /* Thought+URLProcessing.swift */,
 				74BC7E772E0013D300A9C2F4 /* ThoughtsAPI+Implementation.swift */,
-				74BC7E732E0010EB00A9C2F4 /* EntertainmentAPI+Implementation.swift */,
 				74BC7E712E0010D000A9C2F4 /* ProfileAPI+Implementation.swift */,
 				74BC7E6F2E00109300A9C2F4 /* AuthenticationAPI+Implementation.swift */,
 				74BC7E572E000DAD00A9C2F4 /* NetworkServiceManager.swift */,
@@ -775,7 +775,6 @@
 				747A54B82DFDC33700BD9541 /* ThoughtsListSection.swift in Sources */,
 				743D5BBB2DFC464000C4F71E /* ProfileView.swift in Sources */,
 				743D5BBC2DFC464000C4F71E /* HomeView.swift in Sources */,
-				74BC7E742E0010EC00A9C2F4 /* EntertainmentAPI+Implementation.swift in Sources */,
 				743D5BBE2DFC464000C4F71E /* AnalyticsView.swift in Sources */,
 				743D5BBF2DFC464000C4F71E /* DeviceView.swift in Sources */,
 				74263C292DDADAE800953598 /* AnimatedParagraphView.swift in Sources */,
@@ -795,6 +794,7 @@
 				747A54B32DFDC0B400BD9541 /* ThoughtCard.swift in Sources */,
 				7468256F2DDCE58B0089AE37 /* ImageLoader.swift in Sources */,
 				74BC7E642E000DF900A9C2F4 /* NetworkModels.swift in Sources */,
+				7499D9082E02A652007E8C92 /* Thought+URLProcessing.swift in Sources */,
 				74263C382DDADAE800953598 /* OnboardingViewModel.swift in Sources */,
 				74263C392DDADAE800953598 /* SubtitleView.swift in Sources */,
 				74263C3A2DDADAE800953598 /* HistoryCard.swift in Sources */,
