@@ -11,7 +11,6 @@ struct myBrainApp: App {
     
     @UIApplicationDelegateAdaptor private var appDelegate: AppDelegate
     
-    
     init() {
         UIApplication.shared.beginReceivingRemoteControlEvents()
         _ = NetworkServiceManager.shared
@@ -29,8 +28,6 @@ struct myBrainApp: App {
         }
     }
 }
-
-
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {

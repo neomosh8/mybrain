@@ -51,63 +51,50 @@ struct ThoughtCard: View {
                 .frame(width: 60, height: 60)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
                 
-                // Thought Info
                 VStack(alignment: .leading, spacing: 4) {
                     ScrollingTitleView(text: thought.name)
                     
-                    HStack(spacing: 8) {
+                    HStack(spacing: 2) {
                         Text("Created:")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .font(.caption2)
+                            .foregroundColor(.gray)
                         
                         Text(formatDate(thought.createdAt))
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .font(.caption2)
+                            .foregroundColor(.gray)
                     }
                     
                     // Progress info
-                    if let progress = thought.progress {
-                        HStack(spacing: 4) {
-                            Text("\(progress.total) chapters")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
+                    let progress = thought.progress
+                    HStack(spacing: 4) {
+                        Text("\(progress.total) chapters")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
                         
-                            Text("•")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                            
-                            Text(formatReadingTime(chapters: progress.total))
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
+                        Text("•")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
                         
-                        HStack(alignment: .center, spacing: 8) {
-                            ProgressView(value: Double(progress.completed), total: Double(progress.total))
-                                .progressViewStyle(LinearProgressViewStyle(tint: .blue))
-                                .frame(height: 2)
-                            
-                            Spacer()
-                            
-                            StatusBadge(status: thought.status)
-                        }
+                        Text(formatReadingTime(chapters: progress.total))
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    HStack(alignment: .center, spacing: 8) {
+                        ProgressView(value: Double(progress.completed), total: Double(progress.total))
+                            .progressViewStyle(LinearProgressViewStyle(tint: .blue))
+                            .frame(height: 2)
                         
-                        if progress.completed > 0 {
-                            Text("Chapter \(progress.completed) of \(progress.total)")
-                                .font(.caption)
-                                .foregroundColor(.blue)
-                                .fontWeight(.medium)
-                        }
-                    } else {
-                        HStack {
-                            Text(thought.description ?? "No description available")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                                .lineLimit(1)
-                            
-                            Spacer()
-                            
-                            StatusBadge(status: thought.status)
-                        }
+                        Spacer()
+                        
+                        StatusBadge(status: thought.status)
+                    }
+                    
+                    if progress.completed > 0 {
+                        Text("Chapter \(progress.completed) of \(progress.total)")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                            .fontWeight(.medium)
                     }
                 }
                 
@@ -266,3 +253,4 @@ struct StatusBadge: View {
         }
     }
 }
+
