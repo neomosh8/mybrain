@@ -2,134 +2,138 @@ import SwiftUI
 
 struct ThoughtCard: View {
     let thought: Thought
-    let onTap: () -> Void
+    let onOpen: () -> Void
     
     var onDelete: ((Thought) -> Void)? = nil
     
     @State private var showDeleteMenu = false
     @State private var animationOffset: CGFloat = 0
+    @State private var showDeleteConfirm = false
     
     var body: some View {
-        VStack {
-            HStack(spacing: 12) {
-                AsyncImage(url: URL(string: thought.cover ?? "")) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                    case .failure(_):
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.gray.opacity(0.2))
-                            .overlay(
-                                VStack {
-                                    Image(systemName: "doc.text")
+        ZStack {
+            VStack {
+                HStack(spacing: 12) {
+                    AsyncImage(url: URL(string: thought.cover ?? "")) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                        case .failure(_):
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.gray.opacity(0.2))
+                                .overlay(
+                                    VStack {
+                                        Image(systemName: "doc.text")
+                                            .foregroundColor(.gray)
+                                            .font(.title2)
+                                        Text("No Image")
+                                            .font(.caption2)
+                                            .foregroundColor(.gray)
+                                    }
+                                )
+                        case .empty:
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.gray.opacity(0.1))
+                                .overlay(
+                                    ProgressView()
+                                        .scaleEffect(0.7)
+                                )
+                        @unknown default:
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.gray.opacity(0.2))
+                                .overlay(
+                                    Image(systemName: "photo")
                                         .foregroundColor(.gray)
                                         .font(.title2)
-                                    Text("No Image")
-                                        .font(.caption2)
-                                        .foregroundColor(.gray)
-                                }
-                            )
-                    case .empty:
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.gray.opacity(0.1))
-                            .overlay(
-                                ProgressView()
-                                    .scaleEffect(0.7)
-                            )
-                    @unknown default:
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.gray.opacity(0.2))
-                            .overlay(
-                                Image(systemName: "photo")
-                                    .foregroundColor(.gray)
-                                    .font(.title2)
-                            )
+                                )
+                        }
                     }
+                    .frame(width: 60, height: 60)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(thought.name)
+                            .font(.headline)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                            .minimumScaleFactor(0.8)
+                            .accessibilityLabel(thought.name)
+                            .padding(.bottom, 4)
+                                                
+                        HStack(spacing: 2) {
+                            Text("Created:")
+                                .font(.caption2)
+                                .foregroundColor(.gray)
+                            
+                            Text(formatDate(thought.createdAt))
+                                .font(.caption2)
+                                .foregroundColor(.gray)
+                        }
+                        
+                        let progress = thought.progress
+                        HStack(spacing: 4) {
+                            Text("\(progress.total) chapters")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                            
+                            Text("•")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                            
+                            Text(formatReadingTime(chapters: progress.total))
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        GeometryReader { geometry in
+                            HStack(alignment: .center, spacing: 4) {
+                                ProgressView(value: Double(progress.completed), total: Double(progress.total))
+                                    .progressViewStyle(LinearProgressViewStyle(tint: .blue))
+                                    .frame(height: 4)
+                                    .frame(maxWidth: geometry.size.width / 4)
+                                
+                                Text("\(progress.completed)/\(progress.total)")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                                    .frame(width: 40, alignment: .trailing)
+                            }
+                        }
+                    }
+                    
                 }
-                .frame(width: 60, height: 60)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    ScrollingTitleView(text: thought.name)
-                    
-                    HStack(spacing: 2) {
-                        Text("Created:")
-                            .font(.caption2)
-                            .foregroundColor(.gray)
-                        
-                        Text(formatDate(thought.createdAt))
-                            .font(.caption2)
-                            .foregroundColor(.gray)
-                    }
-                    
-                    // Progress info
-                    let progress = thought.progress
-                    HStack(spacing: 4) {
-                        Text("\(progress.total) chapters")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                        
-                        Text("•")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                        
-                        Text(formatReadingTime(chapters: progress.total))
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    HStack(alignment: .center, spacing: 8) {
-                        ProgressView(value: Double(progress.completed), total: Double(progress.total))
-                            .progressViewStyle(LinearProgressViewStyle(tint: .blue))
-                            .frame(height: 2)
-                        
-                        Spacer()
-                        
-                        StatusBadge(status: thought.status)
-                    }
-                    
-                    if progress.completed > 0 {
-                        Text("Chapter \(progress.completed) of \(progress.total)")
-                            .font(.caption)
-                            .foregroundColor(.blue)
-                            .fontWeight(.medium)
-                    }
-                }
-                
-                Spacer()
+                .padding(16)
             }
-            .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color(.systemBackground))
-                    .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
-                    )
+                    .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
             )
-        }
-        .onTapGesture {
-            onTap()
-        }
-        .onLongPressGesture(minimumDuration: 0.6) {
-            if onDelete != nil {
-                showDeleteMenu = true
+            
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    StatusBadge(status: thought.status)
+                        .padding(.trailing, 16)
+                        .padding(.bottom, 16)
+                }
             }
         }
-        .actionSheet(isPresented: $showDeleteMenu) {
-            ActionSheet(
-                title: Text("Delete Thought"),
-                message: Text("Are you sure you want to delete this thought? This action cannot be undone."),
-                buttons: [
-                    .destructive(Text("Delete")) {
-                        onDelete?(thought)
-                    },
-                    .cancel()
-                ]
-            )
+        .onTapGesture {
+        }
+        .confirmationDialog(
+            "Delete Thought",
+            isPresented: $showDeleteMenu,
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) {
+                onDelete?(thought)
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("Are you sure you want to delete '\(thought.name)'? This action cannot be undone.")
         }
     }
     
@@ -148,8 +152,8 @@ struct ThoughtCard: View {
     }
     
     private func formatReadingTime(chapters: Int) -> String {
-        // Estimate ~20 minutes per chapter
-        let totalMinutes = chapters * 20
+        // Estimate ~2 minutes per chapter
+        let totalMinutes = chapters * 2
         let hours = totalMinutes / 60
         let minutes = totalMinutes % 60
         
@@ -158,61 +162,6 @@ struct ThoughtCard: View {
         } else {
             return "\(minutes)m reading time"
         }
-    }
-}
-
-// MARK: - Scrolling Title Component
-struct ScrollingTitleView: View {
-    let text: String
-    @State private var textWidth: CGFloat = 0
-    @State private var containerWidth: CGFloat = 0
-    @State private var offset: CGFloat = 0
-    @State private var shouldAnimate = false
-    
-    var body: some View {
-        GeometryReader { geometry in
-            Text(text)
-                .font(.headline)
-                .fontWeight(.semibold)
-                .foregroundColor(.primary)
-                .lineLimit(1)
-                .fixedSize()
-                .background(
-                    GeometryReader { textGeometry in
-                        Color.clear
-                            .onAppear {
-                                textWidth = textGeometry.size.width
-                                containerWidth = geometry.size.width
-                                
-                                if textWidth > containerWidth {
-                                    shouldAnimate = true
-                                    startScrolling()
-                                }
-                            }
-                    }
-                )
-                .offset(x: offset)
-                .clipped()
-        }
-        .frame(height: 22)
-    }
-    
-    private func startScrolling() {
-        guard shouldAnimate else { return }
-        
-        let totalDistance = textWidth + 50 // text width + padding
-        let animationDuration: Double = max(3.0, totalDistance / 30)
-        
-        withAnimation(.linear(duration: animationDuration).repeatForever(autoreverses: false)) {
-            offset = -totalDistance
-        }
-    }
-}
-
-struct ContentWidthPreferenceKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
     }
 }
 
@@ -253,4 +202,3 @@ struct StatusBadge: View {
         }
     }
 }
-

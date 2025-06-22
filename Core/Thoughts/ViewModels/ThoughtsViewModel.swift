@@ -71,3 +71,12 @@ class ThoughtsViewModel: ObservableObject {
         cancellables.insert(subscription)
     }
 }
+
+
+extension ThoughtsViewModel {
+    func setMockData(_ mockThoughts: [Thought]) {
+        self.thoughts = mockThoughts
+        self.isLoading = false
+        self.errorMessage = nil
+    }
+}

@@ -1,4 +1,6 @@
 import SwiftUI
+import SwiftData
+import Combine
 
 struct HomeView: View {
     @EnvironmentObject var bluetoothService: BluetoothService
@@ -164,7 +166,6 @@ struct HomeView: View {
     
     private func handleThoughtSelection(_ thought: Thought) {
         guard thought.status == "processed" else {
-            // Show alert or handle non-processed thoughts
             print("Thought is not ready yet - Status: \(thought.status)")
             return
         }
@@ -507,7 +508,6 @@ struct ThoughtsListSection: View {
     
     var body: some View {
         VStack(spacing: 16) {
-            // Header with title and search
             if showSearchField {
                 SearchFieldView(
                     searchText: $searchText,
@@ -528,7 +528,6 @@ struct ThoughtsListSection: View {
                 )
             }
             
-            // Thoughts List
             if thoughts.isEmpty {
                 EmptyThoughtsView(isSearching: !searchText.isEmpty)
             } else {
@@ -635,3 +634,203 @@ struct EmptyThoughtsView: View {
     }
 }
 
+
+
+struct HomeViewPreview: View {
+    @StateObject private var mockThoughtsViewModel = createMockThoughtsViewModel()
+    
+    var body: some View {
+        HomeViewWithViewModel(thoughtsViewModel: mockThoughtsViewModel)
+            .environmentObject(AuthViewModel())
+            .environmentObject(BluetoothService())
+    }
+}
+
+// Wrapper view that accepts a ThoughtsViewModel
+struct HomeViewWithViewModel: View {
+    @ObservedObject var thoughtsViewModel: ThoughtsViewModel
+    @EnvironmentObject var bluetoothService: BluetoothService
+    
+    // Copy the exact same body content from HomeView but use the injected thoughtsViewModel
+    @State private var selectedMode: ContentMode = .reading
+    @State private var selectedThought: Thought?
+    @State private var showDeviceCard = false
+    @State private var cardScale: CGFloat = 1.0
+    @State private var cardOpacity: Double = 1.0
+    @State private var cardOffset: CGSize = .zero
+    @State private var showSearchField = false
+    @State private var searchText = ""
+    
+    var body: some View {
+        ZStack {
+            VStack(spacing: 0) {
+                TopAppBar(
+                    showDeviceCard: $showDeviceCard,
+                    onDeviceCardTapped: {
+                        if showDeviceCard {
+                            hideDeviceCardWithAnimation()
+                        } else {
+                            showDeviceCardWithAnimation()
+                        }
+                    }
+                )
+                
+                ScrollView {
+                    VStack(spacing: 20) {
+                        ModeSelectionView(selectedMode: $selectedMode)
+                        
+                        if thoughtsViewModel.isLoading && thoughtsViewModel.thoughts.isEmpty {
+                            LoadingThoughtsView()
+                        } else if let errorMessage = thoughtsViewModel.errorMessage, thoughtsViewModel.thoughts.isEmpty {
+                            ErrorThoughtsView(message: errorMessage) {
+                                thoughtsViewModel.refreshData()
+                            }
+                        } else {
+                            VStack(spacing: 12) {
+                                ThoughtsListSection(
+                                    showSearchField: $showSearchField,
+                                    searchText: $searchText,
+                                    thoughts: filteredThoughts,
+                                    selectedMode: selectedMode,
+                                    onThoughtTap: { thought in
+                                        selectedThought = thought
+                                    }
+                                )
+                            }
+                        }
+                        
+                        Color.clear.frame(height: 50)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)
+                }
+            }
+        }
+        .onAppear {
+            bluetoothService.isDevelopmentMode = true
+            bluetoothService.isConnected = true
+            bluetoothService.batteryLevel = 78
+        }
+    }
+    
+    private var filteredThoughts: [Thought] {
+        if searchText.isEmpty {
+            return thoughtsViewModel.thoughts
+        } else {
+            return thoughtsViewModel.thoughts.filter { thought in
+                thought.name.localizedCaseInsensitiveContains(searchText) ||
+                (thought.description?.localizedCaseInsensitiveContains(searchText) ?? false)
+            }
+        }
+    }
+    
+    private func showDeviceCardWithAnimation() {
+        cardScale = 0.1
+        cardOpacity = 0.0
+        cardOffset = CGSize(width: 80, height: -60)
+        
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            showDeviceCard = true
+        }
+        
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8).delay(0.05)) {
+            cardScale = 1.0
+            cardOpacity = 1.0
+            cardOffset = .zero
+        }
+    }
+    
+    private func hideDeviceCardWithAnimation() {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.9)) {
+            cardScale = 0.1
+            cardOpacity = 0.0
+            cardOffset = CGSize(width: 80, height: -60)
+        }
+        
+        withAnimation(.easeOut(duration: 0.2).delay(0.25)) {
+            showDeviceCard = false
+        }
+    }
+}
+
+// Mock data creation function
+func createMockThoughtsViewModel() -> ThoughtsViewModel {
+    let mockVM = ThoughtsViewModel()
+    
+    // Create mock thoughts with all required properties
+    let mockThoughts = [
+        Thought(
+            id: 1,
+            name: "The Psychology of Persuasion",
+            description: "Master the art of influence and persuasion through proven psychological principles",
+            contentType: "book",
+            cover: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=400&fit=crop",
+            model3d: nil,
+            status: "processed",
+            progress: ThoughtProgress(total: 12, completed: 3, remaining: 9),
+            createdAt: "2024-06-19T10:30:00.000000+03:30",
+            updatedAt: "2024-06-22T08:15:00.000000+03:30"
+        ),
+        Thought(
+            id: 2,
+            name: "Atomic Habits: Small Changes, Remarkable Results",
+            description: "Learn how tiny changes can lead to remarkable results with this practical guide",
+            contentType: "book",
+            cover: "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=300&h=400&fit=crop",
+            model3d: nil,
+            status: "pending",
+            progress: ThoughtProgress(total: 0, completed: 0, remaining: 0),
+            createdAt: "2024-06-15T14:20:00.000000+03:30",
+            updatedAt: "2024-06-21T16:45:00.000000+03:30"
+        ),
+        Thought(
+            id: 3,
+            name: "The Power of Now: A Guide to Spiritual Enlightenment",
+            description: "A transformative guide to finding peace and presence in everyday life",
+            contentType: "book",
+            cover: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&h=400&fit=crop",
+            model3d: nil,
+            status: "enriched",
+            progress: ThoughtProgress(total: 18, completed: 0, remaining: 18),
+            createdAt: "2024-06-21T09:00:00.000000+03:30",
+            updatedAt: "2024-06-21T09:00:00.000000+03:30"
+        ),
+        Thought(
+            id: 4,
+            name: "Thinking, Fast and Slow",
+            description: "Explore the two systems that drive the way we think and make decisions",
+            contentType: "book",
+            cover: "https://images.unsplash.com/photo-1532012197267-da84d127e765?w=300&h=400&fit=crop",
+            model3d: nil,
+            status: "extracted",
+            progress: ThoughtProgress(total: 22, completed: 22, remaining: 0),
+            createdAt: "2024-06-08T11:15:00.000000+03:30",
+            updatedAt: "2024-06-20T13:30:00.000000+03:30"
+        ),
+        Thought(
+            id: 5,
+            name: "The 7 Habits of Highly Effective People",
+            description: "Develop powerful lessons in personal change and leadership",
+            contentType: "book",
+            cover: "https://images.unsplash.com/photo-1471086569966-db3eebc25a59?w=300&h=400&fit=crop",
+            model3d: nil,
+            status: "extraction_failed",
+            progress: ThoughtProgress(total: 10, completed: 1, remaining: 9),
+            createdAt: "2024-05-23T16:45:00.000000+03:30",
+            updatedAt: "2024-06-01T10:20:00.000000+03:30"
+        )
+    ]
+    
+    // Set mock data directly on the view model
+    DispatchQueue.main.async {
+        mockVM.thoughts = mockThoughts
+        mockVM.isLoading = false
+        mockVM.errorMessage = nil
+    }
+    
+    return mockVM
+}
+
+#Preview("Home with Mock Data") {
+    HomeViewPreview()
+}

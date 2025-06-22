@@ -97,7 +97,7 @@ struct Thought: Codable, Identifiable {
     let cover: String?
     let model3d: String?
     let status: String
-    let progress: ThoughtProgress?
+    let progress: ThoughtProgress
     let createdAt: String
     let updatedAt: String
     
@@ -132,7 +132,7 @@ struct ThoughtStatus: Codable {
     let thoughtId: Int
     let thoughtName: String
     let status: String
-    let progress: ThoughtProgress?
+    let progress: ThoughtProgress
     let chapters: [Chapter]?
     
     enum CodingKeys: String, CodingKey {
