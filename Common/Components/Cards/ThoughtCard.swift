@@ -16,6 +16,7 @@ struct ThoughtCard: View {
     let onOpen: () -> Void
     
     var onDelete: ((Thought) -> Void)? = nil
+    var onRetry: ((Thought) -> Void)? = nil
     
     @State private var showDeleteConfirm = false
     
@@ -27,6 +28,15 @@ struct ThoughtCard: View {
         .hoverEffect(.highlight)
         .accessibilityHint("Opens thought \(thought.name)")
         .swipeActions(edge: .trailing) {
+            if isErrorStatus {
+                Button {
+                    onRetry?(thought)
+                } label: {
+                    Label("Retry", systemImage: "arrow.clockwise")
+                }
+                .tint(.blue)
+            }
+            
             Button(role: .destructive) {
                 showDeleteConfirm = true
             } label: {
@@ -34,6 +44,14 @@ struct ThoughtCard: View {
             }
         }
         .contextMenu {
+            if isErrorStatus {
+                Button {
+                    onRetry?(thought)
+                } label: {
+                    Label("Retry", systemImage: "arrow.clockwise")
+                }
+            }
+            
             Button(role: .destructive) {
                 showDeleteConfirm = true
             } label: {
@@ -50,6 +68,10 @@ struct ThoughtCard: View {
             }
             Button("Cancel", role: .cancel) { }
         }
+    }
+    
+    private var isErrorStatus: Bool {
+        ["extraction_failed", "enrichment_failed", "processing_failed"].contains(thought.status)
     }
     
     @MainActor
@@ -201,27 +223,17 @@ struct StatusBadge: View {
 
 
 // MARK: - Helper Functions (keep your existing ones)
-import Foundation
-
-private func formatDate(_ isoString: String) -> String {
-    let parserWithFrac = ISO8601DateFormatter()
-    parserWithFrac.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+private func formatDate(_ dateString: String) -> String {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXXXX"
     
-    let parserNoFrac = ISO8601DateFormatter()
-    parserNoFrac.formatOptions = [.withInternetDateTime]
-    
-    let date = parserWithFrac.date(from: isoString)
-            ?? parserNoFrac.date(from: isoString)
-    
-    guard let validDate = date else {
-        return isoString
+    if let date = formatter.date(from: dateString) {
+        let displayFormatter = DateFormatter()
+        displayFormatter.dateFormat = "MMMM d, yyyy"
+        return displayFormatter.string(from: date)
     }
-    let display = DateFormatter()
-    display.locale = Locale(identifier: "en_US_POSIX")
-    display.dateFormat = "MMMM d, yyyy"
-    return display.string(from: validDate)
+    return "Unknown"
 }
-
 
 private func formatReadingTime(chapters: Int) -> String {
     // ≈ 2 min / chapter
