@@ -4,7 +4,6 @@ struct MainTabView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var selectedTab = 0
     
-    // Create ThoughtsViewModel once we have modelContext
     @State private var thoughtsViewModel: ThoughtsViewModel?
     
     var body: some View {
@@ -12,7 +11,6 @@ struct MainTabView: View {
             if let thoughtsViewModel = thoughtsViewModel {
                 currentTabContent(thoughtsViewModel: thoughtsViewModel)
             } else {
-                // Show loading while initializing services
                 ProgressView("Initializing...")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
