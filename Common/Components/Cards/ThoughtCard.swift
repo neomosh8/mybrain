@@ -1,15 +1,16 @@
 import SwiftUI
 
-
+// MARK: - CardButtonStyle
 struct CardButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .opacity(configuration.isPressed ? 0.85 : 1)
+            .scaleEffect(configuration.isPressed ? 0.96 : 1)
+            .opacity(configuration.isPressed ? 0.9 : 1)
             .animation(.easeInOut(duration: 0.15), value: configuration.isPressed)
     }
 }
 
+// MARK: - ThoughtCard
 struct ThoughtCard: View {
     let thought: Thought
     let onOpen: () -> Void
@@ -45,9 +46,7 @@ struct ThoughtCard: View {
             titleVisibility: .visible
         ) {
             Button("Delete", role: .destructive) {
-                Task {
-                    await deleteThought()
-                }
+                Task { await deleteThought() }
             }
             Button("Cancel", role: .cancel) { }
         }
@@ -59,6 +58,7 @@ struct ThoughtCard: View {
     }
 }
 
+// MARK: - ThoughtCardContent
 private struct ThoughtCardContent: View {
     let thought: Thought
     
@@ -92,7 +92,6 @@ private struct ThoughtCardContent: View {
                         .font(.headline)
                         .lineLimit(1)
                         .truncationMode(.tail)
-                        .minimumScaleFactor(0.8)
                         .accessibilityLabel(thought.name)
                         .padding(.bottom, 4)
                     
@@ -121,15 +120,13 @@ private struct ThoughtCardContent: View {
                             .foregroundColor(.secondary)
                     }
                     
-                    HStack(alignment: .center, spacing: 4) {
+                    HStack(alignment: .center, spacing: 8) {
                         ProgressView(value: Double(progress.completed), total: Double(progress.total))
-                            .progressViewStyle(LinearProgressViewStyle(tint: .blue))
+                            .progressViewStyle(.linear)
                             .frame(height: 4)
-                        
                         Text("\(progress.completed)/\(progress.total)")
                             .font(.caption2)
                             .foregroundColor(.secondary)
-                            .frame(width: 40, alignment: .trailing)
                         
                         Spacer(minLength: 120)
                     }
@@ -164,7 +161,7 @@ private struct ThoughtCardContent: View {
     }
 }
 
-// MARK: - Status Badge
+// MARK: - StatusBadge
 struct StatusBadge: View {
     let status: String
     
@@ -204,27 +201,32 @@ struct StatusBadge: View {
 
 
 // MARK: - Helper Functions (keep your existing ones)
-private func formatDate(_ dateString: String) -> String {
-    let formatter = DateFormatter()
-    formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXXXX"
+import Foundation
+
+private func formatDate(_ isoString: String) -> String {
+    let parserWithFrac = ISO8601DateFormatter()
+    parserWithFrac.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
     
-    if let date = formatter.date(from: dateString) {
-        let displayFormatter = DateFormatter()
-        displayFormatter.dateFormat = "MMMM d, yyyy"
-        return displayFormatter.string(from: date)
+    let parserNoFrac = ISO8601DateFormatter()
+    parserNoFrac.formatOptions = [.withInternetDateTime]
+    
+    let date = parserWithFrac.date(from: isoString)
+            ?? parserNoFrac.date(from: isoString)
+    
+    guard let validDate = date else {
+        return isoString
     }
-    return "Unknown"
+    let display = DateFormatter()
+    display.locale = Locale(identifier: "en_US_POSIX")
+    display.dateFormat = "MMMM d, yyyy"
+    return display.string(from: validDate)
 }
 
+
 private func formatReadingTime(chapters: Int) -> String {
-    // Estimate ~2 minutes per chapter
-    let totalMinutes = chapters * 2
-    let hours = totalMinutes / 60
-    let minutes = totalMinutes % 60
-    
-    if hours > 0 {
-        return "\(hours)h \(minutes)m reading time"
-    } else {
-        return "\(minutes)m reading time"
-    }
+    // ≈ 2 min / chapter
+    let minutes = chapters * 2
+    return minutes >= 60
+        ? "\(minutes / 60)h \(minutes % 60)m reading time"
+        : "\(minutes)m reading time"
 }
