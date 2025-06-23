@@ -10,14 +10,12 @@ struct CardButtonStyle: ButtonStyle {
     }
 }
 
-// MARK: - Updated ThoughtCard with Button
 struct ThoughtCard: View {
     let thought: Thought
     let onOpen: () -> Void
     
     var onDelete: ((Thought) -> Void)? = nil
     
-    @State private var showDeleteMenu = false
     @State private var showDeleteConfirm = false
     
     var body: some View {
@@ -27,17 +25,19 @@ struct ThoughtCard: View {
         .buttonStyle(CardButtonStyle())
         .hoverEffect(.highlight)
         .accessibilityHint("Opens thought \(thought.name)")
-        .confirmationDialog(
-            "Delete Thought",
-            isPresented: $showDeleteMenu,
-            titleVisibility: .visible
-        ) {
-            Button("Delete", role: .destructive) {
+        .swipeActions(edge: .trailing) {
+            Button(role: .destructive) {
                 showDeleteConfirm = true
+            } label: {
+                Label("Delete", systemImage: "trash")
             }
-            Button("Cancel", role: .cancel) { }
-        } message: {
-            Text("Are you sure you want to delete '\(thought.name)'? This action cannot be undone.")
+        }
+        .contextMenu {
+            Button(role: .destructive) {
+                showDeleteConfirm = true
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
         }
         .confirmationDialog(
             "Delete \"\(thought.name)\"?",
@@ -59,8 +59,6 @@ struct ThoughtCard: View {
     }
 }
 
-// MARK: - Extracted Card Content
-/// Extracted inner view to keep Button hierarchies clean
 private struct ThoughtCardContent: View {
     let thought: Thought
     
@@ -166,32 +164,6 @@ private struct ThoughtCardContent: View {
     }
 }
 
-// MARK: - Helper Functions (keep your existing ones)
-private func formatDate(_ dateString: String) -> String {
-    let formatter = DateFormatter()
-    formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXXXX"
-    
-    if let date = formatter.date(from: dateString) {
-        let displayFormatter = DateFormatter()
-        displayFormatter.dateFormat = "MMMM d, yyyy"
-        return displayFormatter.string(from: date)
-    }
-    return "Unknown"
-}
-
-private func formatReadingTime(chapters: Int) -> String {
-    // Estimate ~2 minutes per chapter
-    let totalMinutes = chapters * 2
-    let hours = totalMinutes / 60
-    let minutes = totalMinutes % 60
-    
-    if hours > 0 {
-        return "\(hours)h \(minutes)m reading time"
-    } else {
-        return "\(minutes)m reading time"
-    }
-}
-
 // MARK: - Status Badge
 struct StatusBadge: View {
     let status: String
@@ -230,3 +202,29 @@ struct StatusBadge: View {
     }
 }
 
+
+// MARK: - Helper Functions (keep your existing ones)
+private func formatDate(_ dateString: String) -> String {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXXXX"
+    
+    if let date = formatter.date(from: dateString) {
+        let displayFormatter = DateFormatter()
+        displayFormatter.dateFormat = "MMMM d, yyyy"
+        return displayFormatter.string(from: date)
+    }
+    return "Unknown"
+}
+
+private func formatReadingTime(chapters: Int) -> String {
+    // Estimate ~2 minutes per chapter
+    let totalMinutes = chapters * 2
+    let hours = totalMinutes / 60
+    let minutes = totalMinutes % 60
+    
+    if hours > 0 {
+        return "\(hours)h \(minutes)m reading time"
+    } else {
+        return "\(minutes)m reading time"
+    }
+}
