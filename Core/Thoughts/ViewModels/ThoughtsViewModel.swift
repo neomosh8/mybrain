@@ -45,6 +45,19 @@ class ThoughtsViewModel: ObservableObject {
             .store(in: &cancellables)
     }
     
+    func retryThought(_ thought: Thought) {
+        networkService.thoughts.retryFailedThought(thoughtId: thought.id)
+            .sink { result in
+                switch result {
+                case .success:
+                    self.fetchThoughts()
+                case .failure(let error):
+                    self.errorMessage = "Failed to retry thought: \(error.localizedDescription)"
+                }
+            }
+            .store(in: &cancellables)
+    }
+    
     func refreshData() {
         fetchThoughts()
     }

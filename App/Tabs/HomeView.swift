@@ -58,6 +58,12 @@ struct HomeView: View {
                                     selectedMode: selectedMode,
                                     onThoughtTap: { thought in
                                         handleThoughtSelection(thought)
+                                    },
+                                    onDelete: { thought in
+                                        thoughtsViewModel.deleteThought(thought)
+                                    },
+                                    onRetry: { thought in
+                                        thoughtsViewModel.retryThought(thought)
                                     }
                                 )
                             }
@@ -506,6 +512,9 @@ struct ThoughtsListSection: View {
     let selectedMode: ContentMode
     let onThoughtTap: (Thought) -> Void
     
+    var onDelete: ((Thought) -> Void)? = nil
+    var onRetry: ((Thought) -> Void)? = nil
+    
     var body: some View {
         VStack(spacing: 16) {
             if showSearchField {
@@ -533,9 +542,12 @@ struct ThoughtsListSection: View {
             } else {
                 LazyVStack(spacing: 12) {
                     ForEach(thoughts) { thought in
-                        ThoughtCard(thought: thought) {
-                            onThoughtTap(thought)
-                        }
+                        ThoughtCard(
+                            thought: thought,
+                            onOpen: { onThoughtTap(thought) },
+                            onDelete: onDelete,
+                            onRetry: onRetry
+                        )
                     }
                 }
             }
@@ -635,7 +647,6 @@ struct EmptyThoughtsView: View {
 }
 
 
-
 struct HomeViewPreview: View {
     @StateObject private var mockThoughtsViewModel = createMockThoughtsViewModel()
     
@@ -693,7 +704,14 @@ struct HomeViewWithViewModel: View {
                                     thoughts: filteredThoughts,
                                     selectedMode: selectedMode,
                                     onThoughtTap: { thought in
+//                                        handleThoughtSelection(thought)
                                         selectedThought = thought
+                                    },
+                                    onDelete: { thought in
+                                        thoughtsViewModel.deleteThought(thought)
+                                    },
+                                    onRetry: { thought in
+                                        thoughtsViewModel.retryThought(thought)
                                     }
                                 )
                             }
