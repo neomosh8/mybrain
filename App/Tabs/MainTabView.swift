@@ -174,7 +174,7 @@ enum TabItem: Int, CaseIterable {
         .environmentObject(BluetoothService())
 }
 
-// Preview version of MainTabView that uses mock data
+
 struct MainTabViewWithMockData: View {
     @State private var selectedTab = 0
     let mockThoughtsViewModel: ThoughtsViewModel
