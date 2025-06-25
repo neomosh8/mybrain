@@ -17,6 +17,8 @@ struct NetworkConstants {
         static let logout = "/api/v1/profiles/logout/"
         static let profile = "/api/v1/profiles/profile/"
         static let updateProfile = "/api/v1/profiles/profile/update/"
+        static let uploadAvatar = "/api/v1/profiles/profile/avatar/"
+        static let deleteAvatar = "/api/v1/profiles/profile/avatar/"
         static let devices = "/api/v1/profiles/devices/"
         static let deviceLogout = "/api/v1/profiles/devices/logout/"
         static let entertainmentTypes = "/api/v1/profiles/entertainment/types/"

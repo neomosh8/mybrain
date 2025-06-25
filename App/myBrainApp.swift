@@ -21,7 +21,7 @@ struct myBrainApp: App {
             ContentView()
                 .environmentObject(authVM)
                 .environmentObject(backgroundManager)
-                .modelContainer(for: [AuthData.self])
+                .modelContainer(for: [AuthData.self, UserProfileData.self])
                 .onOpenURL { url in
                     GIDSignIn.sharedInstance.handle(url)
                 }

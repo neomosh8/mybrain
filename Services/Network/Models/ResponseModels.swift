@@ -35,6 +35,7 @@ struct UserProfile: Codable {
     let lastName: String?
     let birthdate: String?
     let gender: String?
+    let avatarUrl: String?
     let onboarded: Bool?
     let isActive: Bool?
     let isStaff: Bool?
@@ -43,6 +44,7 @@ struct UserProfile: Codable {
         case id, email, birthdate, gender, onboarded
         case firstName = "first_name"
         case lastName = "last_name"
+        case avatarUrl = "avatar_url"
         case isActive = "is_active"
         case isStaff = "is_staff"
     }

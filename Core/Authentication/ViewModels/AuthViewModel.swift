@@ -10,7 +10,8 @@ class AuthViewModel: ObservableObject {
     @Published var refreshToken: String?
     @Published var isAuthenticated = false
     @Published var isProfileComplete: Bool = true
-    
+    @Published var profileManager = ProfileManager.shared
+
     @Published var appleAuthManager = AppleAuthManager()
     @Published var googleAuthManager = GoogleAuthManager()
     
@@ -74,6 +75,8 @@ class AuthViewModel: ObservableObject {
             self.isAuthenticated = authData.isLoggedIn
             self.isProfileComplete = authData.profileComplete
         }
+        
+        profileManager.loadProfileFromStorage(context: context)
     }
 
     func requestAuthCode(
@@ -120,25 +123,22 @@ class AuthViewModel: ObservableObject {
         firstName: String,
         lastName: String,
         context: ModelContext,
-        completion: @escaping (Result<Void, Error>) -> Void
+        completion: @escaping (Result<UserProfile, Error>) -> Void
     ) {
-        networkService.profile.updateProfile(
+        profileManager.updateProfile(
             firstName: firstName,
             lastName: lastName,
-            birthdate: nil,
-            gender: nil
-        )
-        .sink { result in
+            context: context
+        ) { result in
             switch result {
-            case .success:
+            case .success(let userProfile):
                 self.isProfileComplete = true
                 self.updateProfileCompleteInSwiftData(context: context)
-                completion(.success(()))
+                completion(.success(userProfile))
             case .failure(let error):
                 completion(.failure(error))
             }
         }
-        .store(in: &cancellables)
     }
     
     func logout(
@@ -225,6 +225,10 @@ class AuthViewModel: ObservableObject {
         
         SharedDataManager.saveToken(tokenResponse.access)
         saveToSwiftData(context: context)
+        
+        if tokenResponse.profileComplete {
+            profileManager.fetchProfileFromServer(context: context)
+        }
     }
     
     private func saveToSwiftData(context: ModelContext) {
@@ -272,6 +276,8 @@ class AuthViewModel: ObservableObject {
         
         SharedDataManager.saveToken(nil)
         clearFromSwiftData(context: context)
+        
+        profileManager.clearProfile(context: context)
     }
     
     private func clearFromSwiftData(context: ModelContext) {

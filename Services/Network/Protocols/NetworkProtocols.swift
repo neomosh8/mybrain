@@ -16,7 +16,9 @@ protocol AuthenticationAPI {
 
 protocol ProfileAPI {
     func getProfile() -> AnyPublisher<NetworkResult<UserProfile>, Never>
-    func updateProfile(firstName: String?, lastName: String?, birthdate: String?, gender: String?) -> AnyPublisher<NetworkResult<SimpleStringResponse>, Never>
+    func updateProfile(firstName: String?, lastName: String?, birthdate: String?, gender: String?) -> AnyPublisher<NetworkResult<UserProfile>, Never>
+    func uploadAvatar(imageData: Data) -> AnyPublisher<NetworkResult<UserProfile>, Never>
+    func deleteAvatar() -> AnyPublisher<NetworkResult<UserProfile>, Never>
     func updatePreferences(types: [PreferenceItem]?, genres: [PreferenceItem]?, contexts: [PreferenceItem]?) -> AnyPublisher<NetworkResult<SimpleStringResponse>, Never>
     func listDevices() -> AnyPublisher<NetworkResult<[UserDevice]>, Never>
     func terminateDevice(deviceId: String, currentDeviceId: String) -> AnyPublisher<NetworkResult<DeviceTerminationResponse>, Never>

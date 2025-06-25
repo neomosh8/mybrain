@@ -26,3 +26,62 @@ final class AuthData {
         self.profileComplete = profileComplete
     }
 }
+
+
+@Model
+final class UserProfileData {
+    @Attribute(.unique) var id: String
+    var userId: Int?
+    var email: String?
+    var firstName: String?
+    var lastName: String?
+    var birthdate: String?
+    var gender: String?
+    var avatarUrl: String?
+    var onboarded: Bool
+    var isActive: Bool
+    var isStaff: Bool
+    var lastUpdated: Date
+    
+    init(
+        id: String = "user_profile_data",
+        userId: Int? = nil,
+        email: String? = nil,
+        firstName: String? = nil,
+        lastName: String? = nil,
+        birthdate: String? = nil,
+        gender: String? = nil,
+        avatarUrl: String? = nil,
+        onboarded: Bool = false,
+        isActive: Bool = true,
+        isStaff: Bool = false,
+        lastUpdated: Date = Date()
+    ) {
+        self.id = id
+        self.userId = userId
+        self.email = email
+        self.firstName = firstName
+        self.lastName = lastName
+        self.birthdate = birthdate
+        self.gender = gender
+        self.avatarUrl = avatarUrl
+        self.onboarded = onboarded
+        self.isActive = isActive
+        self.isStaff = isStaff
+        self.lastUpdated = lastUpdated
+    }
+    
+    func updateFromUserProfile(_ profile: UserProfile) {
+        self.userId = profile.id
+        self.email = profile.email
+        self.firstName = profile.firstName
+        self.lastName = profile.lastName
+        self.birthdate = profile.birthdate
+        self.gender = profile.gender
+        self.avatarUrl = profile.avatarUrl
+        self.onboarded = profile.onboarded ?? false
+        self.isActive = profile.isActive ?? true
+        self.isStaff = profile.isStaff ?? false
+        self.lastUpdated = Date()
+    }
+}

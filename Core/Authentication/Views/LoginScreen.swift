@@ -626,7 +626,8 @@ struct LoginScreen: View {
     private func updateProfile() {
         authVM.updateProfile(firstName: firstName, lastName: lastName, context: modelContext) { result in
             switch result {
-            case .success:
+            case .success(let userProfile):
+                print("Profile updated: \(userProfile)")
                 authVM.isAuthenticated = true
             case .failure(let error):
                 withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
