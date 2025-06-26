@@ -577,7 +577,6 @@ struct LoginScreen: View {
                     errorMessage = error.localizedDescription
                 }
                 
-                // Auto-hide error after 3 seconds
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                     withAnimation(.easeOut(duration: 0.5)) {
                         errorMessage = nil
@@ -651,7 +650,6 @@ struct LoginScreen: View {
                     return
                 }
                 
-                // Apple Sign-In sometimes doesn't provide name/email on subsequent logins
                 let firstName = notification.userInfo?["firstName"] as? String
                 let lastName = notification.userInfo?["lastName"] as? String
                 let email = notification.userInfo?["email"] as? String
@@ -663,7 +661,7 @@ struct LoginScreen: View {
                     lastName: lastName,
                     email: email
                 ) { result in
-                    DispatchQueue.main.async {  // Ensure UI updates on main thread
+                    DispatchQueue.main.async {
                         switch result {
                         case .success(let isProfileComplete):
                             if !isProfileComplete {
@@ -701,7 +699,7 @@ struct LoginScreen: View {
                     context: self.modelContext,
                     idToken: idToken
                 ) { result in
-                    DispatchQueue.main.async {  // Ensure UI updates on main thread
+                    DispatchQueue.main.async {
                         switch result {
                         case .success(let isProfileComplete):
                             if !isProfileComplete {
