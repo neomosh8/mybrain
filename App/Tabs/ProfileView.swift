@@ -1,81 +1,74 @@
 import SwiftUI
+import SwiftData
 
 struct ProfileView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject var authVM: AuthViewModel
     
-    @State private var userStats = UserStats(
-        thoughtsConsumed: 47,
-        totalUsage: "156h",
-        avgPerformance: 84,
-        dayStreak: 12
-    )
+    @State private var isEditingAccountDetails = false
+    @State private var editedFirstName = ""
+    @State private var editedLastName = ""
+    @State private var editedBirthdate = ""
+    @State private var editedGender = ""
+    @State private var selectedDate = Date()
     
-    @State private var userPreferences = UserPreferences(
-        defaultReadingSpeed: 250,
-        pushNotifications: true,
-        dataSharing: false,
-        autoResume: true
-    )
-    
-    @State private var showingPasswordChange = false
-    @State private var showingExportData = false
-    @State private var showingPrivacyPolicy = false
-    @State private var showingDeleteAccount = false
+    @State private var showingImagePicker = false
+    @State private var showingLogoutAlert = false
     @State private var isLoggingOut = false
     @State private var showLogoutError = false
     @State private var logoutErrorMessage = ""
     
+    private let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        return formatter
+    }()
+    
+    private let memberSinceDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        return formatter
+    }()
+    
+    private var memberSinceText: String {
+        guard let dateJoined = authVM.profileManager.currentProfile?.dateJoined else {
+            return "Member since unknown"
+        }
+        return "Member since \(memberSinceDateFormatter.string(from: dateJoined))"
+    }
+    
     var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(spacing: 0) {
-                    // Header
-                    headerSection
-                    
-                    // Account Details
-                    accountDetailsSection
-                    
-                    // Your Stats
-                    statsSection
-                    
-                    // Preferences
-                    preferencesSection
-                    
-                    // Account Actions
-                    accountActionsSection
-                    
-                    Spacer(minLength: 20)
-                }
+        ScrollView {
+            VStack(spacing: 24) {
+                headerSection
+                
+                accountDetailsSection
+                
+                privacyTermsSection
+                
+                logoutSection
+                
+                Spacer(minLength: 50)
             }
-            .navigationTitle("Profile")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
-                        saveProfile()
-                    }
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.blue)
-                }
+            .padding(.horizontal, 16)
+        }
+        .navigationTitle("Profile")
+        .navigationBarTitleDisplayMode(.large)
+        .onAppear {
+            loadProfileData()
+        }
+        .sheet(isPresented: $showingImagePicker) {
+            ImagePickerView { image in
+                uploadProfileImage(image)
             }
         }
-        .sheet(isPresented: $showingPasswordChange) {
-            ChangePasswordView()
-        }
-        .sheet(isPresented: $showingExportData) {
-            ExportDataView()
-        }
-        .sheet(isPresented: $showingPrivacyPolicy) {
-            PrivacyPolicyView()
-        }
-        .alert("Delete Account", isPresented: $showingDeleteAccount) {
+        .alert("Logout", isPresented: $showingLogoutAlert) {
             Button("Cancel", role: .cancel) { }
-            Button("Delete", role: .destructive) {
-                deleteAccount()
+            Button("Logout", role: .destructive) {
+                performLogout()
             }
         } message: {
-            Text("This action cannot be undone. All your data will be permanently removed.")
+            Text("Are you sure you want to logout?")
         }
         .alert("Logout Error", isPresented: $showLogoutError) {
             Button("OK") { }
@@ -89,54 +82,52 @@ struct ProfileView: View {
 extension ProfileView {
     private var headerSection: some View {
         VStack(spacing: 12) {
-            // Profile Picture
             ZStack {
                 Circle()
                     .fill(Color.gray.opacity(0.2))
-                    .frame(width: 80, height: 80)
+                    .frame(width: 100, height: 100)
                 
-                if let profileURL = authVM.googleAuthManager.profilePictureURL {
-                    AsyncImage(url: profileURL) { image in
+                if authVM.profileManager.hasAvatar,
+                   let avatarURL = authVM.profileManager.avatarURL {
+                    AsyncImage(url: avatarURL) { image in
                         image
                             .resizable()
                             .aspectRatio(contentMode: .fill)
-                            .frame(width: 80, height: 80)
+                            .frame(width: 100, height: 100)
                             .clipShape(Circle())
                     } placeholder: {
                         Image(systemName: "person.circle.fill")
-                            .font(.system(size: 60))
+                            .font(.system(size: 80))
                             .foregroundColor(.gray)
                     }
                 } else {
                     Image(systemName: "person.circle.fill")
-                        .font(.system(size: 60))
+                        .font(.system(size: 80))
                         .foregroundColor(.gray)
                 }
                 
-                // Edit button overlay
                 Button(action: {
-                    // Handle profile picture change
+                    showingImagePicker = true
                 }) {
                     ZStack {
                         Circle()
                             .fill(Color.blue)
-                            .frame(width: 24, height: 24)
+                            .frame(width: 30, height: 30)
                         
                         Image(systemName: "camera")
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.white)
                     }
                 }
-                .offset(x: 25, y: 25)
+                .offset(x: 30, y: 30)
             }
             
-            // Name and Email
-            VStack(spacing: 4) {
-                Text("\(authVM.googleAuthManager.firstName ?? "Sarah") \(authVM.googleAuthManager.lastName ?? "Johnson")")
+        VStack(spacing: 4) {
+                Text(authVM.profileManager.displayName)
                     .font(.system(size: 24, weight: .semibold))
                     .foregroundColor(.primary)
                 
-                Text(authVM.googleAuthManager.email ?? "sarah.johnson@email.com")
+                Text(authVM.profileManager.currentProfile?.email ?? "")
                     .font(.system(size: 16))
                     .foregroundColor(.secondary)
                 
@@ -145,275 +136,249 @@ extension ProfileView {
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
                     
-                    Text("Member since March 2024")
+                    Text(memberSinceText)
                         .font(.system(size: 14))
                         .foregroundColor(.secondary)
                 }
                 .padding(.top, 4)
             }
         }
-        .padding(.vertical, 24)
+        .padding(.top, 20)
     }
 }
 
 // MARK: - Account Details Section
 extension ProfileView {
     private var accountDetailsSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Account Details")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundColor(.primary)
-                .padding(.horizontal, 16)
-            
-            VStack(spacing: 0) {
-                profileDetailRow(
-                    title: "First Name",
-                    value: authVM.googleAuthManager.firstName ?? "Sarah",
-                    showDivider: true
-                )
-                
-                profileDetailRow(
-                    title: "Last Name",
-                    value: authVM.googleAuthManager.lastName ?? "Johnson",
-                    showDivider: true
-                )
-                
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Email Address")
-                            .font(.system(size: 16))
-                            .foregroundColor(.primary)
-                        
-                        HStack(spacing: 8) {
-                            Text(authVM.googleAuthManager.email ?? "sarah.johnson@email.com")
-                                .font(.system(size: 16))
-                                .foregroundColor(.secondary)
-                            
-                            HStack(spacing: 4) {
-                                Circle()
-                                    .fill(Color.green)
-                                    .frame(width: 6, height: 6)
-                                
-                                Text("Verified")
-                                    .font(.system(size: 12, weight: .medium))
-                                    .foregroundColor(.green)
-                            }
-                        }
-                    }
-                    
-                    Spacer()
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-            }
-            .background(Color(.systemGray6))
-            .cornerRadius(12)
-            .padding(.horizontal, 16)
-        }
-        .padding(.vertical, 16)
-    }
-    
-    private func profileDetailRow(title: String, value: String, showDivider: Bool = false) -> some View {
-        VStack(spacing: 0) {
+        VStack(spacing: 16) {
+            // Section Header with Edit Button
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
-                        .font(.system(size: 16))
-                        .foregroundColor(.primary)
-                    
-                    Text(value)
-                        .font(.system(size: 16))
-                        .foregroundColor(.secondary)
-                }
+                Text("Account Details")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(.primary)
                 
                 Spacer()
                 
-                Button(action: {
-                    // Handle edit action
-                }) {
-                    Image(systemName: "pencil")
-                        .font(.system(size: 16))
-                        .foregroundColor(.blue)
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            
-            if showDivider {
-                Divider()
-                    .padding(.leading, 16)
-            }
-        }
-    }
-}
-
-// MARK: - Stats Section
-extension ProfileView {
-    private var statsSection: some View {
-        VStack(spacing: 16) {
-            VStack(spacing: 16) {
-                Text("Your Stats")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.secondary)
-                
-                HStack(spacing: 0) {
-                    statCard(
-                        value: "\(userStats.thoughtsConsumed)",
-                        label: "Thoughts Consumed",
-                        color: .blue
-                    )
-                    
-                    statCard(
-                        value: userStats.totalUsage,
-                        label: "Total Usage",
-                        color: .green
-                    )
-                }
-                
-                HStack(spacing: 0) {
-                    statCard(
-                        value: "\(userStats.avgPerformance)%",
-                        label: "Avg Performance",
-                        color: .purple
-                    )
-                    
-                    statCard(
-                        value: "\(userStats.dayStreak)",
-                        label: "Day Streak",
-                        color: .red
-                    )
-                }
-            }
-            .padding(16)
-            .background(Color(.systemIndigo).opacity(0.1))
-            .cornerRadius(12)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-    }
-    
-    private func statCard(value: String, label: String, color: Color) -> some View {
-        VStack(spacing: 8) {
-            Text(value)
-                .font(.system(size: 28, weight: .bold))
-                .foregroundColor(color)
-            
-            Text(label)
-                .font(.system(size: 12))
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 80)
-    }
-}
-
-// MARK: - Preferences Section
-extension ProfileView {
-    private var preferencesSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Preferences")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundColor(.primary)
-                .padding(.horizontal, 16)
-            
-            VStack(spacing: 0) {
-                preferenceRow(
-                    title: "Default Reading Speed",
-                    subtitle: "\(userPreferences.defaultReadingSpeed) words per minute",
-                    action: .disclosure,
-                    actionHandler: {
-                        // Handle reading speed change
+                if isEditingAccountDetails {
+                    // Save and Cancel buttons
+                    HStack(spacing: 12) {
+                        Button(action: cancelEditing) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.primary)
+                                .frame(width: 40, height: 40)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(Color(.systemGray6))
+                                )
+                        }
+                        
+                        Button(action: saveProfile) {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.primary)
+                                .frame(width: 40, height: 40)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(Color(.systemGray6))
+                                )
+                        }
                     }
+                } else {
+                    Button(action: startEditing) {
+                        Image(systemName: "pencil")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.primary)
+                            .frame(width: 40, height: 40)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color(.systemGray6))
+                            )
+                    }
+                }
+            }
+            
+            VStack(spacing: 12) {
+                // First Name
+                accountDetailRow(
+                    title: "First Name",
+                    value: isEditingAccountDetails ? $editedFirstName : .constant(authVM.profileManager.currentProfile?.firstName ?? ""),
+                    isEditing: isEditingAccountDetails
                 )
                 
                 Divider().padding(.leading, 16)
                 
-                preferenceRow(
-                    title: "Push Notifications",
-                    subtitle: "Daily reminders and achievements",
-                    action: .toggle(userPreferences.pushNotifications),
-                    actionHandler: {
-                        userPreferences.pushNotifications.toggle()
-                    }
+                // Last Name
+                accountDetailRow(
+                    title: "Last Name",
+                    value: isEditingAccountDetails ? $editedLastName : .constant(authVM.profileManager.currentProfile?.lastName ?? ""),
+                    isEditing: isEditingAccountDetails
                 )
                 
                 Divider().padding(.leading, 16)
                 
-                preferenceRow(
-                    title: "Data Sharing",
-                    subtitle: "Anonymous usage analytics",
-                    action: .toggle(userPreferences.dataSharing),
-                    actionHandler: {
-                        userPreferences.dataSharing.toggle()
+                // Birthdate
+                if isEditingAccountDetails {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Birthdate")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.primary)
+                        
+                        DatePicker("", selection: $selectedDate, displayedComponents: [.date])
+                            .datePickerStyle(.compact)
+                            .onChange(of: selectedDate) { _, newValue in
+                                editedBirthdate = dateFormatter.string(from: newValue)
+                            }
                     }
-                )
+                    .padding(.horizontal, 16)
+                } else {
+                    accountDetailRow(
+                        title: "Birthdate",
+                        value: .constant(authVM.profileManager.currentProfile?.birthdate ?? "Not set"),
+                        isEditing: false
+                    )
+                }
                 
                 Divider().padding(.leading, 16)
                 
-                preferenceRow(
-                    title: "Auto-Resume",
-                    subtitle: "Continue where you left off",
-                    action: .toggle(userPreferences.autoResume),
-                    actionHandler: {
-                        userPreferences.autoResume.toggle()
+                // Gender
+                if isEditingAccountDetails {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Gender")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.primary)
+                        
+                        Picker("Gender", selection: $editedGender) {
+                            Text("Prefer not to say").tag("")
+                            Text("Male").tag("male")
+                            Text("Female").tag("female")
+                            Text("Non-binary").tag("non-binary")
+                            Text("Other").tag("other")
+                        }
+                        .pickerStyle(.menu)
                     }
+                    .padding(.horizontal, 16)
+                } else {
+                    accountDetailRow(
+                        title: "Gender",
+                        value: .constant(authVM.profileManager.currentProfile?.gender?.capitalized ?? "Not set"),
+                        isEditing: false
+                    )
+                }
+                
+                Divider().padding(.leading, 16)
+                
+                // Email (not editable)
+                accountDetailRow(
+                    title: "Email",
+                    value: .constant(authVM.profileManager.currentProfile?.email ?? ""),
+                    isEditing: false
                 )
             }
             .background(Color(.systemGray6))
             .cornerRadius(12)
-            .padding(.horizontal, 16)
         }
-        .padding(.vertical, 16)
     }
 }
 
-// MARK: - Account Actions Section
+// MARK: - Privacy and Terms Section
 extension ProfileView {
-    private var accountActionsSection: some View {
+    private var privacyTermsSection: some View {
         VStack(spacing: 12) {
-            accountActionRow(
-                icon: "key",
-                title: "Change Password",
-                subtitle: "Update your security credentials",
+            actionRow(
+                icon: "doc.text",
+                title: "Terms of Service",
+                subtitle: "Read our terms and conditions",
                 iconColor: .blue
             ) {
-                showingPasswordChange = true
+                openURL("https://neocore.com/terms")
             }
             
-            accountActionRow(
-                icon: "arrow.down.doc",
-                title: "Export Data",
-                subtitle: "Download your personal information",
-                iconColor: .green
-            ) {
-                showingExportData = true
-            }
-            
-            accountActionRow(
+            actionRow(
                 icon: "shield",
                 title: "Privacy Policy",
                 subtitle: "How we protect your data",
-                iconColor: .indigo
+                iconColor: .green
             ) {
-                showingPrivacyPolicy = true
-            }
-            
-            accountActionRow(
-                icon: "trash",
-                title: "Delete Account",
-                subtitle: "Permanently remove your account",
-                iconColor: .red
-            ) {
-                showingDeleteAccount = true
+                openURL("https://neocore.com/privacy")
             }
         }
+    }
+}
+
+// MARK: - Logout Section
+extension ProfileView {
+    private var logoutSection: some View {
+        VStack(spacing: 12) {
+            Button(action: {
+                showingLogoutAlert = true
+            }) {
+                HStack(spacing: 12) {
+                    Image(systemName: "rectangle.portrait.and.arrow.right")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(.red)
+                        .frame(width: 24, height: 24)
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Logout")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.red)
+                        
+                        Text("Sign out of your account")
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    if isLoggingOut {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
+            }
+            .disabled(isLoggingOut)
+        }
+    }
+}
+
+// MARK: - Helper Views
+extension ProfileView {
+    private func accountDetailRow(
+        title: String,
+        value: Binding<String>,
+        isEditing: Bool
+    ) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.primary)
+                
+                if isEditing && title != "Email" {
+                    TextField(title, text: value)
+                        .textFieldStyle(PlainTextFieldStyle())
+                        .font(.system(size: 14))
+                        .foregroundColor(.primary)
+                } else {
+                    Text(value.wrappedValue)
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            Spacer()
+        }
         .padding(.horizontal, 16)
-        .padding(.vertical, 16)
+        .padding(.vertical, 12)
+        .contentShape(Rectangle())
     }
     
-    private func accountActionRow(
+    private func actionRow(
         icon: String,
         title: String,
         subtitle: String,
@@ -421,31 +386,26 @@ extension ProfileView {
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            HStack(spacing: 16) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(iconColor.opacity(0.1))
-                        .frame(width: 36, height: 36)
-                    
-                    Image(systemName: icon)
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(iconColor)
-                }
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(iconColor)
+                    .frame(width: 24, height: 24)
                 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(title)
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.primary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
                     
                     Text(subtitle)
                         .font(.system(size: 14))
                         .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 
+                Spacer()
+                
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.secondary)
             }
             .padding(.horizontal, 16)
@@ -457,187 +417,140 @@ extension ProfileView {
     }
 }
 
-// MARK: - Preference Row Helper
-extension ProfileView {
-    enum PreferenceAction {
-        case toggle(Bool)
-        case disclosure
-    }
-    
-    private func preferenceRow(
-        title: String,
-        subtitle: String,
-        action: PreferenceAction,
-        actionHandler: @escaping () -> Void
-    ) -> some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.primary)
-                
-                Text(subtitle)
-                    .font(.system(size: 14))
-                    .foregroundColor(.secondary)
-            }
-            
-            Spacer()
-            
-            switch action {
-            case .toggle(let isOn):
-                Toggle("", isOn: .constant(isOn))
-                    .labelsHidden()
-                    .onTapGesture {
-                        actionHandler()
-                    }
-                
-            case .disclosure:
-                Button(action: actionHandler) {
-                    HStack(spacing: 4) {
-                        Text("Change")
-                            .font(.system(size: 16))
-                            .foregroundColor(.blue)
-                        
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.blue)
-                    }
-                }
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            if case .toggle(_) = action {
-                actionHandler()
-            }
-        }
-    }
-}
-
 // MARK: - Helper Functions
 extension ProfileView {
+    private func loadProfileData() {
+        // Load initial values for editing
+        editedFirstName = authVM.profileManager.currentProfile?.firstName ?? ""
+        editedLastName = authVM.profileManager.currentProfile?.lastName ?? ""
+        editedBirthdate = authVM.profileManager.currentProfile?.birthdate ?? ""
+        editedGender = authVM.profileManager.currentProfile?.gender ?? ""
+        
+        if let birthdateString = authVM.profileManager.currentProfile?.birthdate,
+           let date = dateFormatter.date(from: birthdateString) {
+            selectedDate = date
+        }
+    }
+    
+    private func startEditing() {
+        withAnimation(.easeInOut(duration: 0.3)) {
+            isEditingAccountDetails = true
+        }
+    }
+    
+    private func cancelEditing() {
+        withAnimation(.easeInOut(duration: 0.3)) {
+            isEditingAccountDetails = false
+            loadProfileData() // Reset to original values
+        }
+    }
+    
     private func saveProfile() {
-        // Save profile changes to server/local storage
-        print("Saving profile changes...")
-    }
-    
-    private func deleteAccount() {
-        // Handle account deletion
-        print("Deleting account...")
-    }
-}
-
-// MARK: - Data Models
-struct UserStats {
-    var thoughtsConsumed: Int
-    var totalUsage: String
-    var avgPerformance: Int
-    var dayStreak: Int
-}
-
-struct UserPreferences {
-    var defaultReadingSpeed: Int
-    var pushNotifications: Bool
-    var dataSharing: Bool
-    var autoResume: Bool
-}
-
-// MARK: - Supporting Views
-struct ChangePasswordView: View {
-    @Environment(\.dismiss) private var dismiss
-    
-    var body: some View {
-        NavigationView {
-            VStack {
-                Text("Change Password")
-                    .font(.title2)
-                    .padding()
-                
-                // Password change form would go here
-                
-                Spacer()
-            }
-            .navigationTitle("Change Password")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
+        authVM.profileManager.updateProfile(
+            firstName: editedFirstName.isEmpty ? nil : editedFirstName,
+            lastName: editedLastName.isEmpty ? nil : editedLastName,
+            birthdate: editedBirthdate.isEmpty ? nil : editedBirthdate,
+            gender: editedGender.isEmpty ? nil : editedGender,
+            context: modelContext
+        ) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        isEditingAccountDetails = false
                     }
-                }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
-                        dismiss()
-                    }
+                case .failure(let error):
+                    print("Error updating profile: \(error)")
+                    // Show error alert if needed
                 }
             }
         }
     }
-}
-
-struct ExportDataView: View {
-    @Environment(\.dismiss) private var dismiss
     
-    var body: some View {
-        NavigationView {
-            VStack {
-                Text("Export Data")
-                    .font(.title2)
-                    .padding()
-                
-                // Data export options would go here
-                
-                Spacer()
-            }
-            .navigationTitle("Export Data")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
+    private func uploadProfileImage(_ image: UIImage) {
+        guard let imageData = image.jpegData(compressionQuality: 0.8) else { return }
+        
+        authVM.profileManager.uploadAvatar(
+            imageData: imageData,
+            context: modelContext
+        ) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    print("Profile image updated successfully")
+                case .failure(let error):
+                    print("Error uploading profile image: \(error)")
                 }
             }
         }
     }
+    
+    private func performLogout() {
+        isLoggingOut = true
+        
+        authVM.logout(context: modelContext) { result in
+            DispatchQueue.main.async {
+                isLoggingOut = false
+                
+                switch result {
+                case .success:
+                    print("Logout successful")
+                case .failure(let error):
+                    logoutErrorMessage = error.localizedDescription
+                    showLogoutError = true
+                }
+            }
+        }
+    }
+    
+    private func openURL(_ urlString: String) {
+        guard let url = URL(string: urlString) else { return }
+        UIApplication.shared.open(url)
+    }
 }
 
-struct PrivacyPolicyView: View {
+// MARK: - Image Picker
+struct ImagePickerView: UIViewControllerRepresentable {
+    let onImageSelected: (UIImage) -> Void
     @Environment(\.dismiss) private var dismiss
     
-    var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Privacy Policy")
-                        .font(.title2)
-                        .padding()
-                    
-                    Text("How we protect your data...")
-                        .padding(.horizontal)
-                    
-                    // Privacy policy content would go here
-                    
-                    Spacer()
-                }
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.delegate = context.coordinator
+        picker.sourceType = .photoLibrary
+        picker.allowsEditing = true
+        return picker
+    }
+    
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: ImagePickerView
+        
+        init(_ parent: ImagePickerView) {
+            self.parent = parent
+        }
+        
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+            if let image = info[.editedImage] as? UIImage ?? info[.originalImage] as? UIImage {
+                parent.onImageSelected(image)
             }
-            .navigationTitle("Privacy Policy")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                }
-            }
+            parent.dismiss()
+        }
+        
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            parent.dismiss()
         }
     }
 }
 
 #Preview {
-    ProfileView()
-        .environmentObject(AuthViewModel())
+    NavigationStack {
+        ProfileView()
+            .environmentObject(AuthViewModel())
+    }
 }

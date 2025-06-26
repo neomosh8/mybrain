@@ -42,7 +42,8 @@ final class UserProfileData {
     var isActive: Bool
     var isStaff: Bool
     var lastUpdated: Date
-    
+    var dateJoined: Date?
+
     init(
         id: String = "user_profile_data",
         userId: Int? = nil,
@@ -55,7 +56,8 @@ final class UserProfileData {
         onboarded: Bool = false,
         isActive: Bool = true,
         isStaff: Bool = false,
-        lastUpdated: Date = Date()
+        lastUpdated: Date = Date(),
+        dateJoined:Date? = nil
     ) {
         self.id = id
         self.userId = userId
@@ -69,6 +71,7 @@ final class UserProfileData {
         self.isActive = isActive
         self.isStaff = isStaff
         self.lastUpdated = lastUpdated
+        self.dateJoined = dateJoined
     }
     
     func updateFromUserProfile(_ profile: UserProfile) {
@@ -83,5 +86,6 @@ final class UserProfileData {
         self.isActive = profile.isActive ?? true
         self.isStaff = profile.isStaff ?? false
         self.lastUpdated = Date()
+        self.dateJoined = profile.dateJoined
     }
 }
