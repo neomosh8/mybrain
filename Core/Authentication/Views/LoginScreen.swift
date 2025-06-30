@@ -1,6 +1,12 @@
 import SwiftUI
 import Combine
 
+struct GenderOption: Identifiable {
+    let id = UUID()
+    let value: String
+    let label: String
+}
+
 struct LoginScreen: View {
     @EnvironmentObject var authVM: AuthViewModel
     @Environment(\.modelContext) private var modelContext
@@ -9,6 +15,22 @@ struct LoginScreen: View {
     @State private var verificationCode = ""
     @State private var firstName = ""
     @State private var lastName = ""
+    @State private var birthdate = Date()
+    @State private var selectedGender = ""
+    
+    @State private var showDatePicker = false
+    @State private var showGenderPicker = false
+    @State private var tempBirthdate = Date()
+    @State private var birthdateSelected = false
+    
+    @State private var genderOptions = [
+        GenderOption(value: "", label: "Select Gender"),
+        GenderOption(value: "M", label: "Male"),
+        GenderOption(value: "F", label: "Female"),
+        GenderOption(value: "P", label: "Prefer not to say"),
+        GenderOption(value: "O", label: "Other")
+    ]
+        
     @State private var errorMessage: String? = nil
     @State private var isRequestingCode = false
     @State private var showVerificationView = false
@@ -23,7 +45,6 @@ struct LoginScreen: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Animated gradient background
                 LinearGradient(
                     gradient: Gradient(colors: [
                         Color.black,
@@ -35,7 +56,6 @@ struct LoginScreen: View {
                 )
                 .ignoresSafeArea()
                 
-                // Floating orbs for ambiance
                 Circle()
                     .fill(Color.blue.opacity(0.1))
                     .frame(width: 200, height: 200)
@@ -49,15 +69,15 @@ struct LoginScreen: View {
                     .offset(x: 150, y: 300)
                 
                 VStack(spacing: 0) {
-                    Spacer(minLength: 60)
+                    Spacer(minLength: 40)
                     
-                    // Header section with logo and title
-                    VStack(spacing: 24) {
+                    // Header section
+                    VStack(spacing: 20) {
                         // Logo with glow effect
                         ZStack {
                             Circle()
                                 .fill(Color.blue.opacity(0.3))
-                                .frame(width: 120, height: 120)
+                                .frame(width: 110, height: 110)
                                 .blur(radius: 30)
                             
                             Image("AppLogoSVG")
@@ -359,7 +379,7 @@ struct LoginScreen: View {
                 Spacer()
             }
             
-            VStack(spacing: 16) {
+            VStack(spacing: 8) {
                 Text("Complete your profile")
                     .font(.system(size: 28, weight: .semibold))
                     .foregroundColor(.white)
@@ -405,7 +425,7 @@ struct LoginScreen: View {
                 
                 // Last Name
                 HStack {
-                    Image(systemName: "person.text.rectangle")
+                    Image(systemName: "person.badge.plus")
                         .foregroundColor(.white.opacity(0.6))
                         .frame(width: 20)
                     
@@ -434,6 +454,93 @@ struct LoginScreen: View {
                         )
                 )
                 
+                // Birthdate
+                HStack {
+                    Image(systemName: "calendar")
+                        .foregroundColor(.white.opacity(0.6))
+                        .frame(width: 20)
+                    
+                    Button(action: {
+                        showDatePicker.toggle()
+                    }) {
+                        HStack {
+                            Text(birthdate == Date() ? "Select birthdate" : DateFormatter.displayFormatter.string(from: birthdate))
+                                .foregroundColor(birthdate == Date() ? .white.opacity(0.5) : .white)
+                                .font(.system(size: 16))
+                            
+                            Spacer()
+                            
+                            Image(systemName: "chevron.down")
+                                .foregroundColor(.white.opacity(0.6))
+                                .font(.system(size: 12))
+                                .rotationEffect(.degrees(showDatePicker ? 180 : 0))
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.white.opacity(0.08))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                        )
+                )
+                
+                // Date Picker
+                if showDatePicker {
+                    DatePicker("", selection: $birthdate, displayedComponents: .date)
+                        .datePickerStyle(WheelDatePickerStyle())
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.white.opacity(0.08))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                )
+                        )
+                        .transition(.opacity)
+                }
+                
+                // Gender Selection
+                HStack {
+                    Image(systemName: "person.2")
+                        .foregroundColor(.white.opacity(0.6))
+                        .frame(width: 20)
+                    
+                    Menu {
+                        ForEach(genderOptions) { option in
+                            Button(option.label) {
+                                selectedGender = option.value
+                            }
+                        }
+                    } label: {
+                        HStack {
+                            Text(genderOptions.first(where: { $0.value == selectedGender })?.label ?? "Select Gender")
+                                .foregroundColor(selectedGender.isEmpty ? .white.opacity(0.5) : .white)
+                                .font(.system(size: 16))
+                            
+                            Spacer()
+                            
+                            Image(systemName: "chevron.down")
+                                .foregroundColor(.white.opacity(0.6))
+                                .font(.system(size: 12))
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.white.opacity(0.08))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                        )
+                )
                 
                 Button(action: updateProfile) {
                     Text("Complete Profile")
@@ -623,12 +730,42 @@ struct LoginScreen: View {
     }
     
     private func updateProfile() {
-        authVM.updateProfile(firstName: firstName, lastName: lastName, context: modelContext) { result in
+        print("🚀 Starting profile update...")
+        print("📝 First Name: '\(firstName)'")
+        print("📝 Last Name: '\(lastName)'")
+        print("📅 Birthdate selected: \(birthdateSelected)")
+        print("📅 Birthdate value: \(birthdate)")
+        print("👤 Selected Gender: '\(selectedGender)'")
+        
+        // Convert birthdate to API format if selected
+        let birthdateString: String? = birthdateSelected ? DateFormatter.apiFormatter.string(from: birthdate) : nil
+        print("📅 Birthdate string for API: \(birthdateString ?? "nil")")
+        
+        // Only send gender if one was actually selected
+        let genderValue = selectedGender.isEmpty ? nil : selectedGender
+        print("👤 Gender value for API: \(genderValue ?? "nil")")
+        
+        print("🌐 Calling authVM.updateProfile...")
+        
+        authVM.updateProfile(
+            firstName: firstName,
+            lastName: lastName,
+            birthdate: birthdateString,
+            gender: genderValue,
+            context: modelContext
+        ) { result in
+            print("📡 Received response from authVM.updateProfile")
+            
             switch result {
             case .success(let userProfile):
-                print("Profile updated: \(userProfile)")
+                print("✅ Profile updated successfully!")
+                print("👤 User Profile: \(userProfile)")
                 authVM.isAuthenticated = true
             case .failure(let error):
+                print("❌ Profile update failed!")
+                print("🔍 Error: \(error)")
+                print("🔍 Error description: \(error.localizedDescription)")
+                
                 withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
                     errorMessage = error.localizedDescription
                 }
@@ -750,4 +887,18 @@ struct LoginScreen: View {
             }
             .store(in: &cancellables)
     }
+}
+
+extension DateFormatter {
+    static let displayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        return formatter
+    }()
+    
+    static let apiFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
 }
