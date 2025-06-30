@@ -30,7 +30,7 @@ struct LoginScreen: View {
         GenderOption(value: "P", label: "Prefer not to say"),
         GenderOption(value: "O", label: "Other")
     ]
-        
+    
     @State private var errorMessage: String? = nil
     @State private var isRequestingCode = false
     @State private var showVerificationView = false
@@ -123,6 +123,140 @@ struct LoginScreen: View {
                     footerSection
                         .opacity(contentOpacity)
                 }
+                
+                
+                // Date Picker
+                if showDatePicker {
+                    Color.black.opacity(0.5)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                showDatePicker = false
+                            }
+                        }
+                    
+                    VStack {
+                        Spacer()
+                        
+                        VStack(spacing: 0) {
+                            Text("Select Birthdate")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(.white)
+                                .padding(.vertical, 16)
+                                .frame(maxWidth: .infinity)
+                                .background(
+                                    UnevenRoundedRectangle(
+                                        topLeadingRadius: 20,
+                                        bottomLeadingRadius: 0,
+                                        bottomTrailingRadius: 0,
+                                        topTrailingRadius: 20
+                                    )
+                                    .fill(Color.white.opacity(0.05))
+                                )
+                            
+                            DatePicker("", selection: $birthdate, displayedComponents: .date)
+                                .datePickerStyle(WheelDatePickerStyle())
+                                .colorScheme(.dark)
+                                .accentColor(.blue)
+                                .onChange(of: birthdate) { _, newValue in
+                                    birthdateSelected = true
+                                }
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 16)
+                        }
+                        .background(
+                            RoundedRectangle(cornerRadius: 20)
+                                .fill(Color(red: 0.05, green: 0.05, blue: 0.1))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                )
+                        )
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 34)
+                    }
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .zIndex(100)
+                }
+                
+                
+                // Gender Picker
+                if showGenderPicker {
+                    Color.black.opacity(0.5)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                showGenderPicker = false
+                            }
+                        }
+                    
+                    VStack {
+                        Spacer()
+                        
+                        VStack(spacing: 0) {
+                            Text("Select Gender")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(.white)
+                                .padding(.vertical, 16)
+                                .frame(maxWidth: .infinity)
+                                .background(
+                                    UnevenRoundedRectangle(
+                                        topLeadingRadius: 20,
+                                        bottomLeadingRadius: 0,
+                                        bottomTrailingRadius: 0,
+                                        topTrailingRadius: 20
+                                    )
+                                    .fill(Color.white.opacity(0.05))
+                                )
+                            
+                            ForEach(genderOptions.dropFirst()) { option in
+                                Button(action: {
+                                    selectedGender = option.value
+                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                        showGenderPicker = false
+                                    }
+                                }) {
+                                    HStack {
+                                        Text(option.label)
+                                            .foregroundColor(.white)
+                                            .font(.system(size: 16))
+                                        
+                                        Spacer()
+                                        
+                                        if selectedGender == option.value {
+                                            Image(systemName: "checkmark")
+                                                .foregroundColor(.white)
+                                                .font(.system(size: 16, weight: .semibold))
+                                        }
+                                    }
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 16)
+                                    .background(
+                                        Color.white.opacity(selectedGender == option.value ? 0.1 : 0.0)
+                                    )
+                                }
+                                
+                                if option.id != genderOptions.dropFirst().last?.id {
+                                    Divider()
+                                        .background(Color.white.opacity(0.1))
+                                }
+                            }
+                        }
+                        .background(
+                            RoundedRectangle(cornerRadius: 20)
+                                .fill(Color(red: 0.05, green: 0.05, blue: 0.1))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                )
+                        )
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 34)
+                    }
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .zIndex(100)
+                }
+
             }
         }
         .onAppear {
@@ -171,7 +305,6 @@ struct LoginScreen: View {
                         )
                 )
                 
-                // Continue button with gradient
                 Button(action: requestAuthCode) {
                     HStack {
                         if isRequestingCode {
@@ -455,163 +588,76 @@ struct LoginScreen: View {
                 )
                 
                 // MARK: - Birthdate Selection
-                VStack(spacing: 0) {
-                    // Birthdate trigger button
-                    Button(action: {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                            showDatePicker.toggle()
-                        }
-                    }) {
-                        HStack {
-                            Image(systemName: "calendar")
-                                .foregroundColor(.white.opacity(0.6))
-                                .frame(width: 20)
-                            
-                            Text(birthdateSelected ?
-                                 DateFormatter.displayFormatter.string(from: birthdate) :
-                                 "Select birthdate")
-                                .foregroundColor(birthdateSelected ? .white : .white.opacity(0.5))
-                                .font(.system(size: 16))
-                            
-                            Spacer()
-                            
-                            Image(systemName: "chevron.down")
-                                .foregroundColor(.white.opacity(0.6))
-                                .font(.system(size: 12))
-                                .rotationEffect(.degrees(showDatePicker ? 180 : 0))
-                                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showDatePicker)
-                        }
+                Button(action: {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                        showDatePicker.toggle()
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 16)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color.white.opacity(0.08))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                            )
-                    )
-                    
-                    // Date Picker Overlay
-                    if showDatePicker {
-                        VStack(spacing: 0) {
-                            DatePicker("", selection: $birthdate, displayedComponents: .date)
-                                .datePickerStyle(WheelDatePickerStyle())
-                                .colorScheme(.dark) // Ensures proper text color in dark theme
-                                .accentColor(.blue) // Sets selection color
-                                .onChange(of: birthdate) { _, newValue in
-                                    birthdateSelected = true
-                                }
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 16)
-                            
-                            // Done button for date picker
-                            Button("Done") {
-                                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                    showDatePicker = false
-                                }
-                            }
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.blue)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .background(Color.white.opacity(0.05))
-                        }
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color.white.opacity(0.08))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                                )
-                        )
-                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                        .zIndex(1) // Ensures overlay appears above other elements
+                }) {
+                    HStack {
+                        Image(systemName: "calendar")
+                            .foregroundColor(.white.opacity(0.6))
+                            .frame(width: 20)
+                        
+                        Text(birthdateSelected ?
+                             DateFormatter.displayFormatter.string(from: birthdate) :
+                                "Select birthdate")
+                        .foregroundColor(birthdateSelected ? .white : .white.opacity(0.5))
+                        .font(.system(size: 16))
+                        
+                        Spacer()
+                        
+                        Image(systemName: "chevron.down")
+                            .foregroundColor(.white.opacity(0.6))
+                            .font(.system(size: 12))
+                            .rotationEffect(.degrees(showDatePicker ? 180 : 0))
+                            .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showDatePicker)
                     }
                 }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.white.opacity(0.08))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                        )
+                )
                 
                 // MARK: - Gender Selection
-                VStack(spacing: 0) {
-                    // Gender trigger button
-                    Button(action: {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                            showGenderPicker.toggle()
-                        }
-                    }) {
-                        HStack {
-                            Image(systemName: "person.2")
-                                .foregroundColor(.white.opacity(0.6))
-                                .frame(width: 20)
-                            
-                            Text(genderOptions.first(where: { $0.value == selectedGender })?.label ?? "Select Gender")
-                                .foregroundColor(selectedGender.isEmpty ? .white.opacity(0.5) : .white)
-                                .font(.system(size: 16))
-                            
-                            Spacer()
-                            
-                            Image(systemName: "chevron.down")
-                                .foregroundColor(.white.opacity(0.6))
-                                .font(.system(size: 12))
-                                .rotationEffect(.degrees(showGenderPicker ? 180 : 0))
-                                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showGenderPicker)
-                        }
+                Button(action: {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                        showGenderPicker.toggle()
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 16)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color.white.opacity(0.08))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                            )
-                    )
-                    
-                    // Gender Picker Overlay
-                    if showGenderPicker {
-                        VStack(spacing: 0) {
-                            ForEach(genderOptions.dropFirst()) { option in // Skip the first "Select Gender" option
-                                Button(action: {
-                                    selectedGender = option.value
-                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                        showGenderPicker = false
-                                    }
-                                }) {
-                                    HStack {
-                                        Text(option.label)
-                                            .foregroundColor(.white)
-                                            .font(.system(size: 16))
-                                        
-                                        Spacer()
-                                        
-                                        if selectedGender == option.value {
-                                            Image(systemName: "checkmark")
-                                                .foregroundColor(.blue)
-                                                .font(.system(size: 14, weight: .semibold))
-                                        }
-                                    }
-                                    .padding(.horizontal, 20)
-                                    .padding(.vertical, 16)
-                                    .background(
-                                        Color.white.opacity(selectedGender == option.value ? 0.1 : 0.05)
-                                    )
-                                }
-                            }
-                        }
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color.white.opacity(0.08))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                                )
-                        )
-                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                        .zIndex(1) // Ensures overlay appears above other elements
+                }) {
+                    HStack {
+                        Image(systemName: "person.2")
+                            .foregroundColor(.white.opacity(0.6))
+                            .frame(width: 20)
+                        
+                        Text(genderOptions.first(where: { $0.value == selectedGender })?.label ?? "Select Gender")
+                            .foregroundColor(selectedGender.isEmpty ? .white.opacity(0.5) : .white)
+                            .font(.system(size: 16))
+                        
+                        Spacer()
+                        
+                        Image(systemName: "chevron.down")
+                            .foregroundColor(.white.opacity(0.6))
+                            .font(.system(size: 12))
+                            .rotationEffect(.degrees(showGenderPicker ? 180 : 0))
+                            .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showGenderPicker)
                     }
                 }
-
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.white.opacity(0.08))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                        )
+                )
                 
                 Button(action: updateProfile) {
                     Text("Complete Profile")
@@ -766,7 +812,7 @@ struct LoginScreen: View {
     
     private func verifyCode() {
         authVM.verifyCode(email: email, code: verificationCode, context: modelContext) { result in
-
+            
             switch result {
             case .success(let isProfileComplete):
                 if !isProfileComplete {
@@ -902,7 +948,7 @@ struct LoginScreen: View {
                 guard let idToken = notification.userInfo?["idToken"] as? String else {
                     return
                 }
-                                
+                
                 self.authVM.authenticateWithGoogle(
                     context: self.modelContext,
                     idToken: idToken
@@ -949,12 +995,12 @@ struct LoginScreen: View {
         
         NotificationCenter.default.publisher(for: .googleAuthFailure)
             .sink { [self] notification in                if let error = notification.userInfo?["error"] as? Error {
-                    DispatchQueue.main.async {
-                        withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                            self.errorMessage = error.localizedDescription
-                        }
+                DispatchQueue.main.async {
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                        self.errorMessage = error.localizedDescription
                     }
                 }
+            }
             }
             .store(in: &cancellables)
     }
