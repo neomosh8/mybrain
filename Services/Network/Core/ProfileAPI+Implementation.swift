@@ -23,6 +23,8 @@ extension HTTPNetworkService: ProfileAPI {
         if let birthdate = birthdate { body["birthdate"] = birthdate }
         if let gender = gender { body["gender"] = gender }
         
+        body["onboarded"] = true
+        
         let endpoint = APIEndpoint(
             path: NetworkConstants.Paths.updateProfile,
             method: .PUT,
