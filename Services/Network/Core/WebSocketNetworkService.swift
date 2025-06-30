@@ -70,23 +70,33 @@ final class WebSocketNetworkService: WebSocketAPI {
         connectionStateSubject.send(.disconnected)
     }
     
-    func sendStreamingLinks(thoughtId: Int) {
+    func sendStreamingLinks(thoughtId: String) {
         let message = WebSocketMessage.streamingLinks(thoughtId: thoughtId)
         sendMessage(message)
     }
     
-    func sendNextChapter(thoughtId: Int, generateAudio: Bool) {
+    func sendListThoughts() {
+        let message = WebSocketMessage.listThoughts
+        sendMessage(message)
+    }
+    
+    func sendNextChapter(thoughtId: String, generateAudio: Bool) {
         let message = WebSocketMessage.nextChapter(thoughtId: thoughtId, generateAudio: generateAudio)
         sendMessage(message)
     }
     
-    func sendFeedback(thoughtId: Int, chapterNumber: Int, word: String, value: Double) {
+    func sendFeedback(thoughtId: String, chapterNumber: Int, word: String, value: Double) {
         let message = WebSocketMessage.feedback(
             thoughtId: thoughtId,
             chapterNumber: chapterNumber,
             word: word,
             value: value
         )
+        sendMessage(message)
+    }
+    
+    func sendThoughtChapters(thoughtId: String) {
+        let message = WebSocketMessage.thoughtChapters(thoughtId: thoughtId)
         sendMessage(message)
     }
     
@@ -101,7 +111,6 @@ final class WebSocketNetworkService: WebSocketAPI {
     
     private func sendMessage(_ message: WebSocketMessage) {
         guard let webSocketTask = webSocketTask, webSocketTask.state == .running else {
-            // Auto-reconnect if not connected
             openSocket()
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
                 self?.sendMessage(message)
@@ -111,16 +120,17 @@ final class WebSocketNetworkService: WebSocketAPI {
         
         do {
             let messageDict = message.toDictionary()
-            let data = try JSONSerialization.data(withJSONObject: messageDict)
-            if let jsonString = String(data: data, encoding: .utf8) {
-                webSocketTask.send(.string(jsonString)) { error in
-                    if let error = error {
-                        print("WebSocket send error: \(error)")
-                    }
+            let jsonData = try JSONSerialization.data(withJSONObject: messageDict)
+            let jsonString = String(data: jsonData, encoding: .utf8) ?? "{}"
+            
+            let task = URLSessionWebSocketTask.Message.string(jsonString)
+            webSocketTask.send(task) { error in
+                if let error = error {
+                    print("WebSocket send error: \(error)")
                 }
             }
         } catch {
-            print("Failed to encode WebSocket message: \(error)")
+            print("Failed to serialize WebSocket message: \(error)")
         }
     }
     

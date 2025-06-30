@@ -20,6 +20,6 @@ struct DeviceInfo: Codable {
 }
 
 struct PreferenceItem: Codable {
-    let id: Int
+    let id: String
     let liked: Bool
 }

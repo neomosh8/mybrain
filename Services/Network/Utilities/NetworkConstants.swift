@@ -28,14 +28,14 @@ struct NetworkConstants {
         static let thoughts = "/api/v1/thoughts/"
         static let createThought = "/api/v1/thoughts/create/"
         
-        static func thoughtDetail(_ id: Int) -> String { "/api/v1/thoughts/\(id)/" }
-        static func resetThought(_ id: Int) -> String { "/api/v1/thoughts/\(id)/reset/" }
-        static func retryThought(_ id: Int) -> String { "/api/v1/thoughts/\(id)/retry/" }
-        static func passChapters(_ id: Int) -> String { "/api/v1/thoughts/\(id)/pass/" }
-        static func summarizeThought(_ id: Int) -> String { "/api/v1/thoughts/\(id)/summarize/" }
-        static func deleteThought(_ id: Int) -> String { "/api/v1/thoughts/\(id)/delete/" }
-        static func thoughtFeedbacks(_ id: Int) -> String { "/api/v1/thoughts/\(id)/feedbacks/" }
-        static func thoughtBookmarks(_ id: Int) -> String { "/api/v1/thoughts/\(id)/bookmarks/" }
-        static func thoughtRetentions(_ id: Int) -> String { "/api/v1/thoughts/\(id)/retentions/" }
+        static func thoughtDetail(_ id: String) -> String { "/api/v1/thoughts/\(id)/" }
+        static func resetThought(_ id: String) -> String { "/api/v1/thoughts/\(id)/reset/" }
+        static func retryThought(_ id: String) -> String { "/api/v1/thoughts/\(id)/retry/" }
+        static func passChapters(_ id: String) -> String { "/api/v1/thoughts/\(id)/pass/" }
+        static func summarizeThought(_ id: String) -> String { "/api/v1/thoughts/\(id)/summarize/" }
+        static func deleteThought(_ id: String) -> String { "/api/v1/thoughts/\(id)/delete/" }
+        static func thoughtFeedbacks(_ id: String) -> String { "/api/v1/thoughts/\(id)/feedbacks/" }
+        static func thoughtBookmarks(_ id: String) -> String { "/api/v1/thoughts/\(id)/bookmarks/" }
+        static func thoughtRetentions(_ id: String) -> String { "/api/v1/thoughts/\(id)/retentions/" }
     }
 }

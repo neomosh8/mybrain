@@ -778,7 +778,7 @@ func createMockThoughtsViewModel() -> ThoughtsViewModel {
     // Create mock thoughts with all required properties
     let mockThoughts = [
         Thought(
-            id: 1,
+            id: "1",
             name: "The Psychology of Persuasion",
             description: "Master the art of influence and persuasion through proven psychological principles",
             contentType: "book",
@@ -790,7 +790,7 @@ func createMockThoughtsViewModel() -> ThoughtsViewModel {
             updatedAt: "2024-06-22T08:15:00.000000+03:30"
         ),
         Thought(
-            id: 2,
+            id: "2",
             name: "Atomic Habits: Small Changes, Remarkable Results",
             description: "Learn how tiny changes can lead to remarkable results with this practical guide",
             contentType: "book",
@@ -802,7 +802,7 @@ func createMockThoughtsViewModel() -> ThoughtsViewModel {
             updatedAt: "2024-06-21T16:45:00.000000+03:30"
         ),
         Thought(
-            id: 3,
+            id: "3",
             name: "The Power of Now: A Guide to Spiritual Enlightenment",
             description: "A transformative guide to finding peace and presence in everyday life",
             contentType: "book",
@@ -814,7 +814,7 @@ func createMockThoughtsViewModel() -> ThoughtsViewModel {
             updatedAt: "2024-06-21T09:00:00.000000+03:30"
         ),
         Thought(
-            id: 4,
+            id: "4",
             name: "Thinking, Fast and Slow",
             description: "Explore the two systems that drive the way we think and make decisions",
             contentType: "book",
@@ -826,7 +826,7 @@ func createMockThoughtsViewModel() -> ThoughtsViewModel {
             updatedAt: "2024-06-20T13:30:00.000000+03:30"
         ),
         Thought(
-            id: 5,
+            id: "5",
             name: "The 7 Habits of Highly Effective People",
             description: "Develop powerful lessons in personal change and leadership",
             contentType: "book",

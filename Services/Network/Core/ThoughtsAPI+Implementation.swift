@@ -104,7 +104,7 @@ extension HTTPNetworkService: ThoughtsAPI {
             .eraseToAnyPublisher()
     }
     
-    func getThoughtStatus(thoughtId: Int) -> AnyPublisher<NetworkResult<ThoughtStatus>, Never> {
+    func getThoughtStatus(thoughtId: String) -> AnyPublisher<NetworkResult<ThoughtStatus>, Never> {
         let endpoint = APIEndpoint(
             path: NetworkConstants.Paths.thoughtDetail(thoughtId),
             method: .GET
@@ -112,7 +112,7 @@ extension HTTPNetworkService: ThoughtsAPI {
         return request(endpoint, responseType: ThoughtStatus.self)
     }
     
-    func resetThoughtProgress(thoughtId: Int) -> AnyPublisher<NetworkResult<ThoughtOperationResponse>, Never> {
+    func resetThoughtProgress(thoughtId: String) -> AnyPublisher<NetworkResult<ThoughtOperationResponse>, Never> {
         let endpoint = APIEndpoint(
             path: NetworkConstants.Paths.resetThought(thoughtId),
             method: .POST
@@ -120,7 +120,7 @@ extension HTTPNetworkService: ThoughtsAPI {
         return request(endpoint, responseType: ThoughtOperationResponse.self)
     }
     
-    func retryFailedThought(thoughtId: Int) -> AnyPublisher<NetworkResult<ThoughtOperationResponse>, Never> {
+    func retryFailedThought(thoughtId: String) -> AnyPublisher<NetworkResult<ThoughtOperationResponse>, Never> {
         let endpoint = APIEndpoint(
             path: NetworkConstants.Paths.retryThought(thoughtId),
             method: .POST
@@ -128,7 +128,7 @@ extension HTTPNetworkService: ThoughtsAPI {
         return request(endpoint, responseType: ThoughtOperationResponse.self)
     }
     
-    func passChapters(thoughtId: Int, upToChapter: Int) -> AnyPublisher<NetworkResult<PassChaptersResponse>, Never> {
+    func passChapters(thoughtId: String, upToChapter: Int) -> AnyPublisher<NetworkResult<PassChaptersResponse>, Never> {
         let body = ["up_to_chapter": upToChapter]
         let endpoint = APIEndpoint(
             path: NetworkConstants.Paths.passChapters(thoughtId),
@@ -138,7 +138,7 @@ extension HTTPNetworkService: ThoughtsAPI {
         return request(endpoint, responseType: PassChaptersResponse.self)
     }
     
-    func summarizeChapters(thoughtId: Int) -> AnyPublisher<NetworkResult<SummarizeResponse>, Never> {
+    func summarizeChapters(thoughtId: String) -> AnyPublisher<NetworkResult<SummarizeResponse>, Never> {
         let endpoint = APIEndpoint(
             path: NetworkConstants.Paths.summarizeThought(thoughtId),
             method: .POST
@@ -146,7 +146,7 @@ extension HTTPNetworkService: ThoughtsAPI {
         return request(endpoint, responseType: SummarizeResponse.self)
     }
     
-    func archiveThought(thoughtId: Int) -> AnyPublisher<NetworkResult<ArchiveThoughtResponse>, Never> {
+    func archiveThought(thoughtId: String) -> AnyPublisher<NetworkResult<ArchiveThoughtResponse>, Never> {
         let endpoint = APIEndpoint(
             path: NetworkConstants.Paths.deleteThought(thoughtId),
             method: .DELETE
@@ -154,7 +154,7 @@ extension HTTPNetworkService: ThoughtsAPI {
         return request(endpoint, responseType: ArchiveThoughtResponse.self)
     }
     
-    func getThoughtFeedbacks(thoughtId: Int) -> AnyPublisher<NetworkResult<ThoughtFeedbacksResponse>, Never> {
+    func getThoughtFeedbacks(thoughtId: String) -> AnyPublisher<NetworkResult<ThoughtFeedbacksResponse>, Never> {
         let endpoint = APIEndpoint(
             path: NetworkConstants.Paths.thoughtFeedbacks(thoughtId),
             method: .GET
@@ -162,7 +162,7 @@ extension HTTPNetworkService: ThoughtsAPI {
         return request(endpoint, responseType: ThoughtFeedbacksResponse.self)
     }
     
-    func getThoughtBookmarks(thoughtId: Int) -> AnyPublisher<NetworkResult<ThoughtBookmarksResponse>, Never> {
+    func getThoughtBookmarks(thoughtId: String) -> AnyPublisher<NetworkResult<ThoughtBookmarksResponse>, Never> {
         let endpoint = APIEndpoint(
             path: NetworkConstants.Paths.thoughtBookmarks(thoughtId),
             method: .GET
@@ -170,7 +170,7 @@ extension HTTPNetworkService: ThoughtsAPI {
         return request(endpoint, responseType: ThoughtBookmarksResponse.self)
     }
     
-    func getRetentionIssues(thoughtId: Int) -> AnyPublisher<NetworkResult<RetentionIssuesResponse>, Never> {
+    func getRetentionIssues(thoughtId: String) -> AnyPublisher<NetworkResult<RetentionIssuesResponse>, Never> {
         let endpoint = APIEndpoint(
             path: NetworkConstants.Paths.thoughtRetentions(thoughtId),
             method: .GET

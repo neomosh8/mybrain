@@ -12,7 +12,7 @@ struct FeedbackPoint: Identifiable {
 struct ChapterCompletionView: View {
     private let networkService = NetworkServiceManager.shared
     
-    let thoughtId: Int
+    let thoughtId: String
     
     // For the animated circle fill
     @State private var fillAmount: CGFloat = 0.0

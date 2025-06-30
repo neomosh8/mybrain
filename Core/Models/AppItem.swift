@@ -31,7 +31,7 @@ final class AuthData {
 @Model
 final class UserProfileData {
     @Attribute(.unique) var id: String
-    var userId: Int?
+    var userId: String?
     var email: String?
     var firstName: String?
     var lastName: String?
@@ -46,7 +46,7 @@ final class UserProfileData {
 
     init(
         id: String = "user_profile_data",
-        userId: Int? = nil,
+        userId: String? = nil,
         email: String? = nil,
         firstName: String? = nil,
         lastName: String? = nil,

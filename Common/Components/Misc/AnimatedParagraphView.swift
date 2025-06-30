@@ -7,7 +7,7 @@ struct AnimatedParagraphView: View {
     let backgroundColor: Color
     var wordInterval: Double
     let chapterIndex: Int
-    let thoughtId: Int
+    let thoughtId: String
     let chapterNumber: Int
     private let networkService = NetworkServiceManager.shared
     

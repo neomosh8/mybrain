@@ -29,15 +29,15 @@ protocol ThoughtsAPI {
     func createThoughtFromText(text: String) -> AnyPublisher<NetworkResult<ThoughtCreationResponse>, Never>
     func createThoughtFromFile(fileData: Data, contentType: String, fileName: String) -> AnyPublisher<NetworkResult<ThoughtCreationResponse>, Never>
     func getAllThoughts() -> AnyPublisher<NetworkResult<[Thought]>, Never>
-    func getThoughtStatus(thoughtId: Int) -> AnyPublisher<NetworkResult<ThoughtStatus>, Never>
-    func resetThoughtProgress(thoughtId: Int) -> AnyPublisher<NetworkResult<ThoughtOperationResponse>, Never>
-    func retryFailedThought(thoughtId: Int) -> AnyPublisher<NetworkResult<ThoughtOperationResponse>, Never>
-    func passChapters(thoughtId: Int, upToChapter: Int) -> AnyPublisher<NetworkResult<PassChaptersResponse>, Never>
-    func summarizeChapters(thoughtId: Int) -> AnyPublisher<NetworkResult<SummarizeResponse>, Never>
-    func archiveThought(thoughtId: Int) -> AnyPublisher<NetworkResult<ArchiveThoughtResponse>, Never>
-    func getThoughtFeedbacks(thoughtId: Int) -> AnyPublisher<NetworkResult<ThoughtFeedbacksResponse>, Never>
-    func getThoughtBookmarks(thoughtId: Int) -> AnyPublisher<NetworkResult<ThoughtBookmarksResponse>, Never>
-    func getRetentionIssues(thoughtId: Int) -> AnyPublisher<NetworkResult<RetentionIssuesResponse>, Never>
+    func getThoughtStatus(thoughtId: String) -> AnyPublisher<NetworkResult<ThoughtStatus>, Never>
+    func resetThoughtProgress(thoughtId: String) -> AnyPublisher<NetworkResult<ThoughtOperationResponse>, Never>
+    func retryFailedThought(thoughtId: String) -> AnyPublisher<NetworkResult<ThoughtOperationResponse>, Never>
+    func passChapters(thoughtId: String, upToChapter: Int) -> AnyPublisher<NetworkResult<PassChaptersResponse>, Never>
+    func summarizeChapters(thoughtId: String) -> AnyPublisher<NetworkResult<SummarizeResponse>, Never>
+    func archiveThought(thoughtId: String) -> AnyPublisher<NetworkResult<ArchiveThoughtResponse>, Never>
+    func getThoughtFeedbacks(thoughtId: String) -> AnyPublisher<NetworkResult<ThoughtFeedbacksResponse>, Never>
+    func getThoughtBookmarks(thoughtId: String) -> AnyPublisher<NetworkResult<ThoughtBookmarksResponse>, Never>
+    func getRetentionIssues(thoughtId: String) -> AnyPublisher<NetworkResult<RetentionIssuesResponse>, Never>
 }
 
 protocol TokenStorage {

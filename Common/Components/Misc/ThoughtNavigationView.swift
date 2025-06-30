@@ -157,7 +157,7 @@ extension ThoughtNavigationView {
         }
         
         let statusString = responseData["status"] as? String ?? "not_started"
-        let thoughtId = responseData["thought_id"] as? Int ?? thought.id
+        let thoughtId = responseData["thought_id"] as? String ?? thought.id
         let thoughtName = responseData["thought_name"] as? String ?? thought.name
         let progressDict = responseData["progress"] as? [String: Any] ?? [:]
         let chaptersArray = responseData["chapters"] as? [[String: Any]] ?? []

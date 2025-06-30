@@ -5,7 +5,7 @@ import Combine
 /// A SwiftUI view that displays the currentSegment's paragraph, highlighting the active word.
 struct SubtitleView: View {
     @ObservedObject var viewModel: SubtitleViewModel
-    let thoughtId: Int
+    let thoughtId: String
     @Binding var chapterNumber: Int
     private let networkService = NetworkServiceManager.shared
     

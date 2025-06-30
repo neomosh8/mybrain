@@ -29,7 +29,7 @@ struct LogoutResponse: Codable {
 // MARK: - Profile Responses
 
 struct UserProfile: Codable {
-    let id: Int?
+    let id: String?
     let email: String?
     let firstName: String?
     let lastName: String?
@@ -77,7 +77,7 @@ struct DeviceTerminationResponse: Codable {
 // MARK: - Thought Management Responses
 
 struct ThoughtCreationResponse: Codable {
-    let id: Int
+    let id: String
     let name: String
     let cover: String?
     let model3d: String?
@@ -94,7 +94,7 @@ struct ThoughtCreationResponse: Codable {
 }
 
 struct Thought: Codable, Identifiable {
-    let id: Int
+    let id: String
     let name: String
     let description: String?
     let contentType: String?
@@ -133,7 +133,7 @@ struct Chapter: Codable {
 }
 
 struct ThoughtStatus: Codable {
-    let thoughtId: Int
+    let thoughtId: String
     let thoughtName: String
     let status: String
     let progress: ThoughtProgress
@@ -155,7 +155,7 @@ struct ThoughtOperationResponse: Codable {
 }
 
 struct ThoughtOperationData: Codable {
-    let thoughtId: Int?
+    let thoughtId: String?
     let error: String?
     let originalStatus: String?
     
