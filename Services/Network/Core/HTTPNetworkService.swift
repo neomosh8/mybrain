@@ -76,7 +76,8 @@ final class HTTPNetworkService: HTTPNetworkServiceProtocol {
                 }
             }
             .catch { error -> Just<NetworkResult<T>> in
-                Just(.failure(.requestFailed(error)))
+                print("Network request failed: \(error)")
+                return Just(.failure(.requestFailed(error)))
             }
             .receive(on: DispatchQueue.main)
             .eraseToAnyPublisher()
