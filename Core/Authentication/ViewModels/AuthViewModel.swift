@@ -122,12 +122,16 @@ class AuthViewModel: ObservableObject {
     func updateProfile(
         firstName: String,
         lastName: String,
+        birthdate: String? = nil,
+        gender: String? = nil,
         context: ModelContext,
         completion: @escaping (Result<UserProfile, Error>) -> Void
     ) {
         profileManager.updateProfile(
             firstName: firstName,
             lastName: lastName,
+            birthdate: birthdate,
+            gender: gender,
             context: context
         ) { result in
             switch result {
