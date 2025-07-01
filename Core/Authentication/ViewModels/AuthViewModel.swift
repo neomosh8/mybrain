@@ -9,7 +9,7 @@ class AuthViewModel: ObservableObject {
     @Published var accessToken: String?
     @Published var refreshToken: String?
     @Published var isAuthenticated = false
-    @Published var isProfileComplete: Bool = true
+    @Published var isProfileComplete: Bool = false
     @Published var profileManager = ProfileManager.shared
 
     @Published var appleAuthManager = AppleAuthManager()
@@ -67,16 +67,44 @@ class AuthViewModel: ObservableObject {
     // MARK: - Public Methods
     
     func loadFromSwiftData(context: ModelContext) {
-        let fetchDescriptor = FetchDescriptor<AuthData>(
+        print("Loading auth data from SwiftData...")
+        
+        // Load auth data
+        let authFetchDescriptor = FetchDescriptor<AuthData>(
             predicate: #Predicate { $0.id == "user_auth_data" })
-        if let authData = try? context.fetch(fetchDescriptor).first {
+        
+        if let authData = try? context.fetch(authFetchDescriptor).first {
             self.accessToken = authData.accessToken
             self.refreshToken = authData.refreshToken
             self.isAuthenticated = authData.isLoggedIn
             self.isProfileComplete = authData.profileComplete
+            
+            print("Auth data loaded - isAuthenticated: \(self.isAuthenticated), isProfileComplete: \(self.isProfileComplete)")
+        } else {
+            print("No auth data found in SwiftData")
+            self.isAuthenticated = false
+            self.isProfileComplete = false
         }
         
+        // Load profile data
         profileManager.loadProfileFromStorage(context: context)
+        
+        // Validate authentication state
+        validateAuthenticationState(context: context)
+    }
+    
+    private func validateAuthenticationState(context: ModelContext) {
+        // If we have tokens but no profile data, check if we need to complete profile
+        if isAuthenticated, let profile = profileManager.currentProfile {
+            let hasRequiredFields = !(profile.firstName?.isEmpty ?? true) &&
+                                  !(profile.lastName?.isEmpty ?? true)
+            
+            if !hasRequiredFields {
+                print("Profile incomplete - missing required fields")
+                self.isProfileComplete = false
+                updateProfileCompleteInSwiftData(context: context, isComplete: false)
+            }
+        }
     }
 
     func requestAuthCode(
@@ -109,9 +137,8 @@ class AuthViewModel: ObservableObject {
         .sink { result in
             switch result {
             case .success(let tokenResponse):
-            self.handleSuccessfulAuth(tokenResponse: tokenResponse, context: context)
-                        
-            completion(.success(tokenResponse.profileComplete))
+                self.handleSuccessfulAuth(tokenResponse: tokenResponse, context: context)
+                completion(.success(tokenResponse.profileComplete))
             case .failure(let error):
                 completion(.failure(error))
             }
@@ -137,7 +164,7 @@ class AuthViewModel: ObservableObject {
             switch result {
             case .success(let userProfile):
                 self.isProfileComplete = true
-                self.updateProfileCompleteInSwiftData(context: context)
+                self.updateProfileCompleteInSwiftData(context: context, isComplete: true)
                 completion(.success(userProfile))
             case .failure(let error):
                 completion(.failure(error))
@@ -230,9 +257,12 @@ class AuthViewModel: ObservableObject {
         SharedDataManager.saveToken(tokenResponse.access)
         saveToSwiftData(context: context)
         
-        if tokenResponse.profileComplete {
-            profileManager.fetchProfileFromServer(context: context)
+        // Save profile data from server response
+        if let profile = tokenResponse.profile {
+            profileManager.saveProfile(profile, context: context)
         }
+        
+        print("Auth completed - isProfileComplete: \(tokenResponse.profileComplete)")
     }
     
     private func saveToSwiftData(context: ModelContext) {
@@ -258,14 +288,14 @@ class AuthViewModel: ObservableObject {
         }
     }
     
-    private func updateProfileCompleteInSwiftData(context: ModelContext) {
+    private func updateProfileCompleteInSwiftData(context: ModelContext, isComplete: Bool) {
         let fetchDescriptor = FetchDescriptor<AuthData>(
             predicate: #Predicate { $0.id == "user_auth_data" })
         
         do {
             let existing = try context.fetch(fetchDescriptor)
             if let authData = existing.first {
-                authData.profileComplete = true
+                authData.profileComplete = isComplete
                 try context.save()
             }
         } catch {
@@ -277,6 +307,7 @@ class AuthViewModel: ObservableObject {
         self.accessToken = nil
         self.refreshToken = nil
         self.isAuthenticated = false
+        self.isProfileComplete = false
         
         SharedDataManager.saveToken(nil)
         clearFromSwiftData(context: context)
@@ -294,6 +325,7 @@ class AuthViewModel: ObservableObject {
                 authData.accessToken = nil
                 authData.refreshToken = nil
                 authData.isLoggedIn = false
+                authData.profileComplete = false
                 try context.save()
             }
         } catch {
