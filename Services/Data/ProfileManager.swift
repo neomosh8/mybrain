@@ -80,11 +80,13 @@ class ProfileManager: ObservableObject {
         context: ModelContext,
         completion: @escaping (Result<UserProfile, Error>) -> Void
     ) {
+        let serverGender = convertGenderToShortFormat(gender)
+        
         networkService.profile.updateProfile(
             firstName: firstName,
             lastName: lastName,
             birthdate: birthdate,
-            gender: gender
+            gender: serverGender
         )
         .sink { result in
             switch result {
@@ -156,6 +158,75 @@ class ProfileManager: ObservableObject {
     var avatarURL: URL? {
         guard let urlString = currentProfile?.avatarUrl else { return nil }
         return URL(string: urlString)
+    }
+    
+    // MARK: - Gender Conversion Methods
+    
+    /// Convert full gender name to short format for server storage
+    private func convertGenderToShortFormat(_ gender: String?) -> String? {
+        guard let gender = gender, !gender.isEmpty else { return nil }
+        
+        switch gender.lowercased() {
+        case "male":
+            return "M"
+        case "female":
+            return "F"
+        case "non-binary":
+            return "N"
+        case "other":
+            return "O"
+        case "prefer not to say", "":
+            return "P"
+        default:
+            // If it's already in short format, return as is
+            if ["M", "F", "N", "O", "P"].contains(gender.uppercased()) {
+                return gender.uppercased()
+            }
+            return "P" // Default to "Prefer not to say"
+        }
+    }
+    
+    /// Convert short gender format to display format
+    func getGenderDisplayName(_ shortGender: String?) -> String {
+        guard let shortGender = shortGender else { return "Not set" }
+        
+        switch shortGender.uppercased() {
+        case "M":
+            return "Male"
+        case "F":
+            return "Female"
+        case "N":
+            return "Non-binary"
+        case "O":
+            return "Other"
+        case "P":
+            return "Prefer not to say"
+        default:
+            return "Not set"
+        }
+    }
+    
+    /// Get the full gender name for the picker
+    func getGenderPickerValue() -> String {
+        guard let gender = currentProfile?.gender else { return "" }
+        return convertShortGenderToFullName(gender)
+    }
+    
+    private func convertShortGenderToFullName(_ shortGender: String) -> String {
+        switch shortGender.uppercased() {
+        case "M":
+            return "male"
+        case "F":
+            return "female"
+        case "N":
+            return "non-binary"
+        case "O":
+            return "other"
+        case "P", "":
+            return ""
+        default:
+            return ""
+        }
     }
     
     // MARK: - Clear Profile
