@@ -57,7 +57,7 @@ final class UserProfileData {
         isActive: Bool = true,
         isStaff: Bool = false,
         lastUpdated: Date = Date(),
-        dateJoined:String? = nil
+        dateJoined: String? = nil
     ) {
         self.id = id
         self.userId = userId
@@ -75,17 +75,90 @@ final class UserProfileData {
     }
     
     func updateFromUserProfile(_ profile: UserProfile) {
-        self.userId = profile.id
-        self.email = profile.email
-        self.firstName = profile.firstName
-        self.lastName = profile.lastName
-        self.birthdate = profile.birthdate
-        self.gender = profile.gender
-        self.avatarUrl = profile.avatarUrl
-        self.onboarded = profile.onboarded ?? false
-        self.isActive = profile.isActive ?? true
-        self.isStaff = profile.isStaff ?? false
+        if let userId = profile.id {
+            self.userId = userId
+        }
+        
+        if let email = profile.email, !email.isEmpty {
+            self.email = email
+        }
+        
+        if let firstName = profile.firstName, !firstName.isEmpty {
+            self.firstName = firstName
+        }
+        
+        if let lastName = profile.lastName, !lastName.isEmpty {
+            self.lastName = lastName
+        }
+        
+        if let birthdate = profile.birthdate {
+            self.birthdate = birthdate
+        }
+        
+        if let gender = profile.gender, !gender.isEmpty {
+            self.gender = gender
+        }
+        
+        if let avatarUrl = profile.avatarUrl {
+            self.avatarUrl = avatarUrl
+        }
+        
+        if let onboarded = profile.onboarded {
+            self.onboarded = onboarded
+        }
+        
+        if let isActive = profile.isActive {
+            self.isActive = isActive
+        }
+        
+        if let isStaff = profile.isStaff {
+            self.isStaff = isStaff
+        }
+        
+        if let dateJoined = profile.dateJoined {
+            self.dateJoined = dateJoined
+        }
+        
         self.lastUpdated = Date()
-        self.dateJoined = profile.dateJoined
+    }
+    
+    // MARK: - Computed Properties
+    
+    var fullName: String {
+        let first = firstName ?? ""
+        let last = lastName ?? ""
+        return "\(first) \(last)".trimmingCharacters(in: .whitespaces)
+    }
+    
+    var displayName: String {
+        if !fullName.isEmpty {
+            return fullName
+        }
+        return email ?? "User"
+    }
+    
+    var genderDisplay: String {
+        guard let gender = gender else { return "Not set" }
+        
+        switch gender.uppercased() {
+        case "M":
+            return "Male"
+        case "F":
+            return "Female"
+        case "N":
+            return "Non-binary"
+        case "O":
+            return "Other"
+        case "P":
+            return "Prefer not to say"
+        default:
+            return "Not set"
+        }
+    }
+    
+    var isProfileCompleteBasic: Bool {
+        return !(firstName?.isEmpty ?? true) &&
+               !(lastName?.isEmpty ?? true) &&
+               !(email?.isEmpty ?? true)
     }
 }
