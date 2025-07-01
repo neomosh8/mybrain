@@ -281,6 +281,7 @@ struct LoginScreen: View {
             
             if authVM.isAuthenticated && !authVM.isProfileComplete {
                 showProfileCompletion = true
+                prepareProfileCompletion()
             }
         }
     }
@@ -651,7 +652,7 @@ struct LoginScreen: View {
                             .foregroundColor(.white.opacity(0.6))
                             .frame(width: 20)
                         
-                        Text(genderOptions.first(where: { $0.value == selectedGender })?.label ?? "Select Gender")
+                        Text(getGenderDisplayName(selectedGender))
                             .foregroundColor(selectedGender.isEmpty ? .white.opacity(0.5) : .white)
                             .font(.system(size: 16))
                         
@@ -835,6 +836,7 @@ struct LoginScreen: View {
                     withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                         showProfileCompletion = true
                         showVerificationView = false
+                        prepareProfileCompletion()
                         formOffset = -30
                         contentOpacity = 0
                     }
@@ -869,6 +871,26 @@ struct LoginScreen: View {
                !selectedGender.isEmpty
     }
     
+    // MARK: - Helper Functions
+    private func getGenderDisplayName(_ value: String) -> String {
+        return genderOptions.first { $0.value == value }?.label ?? "Select Gender"
+    }
+    
+    private func prepareProfileCompletion() {
+        if let profile = authVM.profileManager.currentProfile {
+            firstName = profile.firstName ?? ""
+            lastName = profile.lastName ?? ""
+            selectedGender = profile.gender ?? ""
+            
+            // Pre-set birthdate if available
+            if let birthdateString = profile.birthdate,
+               let date = DateFormatter.iso8601Date.date(from: birthdateString) {
+                birthdate = date
+                birthdateSelected = true
+            }
+        }
+    }
+    
     private func updateProfile() {
         let birthdateString = DateFormatter.iso8601Date.string(from: birthdate)
         
@@ -880,7 +902,7 @@ struct LoginScreen: View {
             context: modelContext
         ) { result in
             switch result {
-            case .success(let userProfile):
+            case .success(_):
                 authVM.isAuthenticated = true
             case .failure(let error):
                 
@@ -922,6 +944,7 @@ struct LoginScreen: View {
                             if !isProfileComplete {
                                 withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                                     self.showProfileCompletion = true
+                                    self.prepareProfileCompletion()
                                     self.formOffset = -30
                                     self.contentOpacity = 0
                                 }
@@ -960,6 +983,7 @@ struct LoginScreen: View {
                             if !isProfileComplete {
                                 withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                                     self.showProfileCompletion = true
+                                    self.prepareProfileCompletion()
                                     self.formOffset = -30
                                     self.contentOpacity = 0
                                 }
@@ -995,13 +1019,14 @@ struct LoginScreen: View {
             .store(in: &cancellables)
         
         NotificationCenter.default.publisher(for: .googleAuthFailure)
-            .sink { [self] notification in                if let error = notification.userInfo?["error"] as? Error {
-                DispatchQueue.main.async {
-                    withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                        self.errorMessage = error.localizedDescription
+            .sink { [self] notification in
+                if let error = notification.userInfo?["error"] as? Error {
+                    DispatchQueue.main.async {
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                            self.errorMessage = error.localizedDescription
+                        }
                     }
                 }
-            }
             }
             .store(in: &cancellables)
     }
