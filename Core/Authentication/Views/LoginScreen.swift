@@ -23,6 +23,22 @@ struct LoginScreen: View {
     @State private var tempBirthdate = Date()
     @State private var birthdateSelected = false
     
+    private var minimumDate: Date {
+       var components = Calendar.current.dateComponents([.year], from: Date())
+       components.year! -= 2
+       components.month = 12
+       components.day = 31
+       return Calendar.current.date(from: components) ?? Date()
+    }
+
+    private var maximumDate: Date {
+       var components = Calendar.current.dateComponents([.year], from: Date())
+       components.year! -= 120
+       components.month = 1
+       components.day = 1
+       return Calendar.current.date(from: components) ?? Date()
+    }
+    
     @State private var genderOptions = [
         GenderOption(value: "", label: "Select Gender"),
         GenderOption(value: "M", label: "Male"),
@@ -154,7 +170,7 @@ struct LoginScreen: View {
                                     .fill(Color.white.opacity(0.05))
                                 )
                             
-                            DatePicker("", selection: $birthdate, displayedComponents: .date)
+                            DatePicker("", selection: $birthdate, in: maximumDate...minimumDate, displayedComponents: .date)
                                 .datePickerStyle(WheelDatePickerStyle())
                                 .colorScheme(.dark)
                                 .accentColor(.blue)
