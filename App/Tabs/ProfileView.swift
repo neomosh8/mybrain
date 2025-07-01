@@ -30,12 +30,24 @@ struct ProfileView: View {
         return formatter
     }()
     
+    private let dateJoinedInputFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssXXXXX"
+        return formatter
+    }()
+
     private var memberSinceText: String {
-        guard let dateJoined = authVM.profileManager.currentProfile?.dateJoined else {
+        guard let dateJoinedString = authVM.profileManager.currentProfile?.dateJoined else {
             return "Member since unknown"
         }
-        return "Member since \(memberSinceDateFormatter.string(from: dateJoined))"
+        
+        if let date = dateJoinedInputFormatter.date(from: dateJoinedString) {
+            return "Member since \(memberSinceDateFormatter.string(from: date))"
+        }
+        
+        return "Member since unknown"
     }
+
     
     var body: some View {
         ScrollView {
@@ -420,7 +432,6 @@ extension ProfileView {
 // MARK: - Helper Functions
 extension ProfileView {
     private func loadProfileData() {
-        // Load initial values for editing
         editedFirstName = authVM.profileManager.currentProfile?.firstName ?? ""
         editedLastName = authVM.profileManager.currentProfile?.lastName ?? ""
         editedBirthdate = authVM.profileManager.currentProfile?.birthdate ?? ""
