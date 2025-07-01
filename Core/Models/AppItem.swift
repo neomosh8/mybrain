@@ -42,7 +42,7 @@ final class UserProfileData {
     var isActive: Bool
     var isStaff: Bool
     var lastUpdated: Date
-    var dateJoined: Date?
+    var dateJoined: String?
 
     init(
         id: String = "user_profile_data",
@@ -57,7 +57,7 @@ final class UserProfileData {
         isActive: Bool = true,
         isStaff: Bool = false,
         lastUpdated: Date = Date(),
-        dateJoined:Date? = nil
+        dateJoined:String? = nil
     ) {
         self.id = id
         self.userId = userId

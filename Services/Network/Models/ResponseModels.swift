@@ -39,7 +39,7 @@ struct UserProfile: Codable {
     let onboarded: Bool?
     let isActive: Bool?
     let isStaff: Bool?
-    let dateJoined: Date?
+    let dateJoined: String?
     
     enum CodingKeys: String, CodingKey {
         case id, email, birthdate, gender, onboarded
