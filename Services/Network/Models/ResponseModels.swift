@@ -9,12 +9,16 @@ struct RegisterResponse: Codable {
 struct TokenResponse: Codable {
     let access: String
     let refresh: String
+    let device: UserDevice?
     let profileComplete: Bool
+    let profile: UserProfile?
     
     enum CodingKeys: String, CodingKey {
         case access = "access"
         case refresh = "refresh"
+        case device = "device"
         case profileComplete = "profile_complete"
+        case profile = "profile"
     }
 }
 
@@ -35,6 +39,7 @@ struct UserProfile: Codable {
     let lastName: String?
     let birthdate: String?
     let gender: String?
+    let genderDisplay: String?
     let avatarUrl: String?
     let onboarded: Bool?
     let isActive: Bool?
@@ -45,6 +50,7 @@ struct UserProfile: Codable {
         case id, email, birthdate, gender, onboarded
         case firstName = "first_name"
         case lastName = "last_name"
+        case genderDisplay = "gender_display"
         case avatarUrl = "avatar_url"
         case isActive = "is_active"
         case isStaff = "is_staff"
@@ -53,6 +59,7 @@ struct UserProfile: Codable {
 }
 
 struct UserDevice: Codable {
+    let id: String?
     let deviceName: String
     let osName: String
     let appVersion: String
@@ -61,6 +68,7 @@ struct UserDevice: Codable {
     let lastLogin: String
     
     enum CodingKeys: String, CodingKey {
+        case id = "id"
         case deviceName = "device_name"
         case osName = "os_name"
         case appVersion = "app_version"
