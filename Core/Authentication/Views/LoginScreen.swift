@@ -599,7 +599,7 @@ struct LoginScreen: View {
                             .frame(width: 20)
                         
                         Text(birthdateSelected ?
-                             DateFormatter.displayFormatter.string(from: birthdate) :
+                             DateFormatter.displayDate.string(from: birthdate) :
                                 "Select birthdate")
                         .foregroundColor(birthdateSelected ? .white : .white.opacity(0.5))
                         .font(.system(size: 16))
@@ -675,8 +675,8 @@ struct LoginScreen: View {
                         .cornerRadius(16)
                         .shadow(color: Color.blue.opacity(0.3), radius: 8, x: 0, y: 4)
                 }
-                .disabled(firstName.isEmpty || lastName.isEmpty)
-                .opacity(firstName.isEmpty || lastName.isEmpty ? 0.6 : 1.0)
+                .disabled(!isProfileFormValid)
+                .opacity(isProfileFormValid ? 1.0 : 0.6)
             }
         }
     }
