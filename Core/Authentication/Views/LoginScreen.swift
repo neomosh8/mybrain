@@ -846,16 +846,21 @@ struct LoginScreen: View {
         }
     }
     
+    private var isProfileFormValid: Bool {
+        return !firstName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+               !lastName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+               birthdateSelected &&
+               !selectedGender.isEmpty
+    }
+    
     private func updateProfile() {
-        let birthdateString: String? = birthdateSelected ? DateFormatter.apiFormatter.string(from: birthdate) : nil
-        
-        let genderValue = selectedGender.isEmpty ? nil : selectedGender
+        let birthdateString = DateFormatter.iso8601Date.string(from: birthdate)
         
         authVM.updateProfile(
-            firstName: firstName,
-            lastName: lastName,
+            firstName: firstName.trimmingCharacters(in: .whitespacesAndNewlines),
+            lastName: lastName.trimmingCharacters(in: .whitespacesAndNewlines),
             birthdate: birthdateString,
-            gender: genderValue,
+            gender: selectedGender,
             context: modelContext
         ) { result in
             switch result {
@@ -987,14 +992,14 @@ struct LoginScreen: View {
 }
 
 extension DateFormatter {
-    static let displayFormatter: DateFormatter = {
+    static let displayDate: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
         return formatter
     }()
     
-    static let apiFormatter: DateFormatter = {
+    static let iso8601Date: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter
