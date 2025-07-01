@@ -847,22 +847,9 @@ struct LoginScreen: View {
     }
     
     private func updateProfile() {
-        print("🚀 Starting profile update...")
-        print("📝 First Name: '\(firstName)'")
-        print("📝 Last Name: '\(lastName)'")
-        print("📅 Birthdate selected: \(birthdateSelected)")
-        print("📅 Birthdate value: \(birthdate)")
-        print("👤 Selected Gender: '\(selectedGender)'")
-        
-        // Convert birthdate to API format if selected
         let birthdateString: String? = birthdateSelected ? DateFormatter.apiFormatter.string(from: birthdate) : nil
-        print("📅 Birthdate string for API: \(birthdateString ?? "nil")")
         
-        // Only send gender if one was actually selected
         let genderValue = selectedGender.isEmpty ? nil : selectedGender
-        print("👤 Gender value for API: \(genderValue ?? "nil")")
-        
-        print("🌐 Calling authVM.updateProfile...")
         
         authVM.updateProfile(
             firstName: firstName,
@@ -871,17 +858,10 @@ struct LoginScreen: View {
             gender: genderValue,
             context: modelContext
         ) { result in
-            print("📡 Received response from authVM.updateProfile")
-            
             switch result {
             case .success(let userProfile):
-                print("✅ Profile updated successfully!")
-                print("👤 User Profile: \(userProfile)")
                 authVM.isAuthenticated = true
             case .failure(let error):
-                print("❌ Profile update failed!")
-                print("🔍 Error: \(error)")
-                print("🔍 Error description: \(error.localizedDescription)")
                 
                 withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
                     errorMessage = error.localizedDescription
