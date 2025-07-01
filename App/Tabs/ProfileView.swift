@@ -273,10 +273,11 @@ extension ProfileView {
                 } else {
                     accountDetailRow(
                         title: "Gender",
-                        value: .constant(authVM.profileManager.currentProfile?.gender?.capitalized ?? "Not set"),
+                        value: .constant(authVM.profileManager.getGenderDisplayName(authVM.profileManager.currentProfile?.gender)),
                         isEditing: false
                     )
                 }
+
                 
                 Divider().padding(.leading, 16)
                 
@@ -444,6 +445,13 @@ extension ProfileView {
     }
     
     private func startEditing() {
+        guard let profile = authVM.profileManager.currentProfile else { return }
+        
+        editedFirstName = profile.firstName ?? ""
+        editedLastName = profile.lastName ?? ""
+        editedBirthdate = profile.birthdate ?? ""
+        editedGender = authVM.profileManager.getGenderPickerValue()
+        
         withAnimation(.easeInOut(duration: 0.3)) {
             isEditingAccountDetails = true
         }
@@ -457,10 +465,12 @@ extension ProfileView {
     }
     
     private func saveProfile() {
-        authVM.profileManager.updateProfile(
-            firstName: editedFirstName.isEmpty ? nil : editedFirstName,
-            lastName: editedLastName.isEmpty ? nil : editedLastName,
-            birthdate: editedBirthdate.isEmpty ? nil : editedBirthdate,
+        guard let profile = authVM.profileManager.currentProfile else { return }
+        
+        authVM.updateProfile(
+            firstName: editedFirstName.isEmpty ? "" : editedFirstName,
+            lastName: editedLastName.isEmpty ? "" : editedLastName,
+            birthdate: editedBirthdate.isEmpty ? "" : editedBirthdate,
             gender: editedGender.isEmpty ? nil : editedGender,
             context: modelContext
         ) { result in
@@ -468,11 +478,10 @@ extension ProfileView {
                 switch result {
                 case .success:
                     withAnimation(.easeInOut(duration: 0.3)) {
-                        isEditingAccountDetails = false
+                        self.isEditingAccountDetails = false
                     }
                 case .failure(let error):
                     print("Error updating profile: \(error)")
-                    // Show error alert if needed
                 }
             }
         }
