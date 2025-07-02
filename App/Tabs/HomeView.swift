@@ -441,12 +441,11 @@ struct ModeSelectionView: View {
                                 .fill(Color.blue)
                                 .frame(width: geometry.size.width / 2 - 4)
                                 .offset(x: selectedMode == .reading ? 2 : geometry.size.width / 2 + 2)
-                                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: selectedMode)
+                                .animation(.easeInOut(duration: 0.2), value: selectedMode)
                             
                             Spacer()
                         }
                     }
-                    .padding(2)
                 }
             )
             .clipShape(RoundedRectangle(cornerRadius: 20))
