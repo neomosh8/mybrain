@@ -4,7 +4,7 @@ import SwiftData
 struct ProfileView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject var authVM: AuthViewModel
-    
+        
     @State private var isEditingAccountDetails = false
     @State private var editedFirstName = ""
     @State private var editedLastName = ""
@@ -17,6 +17,9 @@ struct ProfileView: View {
     @State private var isLoggingOut = false
     @State private var showLogoutError = false
     @State private var logoutErrorMessage = ""
+    
+    @State private var showMenu = false
+    @State private var showingEditProfileSheet = false
     
     var onNavigateToHome: (() -> Void)?
 
@@ -60,38 +63,110 @@ struct ProfileView: View {
             VStack(spacing: 24) {
                 infoSection
                 
-                accountDetailsSection
-                
                 privacyTermsSection
-                
-                logoutSection
-                
+                                
                 Spacer(minLength: 50)
             }
             .padding(.horizontal, 16)
         }
         .customNavigationBar(
-                    title: "Profile",
-                    onBackTap: {
-                        onNavigateToHome?()
-                    }
-                ) {
-                    // Add edit button
-                    Button(action: {
-                        print("Edit profile")
-                    }) {
-                        Text("Edit")
-                            .font(.title2)
-                            .fontWeight(.medium)
-                            .foregroundColor(.blue)
+            title: "Profile",
+            onBackTap: {
+                onNavigateToHome?()
+            }
+        ) {
+            Button(action: {
+                showMenu.toggle()
+            }) {
+                Image(systemName: "ellipsis")
+                    .font(.title2)
+                    .foregroundColor(.primary)
+                    .frame(width: 40, height: 40)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color(.systemGray6))
+                    )
+            }
+            .overlay(
+                VStack {
+                    if showMenu {
+                        VStack(spacing: 0) {
+                            Button(action: {
+                                showMenu = false
+                                showingEditProfileSheet = true
+                            }) {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "pencil")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(.primary)
+                                        .frame(width: 20)
+                                    
+                                    Text("Edit Profile")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(.primary)
+                                    
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                            }
+                            
+                            Divider()
+                                .padding(.horizontal, 8)
+                            
+                            Button(action: {
+                                showMenu = false
+                                showingLogoutAlert = true
+                            }) {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "rectangle.portrait.and.arrow.right")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(.red)
+                                        .frame(width: 20)
+                                    
+                                    Text("Logout")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(.red)
+                                    
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                            }
+                        }
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color(.systemBackground))
+                                .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
+                        )
+                        .frame(width: 180)
+                        .offset(x: -70, y: 50)
+                        .zIndex(99999)
+                        .transition(.asymmetric(
+                            insertion: .scale(scale: 0.8).combined(with: .opacity),
+                            removal: .scale(scale: 0.8).combined(with: .opacity)
+                        ))
                     }
                 }
+                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showMenu)
+            )
+        }
         .onAppear {
             loadProfileData()
         }
         .sheet(isPresented: $showingImagePicker) {
             ImagePickerView { image in
                 uploadProfileImage(image)
+            }
+        }
+        .sheet(isPresented: $showingEditProfileSheet) {
+            EditProfileView()
+        }
+        .onTapGesture {
+            if showMenu {
+                withAnimation {
+                    showMenu = false
+                }
             }
         }
         .alert("Logout", isPresented: $showingLogoutAlert) {
@@ -137,21 +212,6 @@ extension ProfileView {
                         .font(.system(size: 80))
                         .foregroundColor(.gray)
                 }
-                
-                Button(action: {
-                    showingImagePicker = true
-                }) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.blue)
-                            .frame(width: 30, height: 30)
-                        
-                        Image(systemName: "camera")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.white)
-                    }
-                }
-                .offset(x: 30, y: 30)
             }
             
             VStack(spacing: 4) {
@@ -179,141 +239,6 @@ extension ProfileView {
     }
 }
 
-// MARK: - Account Details Section
-extension ProfileView {
-    private var accountDetailsSection: some View {
-        VStack(spacing: 16) {
-            // Section Header with Edit Button
-            HStack {
-                Text("Account Details")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(.primary)
-                
-                Spacer()
-                
-                if isEditingAccountDetails {
-                    // Save and Cancel buttons
-                    HStack(spacing: 12) {
-                        Button(action: cancelEditing) {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.primary)
-                                .frame(width: 40, height: 40)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .fill(Color(.systemGray6))
-                                )
-                        }
-                        
-                        Button(action: saveProfile) {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.primary)
-                                .frame(width: 40, height: 40)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .fill(Color(.systemGray6))
-                                )
-                        }
-                    }
-                } else {
-                    Button(action: startEditing) {
-                        Image(systemName: "pencil")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.primary)
-                            .frame(width: 40, height: 40)
-                            .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color(.systemGray6))
-                            )
-                    }
-                }
-            }
-            
-            VStack(spacing: 12) {
-                // First Name
-                accountDetailRow(
-                    title: "First Name",
-                    value: isEditingAccountDetails ? $editedFirstName : .constant(authVM.profileManager.currentProfile?.firstName ?? ""),
-                    isEditing: isEditingAccountDetails
-                )
-                
-                Divider().padding(.leading, 16)
-                
-                // Last Name
-                accountDetailRow(
-                    title: "Last Name",
-                    value: isEditingAccountDetails ? $editedLastName : .constant(authVM.profileManager.currentProfile?.lastName ?? ""),
-                    isEditing: isEditingAccountDetails
-                )
-                
-                Divider().padding(.leading, 16)
-                
-                // Birthdate
-                if isEditingAccountDetails {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Birthdate")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.primary)
-                        
-                        DatePicker("", selection: $selectedDate, displayedComponents: [.date])
-                            .datePickerStyle(.compact)
-                            .onChange(of: selectedDate) { _, newValue in
-                                editedBirthdate = dateFormatter.string(from: newValue)
-                            }
-                    }
-                    .padding(.horizontal, 16)
-                } else {
-                    accountDetailRow(
-                        title: "Birthdate",
-                        value: .constant(authVM.profileManager.currentProfile?.birthdate ?? "Not set"),
-                        isEditing: false
-                    )
-                }
-                
-                Divider().padding(.leading, 16)
-                
-                // Gender
-                if isEditingAccountDetails {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Gender")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.primary)
-                        
-                        Picker("Gender", selection: $editedGender) {
-                            Text("Prefer not to say").tag("")
-                            Text("Male").tag("male")
-                            Text("Female").tag("female")
-                            Text("Non-binary").tag("non-binary")
-                            Text("Other").tag("other")
-                        }
-                        .pickerStyle(.menu)
-                    }
-                    .padding(.horizontal, 16)
-                } else {
-                    accountDetailRow(
-                        title: "Gender",
-                        value: .constant(authVM.profileManager.getGenderDisplayName(authVM.profileManager.currentProfile?.gender)),
-                        isEditing: false
-                    )
-                }
-                
-                
-                Divider().padding(.leading, 16)
-                
-                // Email (not editable)
-                accountDetailRow(
-                    title: "Email",
-                    value: .constant(authVM.profileManager.currentProfile?.email ?? ""),
-                    isEditing: false
-                )
-            }
-            .background(Color(.systemGray6))
-            .cornerRadius(12)
-        }
-    }
-}
-
 // MARK: - Privacy and Terms Section
 extension ProfileView {
     private var privacyTermsSection: some View {
@@ -335,46 +260,6 @@ extension ProfileView {
             ) {
                 openURL("https://neocore.com/privacy")
             }
-        }
-    }
-}
-
-// MARK: - Logout Section
-extension ProfileView {
-    private var logoutSection: some View {
-        VStack(spacing: 12) {
-            Button(action: {
-                showingLogoutAlert = true
-            }) {
-                HStack(spacing: 12) {
-                    Image(systemName: "rectangle.portrait.and.arrow.right")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(.red)
-                        .frame(width: 24, height: 24)
-                    
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Logout")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.red)
-                        
-                        Text("Sign out of your account")
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    Spacer()
-                    
-                    if isLoggingOut {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(Color(.systemGray6))
-                .cornerRadius(12)
-            }
-            .disabled(isLoggingOut)
         }
     }
 }
@@ -584,6 +469,265 @@ struct ImagePickerView: UIViewControllerRepresentable {
         
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
             parent.dismiss()
+        }
+    }
+}
+
+// MARK: - Edit Profile Sheet View
+struct EditProfileView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject var authVM: AuthViewModel
+    
+    @State private var editedFirstName = ""
+    @State private var editedLastName = ""
+    @State private var editedBirthdate = ""
+    @State private var editedGender = ""
+    @State private var selectedDate = Date()
+    @State private var showDatePicker = false
+    @State private var showGenderPicker = false
+    
+    private let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        return formatter
+    }()
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                // Header
+                HStack {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                    .foregroundColor(.primary)
+                    
+                    Spacer()
+                    
+                    Text("Edit Profile")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                    
+                    Spacer()
+                    
+                    Button("Save") {
+                        saveProfile()
+                    }
+                    .foregroundColor(.blue)
+                    .fontWeight(.semibold)
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+                
+                Divider()
+                
+                // Form Content
+                ScrollView {
+                    VStack(spacing: 20) {
+                        // Profile Image Section
+                        VStack(spacing: 12) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.gray.opacity(0.2))
+                                    .frame(width: 100, height: 100)
+                                
+                                if authVM.profileManager.hasAvatar,
+                                   let avatarURL = authVM.profileManager.avatarURL {
+                                    AsyncImage(url: avatarURL) { image in
+                                        image
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(width: 100, height: 100)
+                                            .clipShape(Circle())
+                                    } placeholder: {
+                                        Image(systemName: "person.circle.fill")
+                                            .font(.system(size: 80))
+                                            .foregroundColor(.gray)
+                                    }
+                                } else {
+                                    Image(systemName: "person.circle.fill")
+                                        .font(.system(size: 80))
+                                        .foregroundColor(.gray)
+                                }
+                                
+                                Button(action: {
+                                    // Handle image picker
+                                }) {
+                                    ZStack {
+                                        Circle()
+                                            .fill(Color.blue)
+                                            .frame(width: 30, height: 30)
+                                        
+                                        Image(systemName: "camera")
+                                            .font(.system(size: 14, weight: .medium))
+                                            .foregroundColor(.white)
+                                    }
+                                }
+                                .offset(x: 30, y: 30)
+                            }
+                            
+                            Text("Tap to change profile photo")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.top, 20)
+                        
+                        // Form Fields
+                        VStack(spacing: 16) {
+                            editField(title: "First Name", text: $editedFirstName)
+                            editField(title: "Last Name", text: $editedLastName)
+                            
+                            // Birthdate Field
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Birthdate")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.primary)
+                                
+                                Button(action: {
+                                    showDatePicker.toggle()
+                                }) {
+                                    HStack {
+                                        Text(dateFormatter.string(from: selectedDate))
+                                            .font(.system(size: 16))
+                                            .foregroundColor(.primary)
+                                        
+                                        Spacer()
+                                        
+                                        Image(systemName: "calendar")
+                                            .foregroundColor(.secondary)
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 12)
+                                    .background(Color(.systemGray6))
+                                    .cornerRadius(8)
+                                }
+                            }
+                            
+                            // Gender Field
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Gender")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.primary)
+                                
+                                Button(action: {
+                                    showGenderPicker.toggle()
+                                }) {
+                                    HStack {
+                                        Text(getGenderDisplayText())
+                                            .font(.system(size: 16))
+                                            .foregroundColor(.primary)
+                                        
+                                        Spacer()
+                                        
+                                        Image(systemName: "chevron.up.chevron.down")
+                                            .foregroundColor(.secondary)
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 12)
+                                    .background(Color(.systemGray6))
+                                    .cornerRadius(8)
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                        
+                        Spacer(minLength: 50)
+                    }
+                }
+            }
+        }
+        .onAppear {
+            loadProfileData()
+        }
+        .sheet(isPresented: $showDatePicker) {
+            NavigationView {
+                DatePicker("Select Date", selection: $selectedDate, displayedComponents: .date)
+                    .datePickerStyle(WheelDatePickerStyle())
+                    .navigationTitle("Select Birthdate")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            Button("Cancel") {
+                                showDatePicker = false
+                            }
+                        }
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("Done") {
+                                showDatePicker = false
+                            }
+                        }
+                    }
+            }
+        }
+        .actionSheet(isPresented: $showGenderPicker) {
+            ActionSheet(
+                title: Text("Select Gender"),
+                buttons: [
+                    .default(Text("Male")) { editedGender = "M" },
+                    .default(Text("Female")) { editedGender = "F" },
+                    .default(Text("Other")) { editedGender = "O" },
+                    .default(Text("Prefer not to say")) { editedGender = "P" },
+                    .cancel()
+                ]
+            )
+        }
+    }
+    
+    private func editField(title: String, text: Binding<String>) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.primary)
+            
+            TextField(title, text: text)
+                .textFieldStyle(PlainTextFieldStyle())
+                .font(.system(size: 16))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(Color(.systemGray6))
+                .cornerRadius(8)
+        }
+    }
+    
+    private func loadProfileData() {
+        editedFirstName = authVM.profileManager.currentProfile?.firstName ?? ""
+        editedLastName = authVM.profileManager.currentProfile?.lastName ?? ""
+        editedBirthdate = authVM.profileManager.currentProfile?.birthdate ?? ""
+        editedGender = authVM.profileManager.currentProfile?.gender ?? ""
+        
+        if let birthdateString = authVM.profileManager.currentProfile?.birthdate,
+           let date = dateFormatter.date(from: birthdateString) {
+            selectedDate = date
+        }
+    }
+    
+    private func getGenderDisplayText() -> String {
+        switch editedGender {
+        case "M": return "Male"
+        case "F": return "Female"
+        case "O": return "Other"
+        case "P": return "Prefer not to say"
+        default: return "Select Gender"
+        }
+    }
+    
+    private func saveProfile() {
+        authVM.updateProfile(
+            firstName: editedFirstName.isEmpty ? "" : editedFirstName,
+            lastName: editedLastName.isEmpty ? "" : editedLastName,
+            birthdate: dateFormatter.string(from: selectedDate),
+            gender: editedGender,
+            context: modelContext
+        ) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    dismiss()
+                case .failure(let error):
+                    print("Profile update failed: \(error)")
+                }
+            }
         }
     }
 }
