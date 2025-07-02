@@ -57,7 +57,7 @@
 		743D5BBA2DFC464000C4F71E /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 743D5BB72DFC464000C4F71E /* MainTabView.swift */; };
 		743D5BBB2DFC464000C4F71E /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 743D5BB82DFC464000C4F71E /* ProfileView.swift */; };
 		743D5BBC2DFC464000C4F71E /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 743D5BB62DFC464000C4F71E /* HomeView.swift */; };
-		743D5BBE2DFC464000C4F71E /* AnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 743D5BB42DFC464000C4F71E /* AnalyticsView.swift */; };
+		743D5BBE2DFC464000C4F71E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 743D5BB42DFC464000C4F71E /* SettingsView.swift */; };
 		743D5BBF2DFC464000C4F71E /* DeviceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 743D5BB52DFC464000C4F71E /* DeviceView.swift */; };
 		7468256F2DDCE58B0089AE37 /* ImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7468256E2DDCE5880089AE37 /* ImageLoader.swift */; };
 		747A54B32DFDC0B400BD9541 /* ThoughtCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747A54B22DFDC0A900BD9541 /* ThoughtCard.swift */; };
@@ -85,6 +85,7 @@
 		74C286102DB4D0E900CF836B /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 74C2860F2DB4D0E900CF836B /* GoogleSignIn */; };
 		74C286122DB4D0E900CF836B /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 74C286112DB4D0E900CF836B /* GoogleSignInSwift */; };
 		74C286142DB4D5EB00CF836B /* client_312380135422-bko7g13qv6ggt7e5cc7dlt6lsquq7qi4.apps.googleusercontent.com.plist in Resources */ = {isa = PBXBuildFile; fileRef = 74C286132DB4D5EB00CF836B /* client_312380135422-bko7g13qv6ggt7e5cc7dlt6lsquq7qi4.apps.googleusercontent.com.plist */; };
+		74D58B352E151AB7008B62DC /* AppStateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74D58B342E151AB3008B62DC /* AppStateManager.swift */; };
 		74EC8AA52DCE6590008DE8A9 /* BackgroundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74EC8AA42DCE6588008DE8A9 /* BackgroundManager.swift */; };
 /* End PBXBuildFile section */
 
@@ -162,7 +163,7 @@
 		74263C862DDAF63500953598 /* AnimatedLineChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedLineChartView.swift; sourceTree = "<group>"; };
 		74263C882DDAF66200953598 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		74263C8E2DDAF6F400953598 /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = Localizable.strings; sourceTree = "<group>"; };
-		743D5BB42DFC464000C4F71E /* AnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsView.swift; sourceTree = "<group>"; };
+		743D5BB42DFC464000C4F71E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		743D5BB52DFC464000C4F71E /* DeviceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceView.swift; sourceTree = "<group>"; };
 		743D5BB62DFC464000C4F71E /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		743D5BB72DFC464000C4F71E /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
@@ -193,6 +194,7 @@
 		74C2860A2DB4C30E00CF836B /* AppleAuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleAuthManager.swift; sourceTree = "<group>"; };
 		74C2860C2DB4C32100CF836B /* GoogleAuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleAuthManager.swift; sourceTree = "<group>"; };
 		74C286132DB4D5EB00CF836B /* client_312380135422-bko7g13qv6ggt7e5cc7dlt6lsquq7qi4.apps.googleusercontent.com.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "client_312380135422-bko7g13qv6ggt7e5cc7dlt6lsquq7qi4.apps.googleusercontent.com.plist"; sourceTree = "<group>"; };
+		74D58B342E151AB3008B62DC /* AppStateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStateManager.swift; sourceTree = "<group>"; };
 		74EC8AA42DCE6588008DE8A9 /* BackgroundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -254,6 +256,7 @@
 		74263C542DDADCB200953598 /* App */ = {
 			isa = PBXGroup;
 			children = (
+				74D58B332E151AA7008B62DC /* Shared */,
 				743D5BB32DFC460700C4F71E /* Tabs */,
 				684426FC2D13D580002E9BC6 /* ContentView.swift */,
 				684426FE2D13D580002E9BC6 /* myBrainApp.swift */,
@@ -587,7 +590,8 @@
 		743D5BB32DFC460700C4F71E /* Tabs */ = {
 			isa = PBXGroup;
 			children = (
-				743D5BB42DFC464000C4F71E /* AnalyticsView.swift */,
+				74D58B342E151AB3008B62DC /* AppStateManager.swift */,
+				743D5BB42DFC464000C4F71E /* SettingsView.swift */,
 				743D5BB52DFC464000C4F71E /* DeviceView.swift */,
 				743D5BB62DFC464000C4F71E /* HomeView.swift */,
 				743D5BB72DFC464000C4F71E /* MainTabView.swift */,
@@ -654,6 +658,13 @@
 				74BC7E6D2E000E1E00A9C2F4 /* NetworkConstants.swift */,
 			);
 			path = Utilities;
+			sourceTree = "<group>";
+		};
+		74D58B332E151AA7008B62DC /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Shared;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -784,10 +795,11 @@
 				743D5BBA2DFC464000C4F71E /* MainTabView.swift in Sources */,
 				743D5BBB2DFC464000C4F71E /* ProfileView.swift in Sources */,
 				743D5BBC2DFC464000C4F71E /* HomeView.swift in Sources */,
-				743D5BBE2DFC464000C4F71E /* AnalyticsView.swift in Sources */,
+				743D5BBE2DFC464000C4F71E /* SettingsView.swift in Sources */,
 				743D5BBF2DFC464000C4F71E /* DeviceView.swift in Sources */,
 				74263C292DDADAE800953598 /* AnimatedParagraphView.swift in Sources */,
 				74BC7E702E00109800A9C2F4 /* AuthenticationAPI+Implementation.swift in Sources */,
+				74D58B352E151AB7008B62DC /* AppStateManager.swift in Sources */,
 				74263C2B2DDADAE800953598 /* SignalProcessing.swift in Sources */,
 				74BC7E5E2E000DCB00A9C2F4 /* TokenStorage.swift in Sources */,
 				74BC7E682E000E0700A9C2F4 /* ResponseModels.swift in Sources */,
