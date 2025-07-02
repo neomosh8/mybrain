@@ -431,8 +431,25 @@ struct ModeSelectionView: View {
                     isLeft: false
                 )
             }
-            .background(Color.gray.opacity(0.1))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .background(
+                ZStack {
+                    Color.gray.opacity(0.1)
+                    
+                    GeometryReader { geometry in
+                        HStack {
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.blue)
+                                .frame(width: geometry.size.width / 2 - 4)
+                                .offset(x: selectedMode == .reading ? 2 : geometry.size.width / 2 + 2)
+                                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: selectedMode)
+                            
+                            Spacer()
+                        }
+                    }
+                    .padding(2)
+                }
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 20))
         }
     }
 }
@@ -465,11 +482,6 @@ struct ModeButton: View {
             .foregroundColor(isSelected ? .white : .primary)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? Color.blue : Color.clear)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
-            )
         }
         .buttonStyle(PlainButtonStyle())
     }
