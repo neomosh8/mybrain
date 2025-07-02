@@ -86,6 +86,7 @@
 		74C286122DB4D0E900CF836B /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 74C286112DB4D0E900CF836B /* GoogleSignInSwift */; };
 		74C286142DB4D5EB00CF836B /* client_312380135422-bko7g13qv6ggt7e5cc7dlt6lsquq7qi4.apps.googleusercontent.com.plist in Resources */ = {isa = PBXBuildFile; fileRef = 74C286132DB4D5EB00CF836B /* client_312380135422-bko7g13qv6ggt7e5cc7dlt6lsquq7qi4.apps.googleusercontent.com.plist */; };
 		74D58B352E151AB7008B62DC /* AppStateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74D58B342E151AB3008B62DC /* AppStateManager.swift */; };
+		74D58B382E152780008B62DC /* CustomNavigationBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74D58B372E152776008B62DC /* CustomNavigationBar.swift */; };
 		74EC8AA52DCE6590008DE8A9 /* BackgroundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74EC8AA42DCE6588008DE8A9 /* BackgroundManager.swift */; };
 /* End PBXBuildFile section */
 
@@ -195,6 +196,7 @@
 		74C2860C2DB4C32100CF836B /* GoogleAuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleAuthManager.swift; sourceTree = "<group>"; };
 		74C286132DB4D5EB00CF836B /* client_312380135422-bko7g13qv6ggt7e5cc7dlt6lsquq7qi4.apps.googleusercontent.com.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "client_312380135422-bko7g13qv6ggt7e5cc7dlt6lsquq7qi4.apps.googleusercontent.com.plist"; sourceTree = "<group>"; };
 		74D58B342E151AB3008B62DC /* AppStateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStateManager.swift; sourceTree = "<group>"; };
+		74D58B372E152776008B62DC /* CustomNavigationBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomNavigationBar.swift; sourceTree = "<group>"; };
 		74EC8AA42DCE6588008DE8A9 /* BackgroundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -256,10 +258,11 @@
 		74263C542DDADCB200953598 /* App */ = {
 			isa = PBXGroup;
 			children = (
+				684426FC2D13D580002E9BC6 /* ContentView.swift */,
+				743D5BB72DFC464000C4F71E /* MainTabView.swift */,
+				684426FE2D13D580002E9BC6 /* myBrainApp.swift */,
 				74D58B332E151AA7008B62DC /* Shared */,
 				743D5BB32DFC460700C4F71E /* Tabs */,
-				684426FC2D13D580002E9BC6 /* ContentView.swift */,
-				684426FE2D13D580002E9BC6 /* myBrainApp.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -402,6 +405,7 @@
 		74263C622DDADDFC00953598 /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				74D58B362E15276C008B62DC /* UI */,
 				74263C652DDADE2300953598 /* Misc */,
 				74263C642DDADE1D00953598 /* Charts */,
 				74263C632DDADE0E00953598 /* Cards */,
@@ -590,11 +594,9 @@
 		743D5BB32DFC460700C4F71E /* Tabs */ = {
 			isa = PBXGroup;
 			children = (
-				74D58B342E151AB3008B62DC /* AppStateManager.swift */,
 				743D5BB42DFC464000C4F71E /* SettingsView.swift */,
 				743D5BB52DFC464000C4F71E /* DeviceView.swift */,
 				743D5BB62DFC464000C4F71E /* HomeView.swift */,
-				743D5BB72DFC464000C4F71E /* MainTabView.swift */,
 				743D5BB82DFC464000C4F71E /* ProfileView.swift */,
 			);
 			path = Tabs;
@@ -663,8 +665,17 @@
 		74D58B332E151AA7008B62DC /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				74D58B342E151AB3008B62DC /* AppStateManager.swift */,
 			);
 			path = Shared;
+			sourceTree = "<group>";
+		};
+		74D58B362E15276C008B62DC /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				74D58B372E152776008B62DC /* CustomNavigationBar.swift */,
+			);
+			path = UI;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -830,6 +841,7 @@
 				74263C402DDADAE800953598 /* ChapterCompletionView.swift in Sources */,
 				74BC7E782E0013D500A9C2F4 /* ThoughtsAPI+Implementation.swift in Sources */,
 				74263C412DDADAE800953598 /* HistoryView.swift in Sources */,
+				74D58B382E152780008B62DC /* CustomNavigationBar.swift in Sources */,
 				74263C422DDADAE800953598 /* StreamThoughtView.swift in Sources */,
 				74BC7E622E000DEF00A9C2F4 /* WebSocketProtocols.swift in Sources */,
 				74263C432DDADAE800953598 /* ThoughtsView.swift in Sources */,

@@ -51,11 +51,16 @@ struct MainTabView: View {
             }
         case 1:
             NavigationStack {
-                ProfileView()
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .leading).combined(with: .opacity),
-                        removal: .move(edge: .trailing).combined(with: .opacity)
-                    ))
+                ProfileView(
+                    onNavigateToHome: {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        selectedTab = 0
+                    }
+                })
+                .transition(.asymmetric(
+                    insertion: .move(edge: .leading).combined(with: .opacity),
+                    removal: .move(edge: .trailing).combined(with: .opacity)
+                ))
             }
         case 2:
             NavigationStack {
