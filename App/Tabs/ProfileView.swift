@@ -225,7 +225,6 @@ extension ProfileView {
                         .foregroundColor(.gray)
                 }
             }
-            .zIndex(1)
             
             VStack(spacing: 4) {
                 Text(authVM.profileManager.displayName)
@@ -249,7 +248,6 @@ extension ProfileView {
             }
         }
         .padding(.top, 20)
-        .zIndex(1)
     }
 }
 
