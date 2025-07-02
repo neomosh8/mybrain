@@ -18,6 +18,12 @@ struct ProfileView: View {
     @State private var showLogoutError = false
     @State private var logoutErrorMessage = ""
     
+    var onNavigateToHome: (() -> Void)?
+
+    init(onNavigateToHome: (() -> Void)? = nil) {
+        self.onNavigateToHome = onNavigateToHome
+    }
+    
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
@@ -35,7 +41,7 @@ struct ProfileView: View {
         formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssXXXXX"
         return formatter
     }()
-
+    
     private var memberSinceText: String {
         guard let dateJoinedString = authVM.profileManager.currentProfile?.dateJoined else {
             return "Member since unknown"
@@ -47,12 +53,12 @@ struct ProfileView: View {
         
         return "Member since unknown"
     }
-
+    
     
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
-                headerSection
+                infoSection
                 
                 accountDetailsSection
                 
@@ -64,8 +70,22 @@ struct ProfileView: View {
             }
             .padding(.horizontal, 16)
         }
-        .navigationTitle("Profile")
-        .navigationBarTitleDisplayMode(.large)
+        .customNavigationBar(
+                    title: "Profile",
+                    onBackTap: {
+                        onNavigateToHome?()
+                    }
+                ) {
+                    // Add edit button
+                    Button(action: {
+                        print("Edit profile")
+                    }) {
+                        Text("Edit")
+                            .font(.title2)
+                            .fontWeight(.medium)
+                            .foregroundColor(.blue)
+                    }
+                }
         .onAppear {
             loadProfileData()
         }
@@ -90,9 +110,9 @@ struct ProfileView: View {
     }
 }
 
-// MARK: - Header Section
+// MARK: - Info Section
 extension ProfileView {
-    private var headerSection: some View {
+    private var infoSection: some View {
         VStack(spacing: 12) {
             ZStack {
                 Circle()
@@ -134,7 +154,7 @@ extension ProfileView {
                 .offset(x: 30, y: 30)
             }
             
-        VStack(spacing: 4) {
+            VStack(spacing: 4) {
                 Text(authVM.profileManager.displayName)
                     .font(.system(size: 24, weight: .semibold))
                     .foregroundColor(.primary)
@@ -277,7 +297,7 @@ extension ProfileView {
                         isEditing: false
                     )
                 }
-
+                
                 
                 Divider().padding(.leading, 16)
                 
