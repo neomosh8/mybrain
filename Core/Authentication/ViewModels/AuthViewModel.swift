@@ -73,15 +73,23 @@ class AuthViewModel: ObservableObject {
         let authFetchDescriptor = FetchDescriptor<AuthData>(
             predicate: #Predicate { $0.id == "user_auth_data" })
         
-        if let authData = try? context.fetch(authFetchDescriptor).first {
-            self.accessToken = authData.accessToken
-            self.refreshToken = authData.refreshToken
-            self.isAuthenticated = authData.isLoggedIn
-            self.isProfileComplete = authData.profileComplete
-            
-            print("Auth data loaded - isAuthenticated: \(self.isAuthenticated), isProfileComplete: \(self.isProfileComplete)")
-        } else {
-            print("No auth data found in SwiftData")
+        do {
+            let authResults = try context.fetch(authFetchDescriptor)
+            if let authData = authResults.first {
+                self.accessToken = authData.accessToken
+                self.refreshToken = authData.refreshToken
+                self.isAuthenticated = authData.isLoggedIn
+                self.isProfileComplete = authData.profileComplete
+                
+                print("Auth data loaded - isAuthenticated: \(self.isAuthenticated), isProfileComplete: \(self.isProfileComplete)")
+                print("Tokens present: access=\(authData.accessToken != nil), refresh=\(authData.refreshToken != nil)")
+            } else {
+                print("No auth data found in SwiftData")
+                self.isAuthenticated = false
+                self.isProfileComplete = false
+            }
+        } catch {
+            print("Error loading auth data: \(error)")
             self.isAuthenticated = false
             self.isProfileComplete = false
         }
@@ -92,7 +100,7 @@ class AuthViewModel: ObservableObject {
         // Validate authentication state
         validateAuthenticationState(context: context)
     }
-    
+
     private func validateAuthenticationState(context: ModelContext) {
         // If we have tokens but no profile data, check if we need to complete profile
         if isAuthenticated, let profile = profileManager.currentProfile {
@@ -104,6 +112,9 @@ class AuthViewModel: ObservableObject {
                 self.isProfileComplete = false
                 updateProfileCompleteInSwiftData(context: context, isComplete: false)
             }
+        } else if isAuthenticated && profileManager.currentProfile == nil {
+            print("Authenticated but no profile data found")
+            // Don't change isProfileComplete here - rely on server response
         }
     }
 
@@ -247,42 +258,61 @@ class AuthViewModel: ObservableObject {
     }
     
     // MARK: - Helper Methods
-    
     private func handleSuccessfulAuth(tokenResponse: TokenResponse, context: ModelContext) {
+        print("Handling successful auth...")
+        
         self.accessToken = tokenResponse.access
         self.refreshToken = tokenResponse.refresh
         self.isAuthenticated = true
         self.isProfileComplete = tokenResponse.profileComplete
         
         SharedDataManager.saveToken(tokenResponse.access)
-        saveToSwiftData(context: context)
         
-        // Save profile data from server response
+        // Save profile data from server response FIRST
         if let profile = tokenResponse.profile {
             profileManager.saveProfile(profile, context: context)
+            print("Profile data saved from auth response")
+        }
+        
+        // Then save auth data
+        saveToSwiftData(context: context)
+        
+        // Fetch full profile if needed
+        if tokenResponse.profileComplete {
+            profileManager.fetchProfileFromServer(context: context)
         }
         
         print("Auth completed - isProfileComplete: \(tokenResponse.profileComplete)")
     }
     
     private func saveToSwiftData(context: ModelContext) {
+        print("Attempting to save auth data to SwiftData...")
+        
         let fetchDescriptor = FetchDescriptor<AuthData>(
             predicate: #Predicate { $0.id == "user_auth_data" })
         
         do {
             let existing = try context.fetch(fetchDescriptor)
-            let authData = existing.first ?? AuthData()
+            let authData: AuthData
+            
+            if let existingData = existing.first {
+                authData = existingData
+                print("Updating existing auth data")
+            } else {
+                authData = AuthData()
+                context.insert(authData)
+                print("Creating new auth data")
+            }
             
             authData.accessToken = self.accessToken
             authData.refreshToken = self.refreshToken
             authData.isLoggedIn = self.isAuthenticated
             authData.profileComplete = self.isProfileComplete
             
-            if existing.isEmpty {
-                context.insert(authData)
-            }
-            
+
             try context.save()
+            print("Auth data saved successfully - isAuthenticated: \(self.isAuthenticated), isProfileComplete: \(self.isProfileComplete)")
+            
         } catch {
             print("Error saving auth data: \(error)")
         }
