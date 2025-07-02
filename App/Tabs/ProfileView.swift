@@ -4,7 +4,7 @@ import SwiftData
 struct ProfileView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject var authVM: AuthViewModel
-        
+    
     @State private var isEditingAccountDetails = false
     @State private var editedFirstName = ""
     @State private var editedLastName = ""
@@ -22,7 +22,7 @@ struct ProfileView: View {
     @State private var showingEditProfileSheet = false
     
     var onNavigateToHome: (() -> Void)?
-
+    
     init(onNavigateToHome: (() -> Void)? = nil) {
         self.onNavigateToHome = onNavigateToHome
     }
@@ -57,42 +57,49 @@ struct ProfileView: View {
         return "Member since unknown"
     }
     
-    
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                infoSection
-                
-                privacyTermsSection
-                                
-                Spacer(minLength: 50)
+        ZStack {
+            ScrollView {
+                VStack(spacing: 24) {
+                    infoSection
+                    
+                    privacyTermsSection
+                    
+                    Spacer(minLength: 50)
+                }
+                .padding(.horizontal, 16)
             }
-            .padding(.horizontal, 16)
-        }
-        .customNavigationBar(
-            title: "Profile",
-            onBackTap: {
-                onNavigateToHome?()
+            .customNavigationBar(
+                title: "Profile",
+                onBackTap: {
+                    onNavigateToHome?()
+                }
+            ) {
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        showMenu.toggle()
+                    }
+                }) {
+                    Image(systemName: "ellipsis")
+                        .font(.title2)
+                        .foregroundColor(.primary)
+                        .frame(width: 40, height: 40)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color(.systemGray6))
+                        )
+                }
             }
-        ) {
-            Button(action: {
-                showMenu.toggle()
-            }) {
-                Image(systemName: "ellipsis")
-                    .font(.title2)
-                    .foregroundColor(.primary)
-                    .frame(width: 40, height: 40)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color(.systemGray6))
-                    )
-            }
-            .overlay(
+            
+            if showMenu {
                 VStack {
-                    if showMenu {
+                    HStack {
+                        Spacer()
                         VStack(spacing: 0) {
                             Button(action: {
-                                showMenu = false
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                                    showMenu = false
+                                }
                                 showingEditProfileSheet = true
                             }) {
                                 HStack(spacing: 12) {
@@ -115,7 +122,9 @@ struct ProfileView: View {
                                 .padding(.horizontal, 8)
                             
                             Button(action: {
-                                showMenu = false
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                                    showMenu = false
+                                }
                                 showingLogoutAlert = true
                             }) {
                                 HStack(spacing: 12) {
@@ -140,16 +149,19 @@ struct ProfileView: View {
                                 .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
                         )
                         .frame(width: 180)
-                        .offset(x: -70, y: 50)
-                        .zIndex(99999)
-                        .transition(.asymmetric(
-                            insertion: .scale(scale: 0.8).combined(with: .opacity),
-                            removal: .scale(scale: 0.8).combined(with: .opacity)
-                        ))
+                        .padding(.trailing, 16)
+                        .padding(.top, 60)
+                        .offset(y: showMenu ? 0 : -30)
+                        .opacity(showMenu ? 1 : 0)
                     }
+                    Spacer()
                 }
-                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showMenu)
-            )
+                .transition(.asymmetric(
+                    insertion: .move(edge: .top).combined(with: .opacity),
+                    removal: .move(edge: .top).combined(with: .opacity)
+                ))
+            }
+
         }
         .onAppear {
             loadProfileData()
@@ -213,6 +225,7 @@ extension ProfileView {
                         .foregroundColor(.gray)
                 }
             }
+            .zIndex(1)
             
             VStack(spacing: 4) {
                 Text(authVM.profileManager.displayName)
@@ -236,6 +249,7 @@ extension ProfileView {
             }
         }
         .padding(.top, 20)
+        .zIndex(1)
     }
 }
 
