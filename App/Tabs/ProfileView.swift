@@ -359,7 +359,7 @@ extension ProfileView {
     }
     
     private func saveProfile() {
-        guard let profile = authVM.profileManager.currentProfile else { return }
+        guard authVM.profileManager.currentProfile != nil else { return }
         
         authVM.updateProfile(
             firstName: editedFirstName.isEmpty ? "" : editedFirstName,
