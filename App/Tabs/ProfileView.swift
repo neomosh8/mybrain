@@ -46,15 +46,11 @@ struct ProfileView: View {
     }()
     
     private var memberSinceText: String {
-        guard let dateJoinedString = authVM.profileManager.currentProfile?.dateJoined else {
+        guard let dateJoinedString = authVM.profileManager.currentProfile?.dateJoined,
+              let date = dateJoinedInputFormatter.date(from: dateJoinedString) else {
             return "Member since unknown"
         }
-        
-        if let date = dateJoinedInputFormatter.date(from: dateJoinedString) {
-            return "Member since \(memberSinceDateFormatter.string(from: date))"
-        }
-        
-        return "Member since unknown"
+        return "Member since \(memberSinceDateFormatter.string(from: date))"
     }
     
     var body: some View {
