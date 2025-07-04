@@ -76,7 +76,7 @@ struct ProfileView: View {
                 }
             ) {
                 Button(action: {
-                    withAnimation(.easeInOut(duration: 0.3)) {
+                    withAnimation(.easeInOut(duration: 0.25)) {
                         showMenu.toggle()
                     }
                 }) {
@@ -97,7 +97,7 @@ struct ProfileView: View {
                         Spacer()
                         VStack(spacing: 0) {
                             Button(action: {
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                                withAnimation(.easeInOut(duration: 0.2)) {
                                     showMenu = false
                                 }
                                 showingEditProfileSheet = true
@@ -122,7 +122,7 @@ struct ProfileView: View {
                                 .padding(.horizontal, 8)
                             
                             Button(action: {
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                                withAnimation(.easeInOut(duration: 0.2)) {
                                     showMenu = false
                                 }
                                 showingLogoutAlert = true
@@ -151,17 +151,18 @@ struct ProfileView: View {
                         .frame(width: 180)
                         .padding(.trailing, 16)
                         .padding(.top, 60)
-                        .offset(y: showMenu ? 0 : -30)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .scaleEffect(y: showMenu ? 1 : 0, anchor: .top)
                         .opacity(showMenu ? 1 : 0)
                     }
                     Spacer()
                 }
                 .transition(.asymmetric(
-                    insertion: .move(edge: .top).combined(with: .opacity),
-                    removal: .move(edge: .top).combined(with: .opacity)
+                    insertion: .scale(scale: 1, anchor: .top).combined(with: .opacity),
+                    removal: .scale(scale: 0, anchor: .top).combined(with: .opacity)
                 ))
             }
-
+            
         }
         .onAppear {
             loadProfileData()
