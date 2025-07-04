@@ -87,10 +87,11 @@ struct ProfileView: View {
                 }
             }
             
+            // Popup Menu
             VStack {
                 HStack {
                     Spacer()
-
+                    
                     VStack(spacing: 0) {
                         Button(action: {
                             withAnimation(.easeInOut(duration: 0.2)) { showMenu = false }
@@ -447,10 +448,15 @@ struct EditProfileView: View {
         return formatter
     }()
     
+    private let serverDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
+    
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                // Header
                 HStack {
                     Button("Cancel") {
                         dismiss()
@@ -492,7 +498,6 @@ struct EditProfileView: View {
                 // Form Content
                 ScrollView {
                     VStack(spacing: 24) {
-                        // Profile Image Section
                         VStack(spacing: 16) {
                             ZStack {
                                 Circle()
@@ -575,7 +580,9 @@ struct EditProfileView: View {
                                     .foregroundColor(.secondary)
                                 
                                 Button(action: {
-                                    showDatePicker = true
+                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                        showDatePicker.toggle()
+                                    }
                                 }) {
                                     HStack {
                                         Image(systemName: "calendar")
@@ -613,7 +620,9 @@ struct EditProfileView: View {
                                     .foregroundColor(.secondary)
                                 
                                 Button(action: {
-                                    showGenderPicker = true
+                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                        showGenderPicker.toggle()
+                                    }
                                 }) {
                                     HStack {
                                         Image(systemName: "person.2")
@@ -649,8 +658,143 @@ struct EditProfileView: View {
                         Spacer(minLength: 60)
                     }
                 }
+                
+                // Date Picker
+                if showDatePicker {
+                    Color.black.opacity(0.3)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                showDatePicker = false
+                            }
+                        }
+                    
+                    VStack {
+                        Spacer()
+                        
+                        VStack(spacing: 0) {
+                            Text("Select Birthdate")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(.primary)
+                                .padding(.vertical, 16)
+                                .frame(maxWidth: .infinity)
+                                .background(
+                                    UnevenRoundedRectangle(
+                                        topLeadingRadius: 20,
+                                        bottomLeadingRadius: 0,
+                                        bottomTrailingRadius: 0,
+                                        topTrailingRadius: 20
+                                    )
+                                    .fill(Color(.systemGray6))
+                                )
+                            
+                            DatePicker("", selection: $selectedDate, displayedComponents: .date)
+                                .datePickerStyle(WheelDatePickerStyle())
+                                .colorScheme(.light)
+                                .accentColor(.blue)
+                                .onChange(of: selectedDate) { _, newValue in
+                                    editedBirthdate = serverDateFormatter.string(from: newValue)
+                                }
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 16)
+                        }
+                        .background(
+                            RoundedRectangle(cornerRadius: 20)
+                                .fill(Color(.systemBackground))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                                )
+                        )
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 34)
+                    }
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .zIndex(100)
+                }
+                
+                // Gender Picker
+                if showGenderPicker {
+                    Color.black.opacity(0.3)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                showGenderPicker = false
+                            }
+                        }
+                    
+                    VStack {
+                        Spacer()
+                        
+                        VStack(spacing: 0) {
+                            Text("Select Gender")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(.primary)
+                                .padding(.vertical, 16)
+                                .frame(maxWidth: .infinity)
+                                .background(
+                                    UnevenRoundedRectangle(
+                                        topLeadingRadius: 20,
+                                        bottomLeadingRadius: 0,
+                                        bottomTrailingRadius: 0,
+                                        topTrailingRadius: 20
+                                    )
+                                    .fill(Color(.systemGray6))
+                                )
+                            
+                            ForEach([
+                                ("M", "Male"),
+                                ("F", "Female"),
+                                ("O", "Other"),
+                                ("P", "Prefer not to say")
+                            ], id: \.0) { value, label in
+                                Button(action: {
+                                    editedGender = value
+                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                        showGenderPicker = false
+                                    }
+                                }) {
+                                    HStack {
+                                        Text(label)
+                                            .foregroundColor(.primary)
+                                            .font(.system(size: 16))
+                                        
+                                        Spacer()
+                                        
+                                        if editedGender == value {
+                                            Image(systemName: "checkmark")
+                                                .foregroundColor(.blue)
+                                                .font(.system(size: 16, weight: .semibold))
+                                        }
+                                    }
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 16)
+                                    .background(
+                                        Color.blue.opacity(editedGender == value ? 0.1 : 0.0)
+                                    )
+                                }
+                                
+                                if value != "P" {
+                                    Divider()
+                                        .background(Color.secondary.opacity(0.2))
+                                }
+                            }
+                        }
+                        .background(
+                            RoundedRectangle(cornerRadius: 20)
+                                .fill(Color(.systemBackground))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                                )
+                        )
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 34)
+                    }
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .zIndex(100)
+                }
             }
-            .background(Color(.systemBackground))
         }
         .onAppear {
             loadProfileData()
@@ -678,67 +822,6 @@ struct EditProfileView: View {
         .sheet(isPresented: $showImagePicker) {
             ImagePickerView(sourceType: imagePickerSourceType) { image in
                 uploadProfileImage(image)
-            }
-        }
-        // Date Picker Sheet
-        .sheet(isPresented: $showDatePicker) {
-            NavigationView {
-                DatePicker("", selection: $selectedDate, displayedComponents: .date)
-                    .datePickerStyle(WheelDatePickerStyle())
-                    .navigationTitle("Select Birthdate")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarLeading) {
-                            Button("Cancel") {
-                                showDatePicker = false
-                            }
-                        }
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            Button("Done") {
-                                editedBirthdate = dateFormatter.string(from: selectedDate)
-                                showDatePicker = false
-                            }
-                        }
-                    }
-            }
-        }
-        // Gender Picker Sheet
-        .sheet(isPresented: $showGenderPicker) {
-            NavigationView {
-                List {
-                    ForEach([
-                        ("M", "Male"),
-                        ("F", "Female"),
-                        ("O", "Other"),
-                        ("P", "Prefer not to say")
-                    ], id: \.0) { value, label in
-                        Button(action: {
-                            editedGender = value
-                            showGenderPicker = false
-                        }) {
-                            HStack {
-                                Text(label)
-                                    .foregroundColor(.primary)
-                                Spacer()
-                                if editedGender == value {
-                                    Image(systemName: "checkmark")
-                                        .foregroundColor(.blue)
-                                        .font(.system(size: 16, weight: .semibold))
-                                }
-                            }
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                }
-                .navigationTitle("Select Gender")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("Done") {
-                            showGenderPicker = false
-                        }
-                    }
-                }
             }
         }
     }
@@ -790,7 +873,7 @@ struct EditProfileView: View {
         editedGender = authVM.profileManager.currentProfile?.gender ?? ""
         
         if let birthdateString = authVM.profileManager.currentProfile?.birthdate,
-           let date = dateFormatter.date(from: birthdateString) {
+           let date = serverDateFormatter.date(from: birthdateString) {
             selectedDate = date
         }
     }
