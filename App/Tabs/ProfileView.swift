@@ -87,78 +87,63 @@ struct ProfileView: View {
                 }
             }
             
-            if showMenu {
-                VStack {
-                    HStack {
-                        Spacer()
-                        VStack(spacing: 0) {
-                            Button(action: {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    showMenu = false
-                                }
-                                showingEditProfileSheet = true
-                            }) {
-                                HStack(spacing: 12) {
-                                    Image(systemName: "pencil")
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(.primary)
-                                        .frame(width: 20)
-                                    
-                                    Text("Edit Profile")
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(.primary)
-                                    
-                                    Spacer()
-                                }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-                            }
-                            
-                            Divider()
-                                .padding(.horizontal, 8)
-                            
-                            Button(action: {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    showMenu = false
-                                }
-                                showingLogoutAlert = true
-                            }) {
-                                HStack(spacing: 12) {
-                                    Image(systemName: "rectangle.portrait.and.arrow.right")
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(.red)
-                                        .frame(width: 20)
-                                    
-                                    Text("Logout")
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(.red)
-                                    
-                                    Spacer()
-                                }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-                            }
-                        }
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color(.systemBackground))
-                                .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
-                        )
-                        .frame(width: 180)
-                        .padding(.trailing, 16)
-                        .padding(.top, 60)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .scaleEffect(y: showMenu ? 1 : 0, anchor: .top)
-                        .opacity(showMenu ? 1 : 0)
-                    }
+            VStack {
+                HStack {
                     Spacer()
+
+                    VStack(spacing: 0) {
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.2)) { showMenu = false }
+                            showingEditProfileSheet = true
+                        }) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "pencil")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.primary)
+                                    .frame(width: 20)
+                                Text("Edit Profile")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.primary)
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                        }
+                        
+                        Divider().padding(.horizontal, 8)
+                        
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.2)) { showMenu = false }
+                            showingLogoutAlert = true
+                        }) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "rectangle.portrait.and.arrow.right")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.red)
+                                    .frame(width: 20)
+                                Text("Logout")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.red)
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                        }
+                    }
+                    .frame(width: 180)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(.systemBackground))
+                            .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
+                    )
+                    .scaleEffect(x: 1, y: showMenu ? 1 : 0, anchor: .top)
+                    .animation(.easeInOut(duration: 0.2), value: showMenu)
+                    .padding(.trailing, 16)
+                    .padding(.top, 60)
                 }
-                .transition(.asymmetric(
-                    insertion: .scale(scale: 1, anchor: .top).combined(with: .opacity),
-                    removal: .scale(scale: 0, anchor: .top).combined(with: .opacity)
-                ))
+                Spacer()
             }
-            
         }
         .onAppear {
             loadProfileData()
