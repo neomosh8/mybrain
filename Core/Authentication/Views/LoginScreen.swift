@@ -155,20 +155,36 @@ struct LoginScreen: View {
                         Spacer()
                         
                         VStack(spacing: 0) {
-                            Text("Select Birthdate")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(.white)
-                                .padding(.vertical, 16)
-                                .frame(maxWidth: .infinity)
-                                .background(
-                                    UnevenRoundedRectangle(
-                                        topLeadingRadius: 20,
-                                        bottomLeadingRadius: 0,
-                                        bottomTrailingRadius: 0,
-                                        topTrailingRadius: 20
-                                    )
-                                    .fill(Color.white.opacity(0.05))
+                            HStack {
+                                Text("Select Birthdate")
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundColor(.white)
+                                
+                                Spacer()
+                                
+                                Button(action: {
+                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                        showDatePicker = false
+                                    }
+                                }) {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.white)
+                                        .padding(8)
+                                        .background(Circle().fill(Color.gray.opacity(0.2)))
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 16)
+                            .background(
+                                UnevenRoundedRectangle(
+                                    topLeadingRadius: 20,
+                                    bottomLeadingRadius: 0,
+                                    bottomTrailingRadius: 0,
+                                    topTrailingRadius: 20
                                 )
+                                .fill(Color(.white.opacity(0.05)))
+                            )
                             
                             DatePicker("", selection: $birthdate, in: maximumDate...minimumDate, displayedComponents: .date)
                                 .datePickerStyle(WheelDatePickerStyle())
@@ -210,20 +226,24 @@ struct LoginScreen: View {
                         Spacer()
                         
                         VStack(spacing: 0) {
-                            Text("Select Gender")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(.white)
-                                .padding(.vertical, 16)
-                                .frame(maxWidth: .infinity)
-                                .background(
-                                    UnevenRoundedRectangle(
-                                        topLeadingRadius: 20,
-                                        bottomLeadingRadius: 0,
-                                        bottomTrailingRadius: 0,
-                                        topTrailingRadius: 20
-                                    )
-                                    .fill(Color.white.opacity(0.05))
+                            HStack {
+                                Text("Select Gender")
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundColor(.white)
+                                
+                                Spacer()
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 16)
+                            .background(
+                                UnevenRoundedRectangle(
+                                    topLeadingRadius: 20,
+                                    bottomLeadingRadius: 0,
+                                    bottomTrailingRadius: 0,
+                                    topTrailingRadius: 20
                                 )
+                                .fill(Color(.white.opacity(0.05)))
+                            )
                             
                             ForEach(genderOptions.dropFirst()) { option in
                                 Button(action: {
