@@ -1017,14 +1017,6 @@ struct EditProfileView: View {
                 
                 // Date Picker
                 if showDatePicker {
-                    Color.clear
-                        .ignoresSafeArea()
-                        .onTapGesture {
-                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                showDatePicker = false
-                            }
-                        }
-                    
                     VStack {
                         Spacer()
                         
@@ -1088,14 +1080,6 @@ struct EditProfileView: View {
                 
                 // Gender Picker
                 if showGenderPicker {
-                    Color.clear
-                        .ignoresSafeArea()
-                        .onTapGesture {
-                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                showGenderPicker = false
-                            }
-                        }
-                    
                     VStack {
                         Spacer()
                         
@@ -1153,14 +1137,14 @@ struct EditProfileView: View {
                                         
                                         if editedGender == value {
                                             Image(systemName: "checkmark")
-                                                .foregroundColor(.blue)
+                                                .foregroundColor(.primary)
                                                 .font(.system(size: 16, weight: .semibold))
                                         }
                                     }
                                     .padding(.horizontal, 20)
                                     .padding(.vertical, 16)
                                     .background(
-                                        Color.blue.opacity(editedGender == value ? 0.1 : 0.0)
+                                        Color(.systemGray4).opacity(editedGender == value ? 1.0 : 0.0)
                                     )
                                 }
                                 
