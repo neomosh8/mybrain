@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import Charts
 
 struct ProfileView: View {
     @Environment(\.modelContext) private var modelContext
@@ -58,6 +59,29 @@ struct ProfileView: View {
             ScrollView {
                 VStack(spacing: 24) {
                     ProfileHeaderView()
+                    
+                    // Analytics Sections
+                    VStack(spacing: 24) {
+                        // Attention Capacity Card
+                        AttentionCapacityCard(
+                            currentPercentage: 78,
+                            yesterdayChange: 5,
+                            activeHours: 2.5,
+                            totalSessions: 12
+                        )
+                        
+                        // Performance Overview
+                        PerformanceOverviewSection()
+                        
+                        // Insights & Recommendations
+                        InsightsRecommendationsSection()
+                        
+                        // Weekly Trends
+                        WeeklyTrendsSection()
+                        
+                        // Session History
+                        SessionHistorySection()
+                    }
                     
                     Spacer(minLength: 50)
                 }
@@ -335,6 +359,553 @@ struct ProfileHeaderView: View {
     }
 }
 
+
+
+// MARK: - Analytics Components
+
+struct AttentionCapacityCard: View {
+    let currentPercentage: Int
+    let yesterdayChange: Int
+    let activeHours: Double
+    let totalSessions: Int
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                Text("Your Current Attention Capacity")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.white)
+                
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+            
+            // Main circle
+            ZStack {
+                // Background circle
+                Circle()
+                    .stroke(Color.white.opacity(0.3), lineWidth: 8)
+                    .frame(width: 120, height: 120)
+                
+                // Progress circle
+                Circle()
+                    .trim(from: 0, to: CGFloat(currentPercentage) / 100)
+                    .stroke(
+                        Color.white,
+                        style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                    )
+                    .frame(width: 120, height: 120)
+                    .rotationEffect(.degrees(-90))
+                    .animation(.easeInOut(duration: 1.5), value: currentPercentage)
+                
+                VStack(spacing: 2) {
+                    Text("\(currentPercentage)%")
+                        .font(.system(size: 32, weight: .bold))
+                        .foregroundColor(.white)
+                    
+                    Text("Excellent")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white.opacity(0.9))
+                }
+            }
+            .padding(.vertical, 24)
+            
+            // Bottom stats
+            HStack(spacing: 0) {
+                VStack(spacing: 4) {
+                    Text(yesterdayChange >= 0 ? "+\(yesterdayChange)%" : "\(yesterdayChange)%")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.white)
+                    
+                    Text("vs yesterday")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.white.opacity(0.8))
+                }
+                .frame(maxWidth: .infinity)
+                
+                VStack(spacing: 4) {
+                    Text(String(format: "%.1fh", activeHours))
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.white)
+                    
+                    Text("active today")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.white.opacity(0.8))
+                }
+                .frame(maxWidth: .infinity)
+                
+                VStack(spacing: 4) {
+                    Text("\(totalSessions)")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.white)
+                    
+                    Text("sessions")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.white.opacity(0.8))
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 20)
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color.blue,
+                            Color.blue.opacity(0.8)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+        )
+        .shadow(color: Color.blue.opacity(0.3), radius: 10, x: 0, y: 5)
+    }
+}
+
+struct PerformanceOverviewSection: View {
+    @State private var selectedPeriod: String = "Today"
+    let periods = ["Today", "Week", "Month"]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Performance Overview")
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(.primary)
+            
+            // Period selector
+            HStack(spacing: 8) {
+                ForEach(periods, id: \.self) { period in
+                    Button(action: {
+                        selectedPeriod = period
+                    }) {
+                        Text(period)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(selectedPeriod == period ? .white : .blue)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(selectedPeriod == period ? Color.blue : Color.blue.opacity(0.1))
+                            )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                
+                Spacer()
+            }
+            
+            // Chart placeholder
+            AttentionChartView()
+                .frame(height: 200)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color(.systemGray6))
+                )
+            
+            // Legend
+            HStack(spacing: 24) {
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(Color.blue)
+                        .frame(width: 8, height: 8)
+                    
+                    Text("Utilized Attention")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+                
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(Color.gray)
+                        .frame(width: 8, height: 8)
+                    
+                    Text("Usual Attention")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+            }
+        }
+    }
+}
+
+struct AttentionChartView: View {
+    @State private var animateChart = false
+    
+    let dataPoints: [AttentionData] = [
+        AttentionData(time: "9:00", utilized: 65, usual: 45),
+        AttentionData(time: "10:00", utilized: 78, usual: 50),
+        AttentionData(time: "11:00", utilized: 82, usual: 55),
+        AttentionData(time: "12:00", utilized: 75, usual: 48),
+        AttentionData(time: "1:00", utilized: 88, usual: 60),
+        AttentionData(time: "2:00", utilized: 92, usual: 65),
+        AttentionData(time: "3:00", utilized: 85, usual: 58)
+    ]
+    
+    var body: some View {
+        Chart {
+            ForEach(dataPoints) { data in
+                LineMark(
+                    x: .value("Time", data.time),
+                    y: .value("Attention", animateChart ? data.utilized : 0)
+                )
+                .foregroundStyle(Color.blue)
+                .lineStyle(StrokeStyle(lineWidth: 3))
+                
+                LineMark(
+                    x: .value("Time", data.time),
+                    y: .value("Attention", animateChart ? data.usual : 0)
+                )
+                .foregroundStyle(Color.gray)
+                .lineStyle(StrokeStyle(lineWidth: 2))
+            }
+        }
+        .chartYScale(domain: 0...100)
+        .chartXAxis {
+            AxisMarks(values: .automatic) { _ in
+                AxisValueLabel()
+                    .font(.system(size: 10))
+            }
+        }
+        .chartYAxis {
+            AxisMarks(values: .automatic) { _ in
+                AxisValueLabel()
+                    .font(.system(size: 10))
+            }
+        }
+        .padding()
+        .onAppear {
+            withAnimation(.easeInOut(duration: 1.5)) {
+                animateChart = true
+            }
+        }
+    }
+}
+
+struct AttentionData: Identifiable {
+    let id = UUID()
+    let time: String
+    let utilized: Double
+    let usual: Double
+}
+
+struct InsightsRecommendationsSection: View {
+    let insights: [InsightItem] = [
+        InsightItem(
+            icon: "clock.fill",
+            iconColor: .blue,
+            title: "Peak Performance",
+            subtitle: "Timing optimization",
+            description: "Your attention peaks at 10:30 AM. Schedule important reading sessions during this time for 25% better results.",
+            timeInfo: "7+ hours better adjustment"
+        ),
+        InsightItem(
+            icon: "moon.fill",
+            iconColor: .purple,
+            title: "Evening Focus",
+            subtitle: "Energy management",
+            description: "Consider scheduling lighter content in the evening when attention naturally decreases.",
+            timeInfo: "4+ hours optimal"
+        )
+    ]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Insights & Recommendations")
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(.primary)
+            
+            ForEach(insights) { insight in
+                InsightCardView(insight: insight)
+            }
+        }
+    }
+}
+
+struct InsightCardView: View {
+    let insight: InsightItem
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            // Icon
+            Circle()
+                .fill(insight.iconColor.opacity(0.1))
+                .frame(width: 44, height: 44)
+                .overlay(
+                    Image(systemName: insight.icon)
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(insight.iconColor)
+                )
+            
+            // Content
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(insight.title)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
+                    
+                    Spacer()
+                    
+                    Text(insight.timeInfo)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+                
+                Text(insight.subtitle)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(insight.iconColor)
+                
+                Text(insight.description)
+                    .font(.system(size: 14))
+                    .foregroundColor(.secondary)
+                    .lineLimit(2)
+            }
+            
+            Spacer()
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.systemGray6))
+        )
+    }
+}
+
+struct InsightItem: Identifiable {
+    let id = UUID()
+    let icon: String
+    let iconColor: Color
+    let title: String
+    let subtitle: String
+    let description: String
+    let timeInfo: String
+}
+
+struct WeeklyTrendsSection: View {
+    let trends: [TrendItem] = [
+        TrendItem(percentage: 85, label: "Weekly Goal", change: "+12% this week", color: .green),
+        TrendItem(percentage: 67, label: "Consistency", change: "5 days streak", color: .blue),
+        TrendItem(percentage: 92, label: "Retention", change: "Excellent", color: .orange)
+    ]
+    
+    let badges = ["Focus Master", "5 Day Streak"]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Weekly Trends")
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(.primary)
+            
+            HStack(spacing: 16) {
+                ForEach(trends) { trend in
+                    TrendCircleView(trend: trend)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            
+            // Badges
+            HStack(spacing: 12) {
+                ForEach(badges, id: \.self) { badge in
+                    HStack(spacing: 6) {
+                        Image(systemName: badge == "Focus Master" ? "brain.head.profile" : "calendar.badge.plus")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.white)
+                        
+                        Text(badge)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.white)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(badge == "Focus Master" ? Color.blue : Color.green)
+                    )
+                }
+                
+                Spacer()
+            }
+        }
+    }
+}
+
+struct TrendCircleView: View {
+    let trend: TrendItem
+    @State private var animateProgress = false
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            ZStack {
+                Circle()
+                    .stroke(trend.color.opacity(0.2), lineWidth: 6)
+                    .frame(width: 60, height: 60)
+                
+                Circle()
+                    .trim(from: 0, to: animateProgress ? CGFloat(trend.percentage) / 100 : 0)
+                    .stroke(trend.color, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                    .frame(width: 60, height: 60)
+                    .rotationEffect(.degrees(-90))
+                    .animation(.easeInOut(duration: 1.2), value: animateProgress)
+                
+                Text("\(trend.percentage)%")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.primary)
+            }
+            
+            VStack(spacing: 2) {
+                Text(trend.label)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.primary)
+                
+                Text(trend.change)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(trend.color)
+            }
+        }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 1.2).delay(0.3)) {
+                animateProgress = true
+            }
+        }
+    }
+}
+
+struct TrendItem: Identifiable {
+    let id = UUID()
+    let percentage: Int
+    let label: String
+    let change: String
+    let color: Color
+}
+
+struct SessionHistorySection: View {
+    @State private var showFilter = false
+    
+    let sessions: [SessionItem] = [
+        SessionItem(
+            title: "Productivity Mastery",
+            subtitle: "Chapter 8 • Today 2:30 PM",
+            score: 89,
+            scoreType: "Focus score",
+            progress: 1.0,
+            color: .green
+        ),
+        SessionItem(
+            title: "Deep Work Principles",
+            subtitle: "Audio • Today 10:15 AM",
+            score: 76,
+            scoreType: "Attention",
+            progress: 0.75,
+            color: .blue
+        ),
+        SessionItem(
+            title: "Neuroscience Basics",
+            subtitle: "Chapter 3 • Yesterday 4:45 PM",
+            score: 82,
+            scoreType: "Retention",
+            progress: 0.82,
+            color: .orange
+        )
+    ]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("Session History")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                Button(action: {
+                    showFilter.toggle()
+                }) {
+                    Text("Filter")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.blue)
+                }
+            }
+            
+            LazyVStack(spacing: 12) {
+                ForEach(sessions) { session in
+                    SessionRowView(session: session)
+                }
+            }
+        }
+    }
+}
+
+struct SessionRowView: View {
+    let session: SessionItem
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(session.title)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
+                
+                Text(session.subtitle)
+                    .font(.system(size: 14))
+                    .foregroundColor(.secondary)
+                
+                // Progress bar
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(Color(.systemGray5))
+                            .frame(height: 4)
+                        
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(session.color)
+                            .frame(width: geometry.size.width * session.progress, height: 4)
+                    }
+                }
+                .frame(height: 4)
+                
+                Text("\(Int(session.progress * 100))%")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+            
+            VStack(alignment: .trailing, spacing: 4) {
+                Text("\(session.score)%")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.primary)
+                
+                Text(session.scoreType)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.systemGray6))
+        )
+    }
+}
+
+struct SessionItem: Identifiable {
+    let id = UUID()
+    let title: String
+    let subtitle: String
+    let score: Int
+    let scoreType: String
+    let progress: Double
+    let color: Color
+}
+
+
+
 // MARK: - Helper Functions
 extension ProfileView {
     private func loadProfileData() {
@@ -352,7 +923,7 @@ extension ProfileView {
     private func cancelEditing() {
         withAnimation(.easeInOut(duration: 0.3)) {
             isEditingAccountDetails = false
-            loadProfileData() // Reset to original values
+            loadProfileData()
         }
     }
     
@@ -1005,10 +1576,4 @@ struct ImagePickerView: UIViewControllerRepresentable {
             parent.dismiss()
         }
     }
-}
-
-#Preview {
-    ProfileHeaderView()
-        .environmentObject(AuthViewModel())
-        .padding()
 }
