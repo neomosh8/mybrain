@@ -186,9 +186,7 @@ struct ProfileHeaderView: View {
         VStack(spacing: 0) {
             HStack(spacing: 20) {
                 avatarSection
-                
                 userInfoSection
-                
                 Spacer()
             }
             .padding(.horizontal, 24)
@@ -221,56 +219,11 @@ struct ProfileHeaderView: View {
     }
     
     private var avatarSection: some View {
-        ZStack {
-            Circle()
-                .fill(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color.blue.opacity(0.8),
-                            Color.purple.opacity(0.8)
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .frame(width: 80, height: 80)
-            
-            if let avatarUrl = authVM.profileManager.currentProfile?.avatarUrl,
-               !avatarUrl.isEmpty {
-                AsyncImage(url: URL(string: avatarUrl)) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: 80, height: 80)
-                        .clipShape(Circle())
-                } placeholder: {
-                    avatarPlaceholder
-                }
-            } else {
-                avatarPlaceholder
-            }
-        }
-    }
-    
-    private var avatarPlaceholder: some View {
-        ZStack {
-            Circle()
-                .fill(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color.blue.opacity(0.3),
-                            Color.purple.opacity(0.3)
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .frame(width: 80, height: 80)
-            
-            Text(getInitials())
-                .font(.system(size: 28, weight: .bold, design: .rounded))
-                .foregroundColor(.white)
-        }
+        CachedAvatarView(
+            avatarUrl: authVM.profileManager.currentProfile?.avatarUrl,
+            size: 80,
+            initials: getInitials()
+        )
     }
     
     private var userInfoSection: some View {
@@ -323,15 +276,13 @@ struct ProfileHeaderView: View {
         let firstName = profile?.firstName ?? ""
         let lastName = profile?.lastName ?? ""
         
-        if !firstName.isEmpty && !lastName.isEmpty {
-            return "\(firstName.prefix(1))\(lastName.prefix(1))".uppercased()
+        if !firstName.isEmpty || !lastName.isEmpty {
+            let firstInitial = firstName.isEmpty ? "" : String(firstName.prefix(1)).uppercased()
+            let lastInitial = lastName.isEmpty ? "" : String(lastName.prefix(1)).uppercased()
+            return "\(firstInitial)\(lastInitial)"
         }
         
-        if !firstName.isEmpty {
-            return String(firstName.prefix(2)).uppercased()
-        }
-        
-        if let email = profile?.email {
+        if let email = profile?.email, !email.isEmpty {
             return String(email.prefix(1)).uppercased()
         }
         
@@ -340,9 +291,7 @@ struct ProfileHeaderView: View {
 }
 
 
-
 // MARK: - Analytics Components
-
 struct AttentionCapacityCard: View {
     let currentPercentage: Int
     let yesterdayChange: Int
@@ -887,6 +836,7 @@ struct SessionItem: Identifiable {
 
 
 // MARK: - Edit Profile View
+
 struct EditProfileView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -972,71 +922,10 @@ struct EditProfileView: View {
                 // Form Content
                 ScrollView {
                     VStack(spacing: 24) {
-                        VStack(spacing: 16) {
-                            ZStack {
-                                Circle()
-                                    .fill(Color.secondary.opacity(0.1))
-                                    .frame(width: 120, height: 120)
-                                
-                                if authVM.profileManager.hasAvatar,
-                                   let avatarURL = authVM.profileManager.avatarURL {
-                                    AsyncImage(url: avatarURL) { image in
-                                        image
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fill)
-                                            .frame(width: 120, height: 120)
-                                            .clipShape(Circle())
-                                    } placeholder: {
-                                        if isUpdatingAvatar {
-                                            ProgressView()
-                                                .progressViewStyle(CircularProgressViewStyle(tint: .blue))
-                                                .scaleEffect(1.2)
-                                        } else {
-                                            Image(systemName: "person.circle.fill")
-                                                .font(.system(size: 100))
-                                                .foregroundColor(.secondary.opacity(0.6))
-                                        }
-                                    }
-                                } else {
-                                    if isUpdatingAvatar {
-                                        ProgressView()
-                                            .progressViewStyle(CircularProgressViewStyle(tint: .blue))
-                                            .scaleEffect(1.2)
-                                    } else {
-                                        Image(systemName: "person.circle.fill")
-                                            .font(.system(size: 100))
-                                            .foregroundColor(.secondary.opacity(0.6))
-                                    }
-                                }
-                                
-                                // camera overlay
-                                VStack {
-                                    Spacer()
-                                    HStack {
-                                        Spacer()
-                                        Button(action: {
-                                            showAvatarActionSheet = true
-                                        }) {
-                                            ZStack {
-                                                Circle()
-                                                    .fill(Color.blue)
-                                                    .frame(width: 36, height: 36)
-                                                    .shadow(color: Color.blue.opacity(0.4), radius: 6, x: 0, y: 3)
-                                                
-                                                Image(systemName: "camera.fill")
-                                                    .font(.system(size: 16, weight: .semibold))
-                                                    .foregroundColor(.white)
-                                            }
-                                        }
-                                        .disabled(isUpdatingAvatar)
-                                        .opacity(isUpdatingAvatar ? 0.6 : 1.0)
-                                    }
-                                }
-                                .frame(width: 120, height: 120)
-                            }
-                        }
-                        .padding(.top, 24)
+                        // Avatar Section
+                        avatarSection
                         
+                        // Form Fields
                         VStack(spacing: 20) {
                             textField(title: "First Name", text: $editedFirstName, icon: "person")
                             textField(title: "Last Name", text: $editedLastName, icon: "person.badge.plus")
@@ -1328,6 +1217,194 @@ struct EditProfileView: View {
         }
     }
     
+    // MARK: - Avatar Section (Updated)
+    private var avatarSection: some View {
+        VStack(spacing: 16) {
+            ZStack {
+                CachedAvatarView(
+                    avatarUrl: authVM.profileManager.currentProfile?.avatarUrl,
+                    size: 120,
+                    initials: getInitials()
+                )
+                
+                if isUpdatingAvatar {
+                    Circle()
+                        .fill(Color.black.opacity(0.5))
+                        .frame(width: 120, height: 120)
+                    
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .scaleEffect(1.2)
+                }
+                
+                // Edit button overlay
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        Button(action: {
+                            showAvatarActionSheet = true
+                        }) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.blue)
+                                    .frame(width: 36, height: 36)
+                                    .shadow(color: Color.blue.opacity(0.4), radius: 6, x: 0, y: 3)
+                                
+                                Image(systemName: "camera.fill")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(.white)
+                            }
+                        }
+                        .disabled(isUpdatingAvatar)
+                        .opacity(isUpdatingAvatar ? 0.6 : 1.0)
+                    }
+                }
+            }
+            
+            Text("Tap to change profile photo")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.secondary)
+        }
+    }
+    
+    // MARK: - Date Picker View
+    private var datePickerView: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                Button("Cancel") {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        showDatePicker = false
+                    }
+                }
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.blue)
+                
+                Spacer()
+                
+                Text("Select Birthdate")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                Button("Done") {
+                    editedBirthdate = serverDateFormatter.string(from: selectedDate)
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        showDatePicker = false
+                    }
+                }
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.blue)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(Color(.systemBackground))
+            
+            Divider()
+            
+            // Date Picker
+            DatePicker("", selection: $selectedDate, displayedComponents: .date)
+                .datePickerStyle(WheelDatePickerStyle())
+                .background(Color(.systemBackground))
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color(.systemBackground))
+                .shadow(color: Color.black.opacity(0.1), radius: 20, x: 0, y: -5)
+        )
+        .padding(.horizontal, 16)
+        .padding(.bottom, 34)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+    }
+    
+    // MARK: - Gender Picker View
+    private var genderPickerView: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                Button("Cancel") {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        showGenderPicker = false
+                    }
+                }
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.blue)
+                
+                Spacer()
+                
+                Text("Select Gender")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                Button("Done") {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        showGenderPicker = false
+                    }
+                }
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.blue)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(Color(.systemBackground))
+            
+            Divider()
+            
+            // Gender Options
+            VStack(spacing: 0) {
+                ForEach(["M", "F", "O", "P"], id: \.self) { value in
+                    Button(action: {
+                        editedGender = value
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            showGenderPicker = false
+                        }
+                    }) {
+                        HStack {
+                            Text(authVM.profileManager.getGenderDisplayName(value))
+                                .font(.system(size: 16))
+                                .foregroundColor(.primary)
+                            
+                            Spacer()
+                            
+                            if editedGender == value {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 16)
+                        .background(
+                            Color(.systemBackground)
+                                .opacity(editedGender == value ? 0.1 : 0.0)
+                        )
+                    }
+                    
+                    if value != "P" {
+                        Divider()
+                            .background(Color.secondary.opacity(0.2))
+                    }
+                }
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color(.systemBackground).opacity(0.95))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                    )
+            )
+            .padding(.horizontal, 16)
+            .padding(.bottom, 34)
+        }
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+        .zIndex(100)
+    }
+    
     // MARK: - Text Field Component
     private func textField(title: String, text: Binding<String>, icon: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -1368,6 +1445,24 @@ struct EditProfileView: View {
     }
     
     // MARK: - Helper Functions
+
+    private func getInitials() -> String {
+        let profile = authVM.profileManager.currentProfile
+        let firstName = profile?.firstName ?? ""
+        let lastName = profile?.lastName ?? ""
+        
+        if !firstName.isEmpty || !lastName.isEmpty {
+            let firstInitial = firstName.isEmpty ? "" : String(firstName.prefix(1)).uppercased()
+            let lastInitial = lastName.isEmpty ? "" : String(lastName.prefix(1)).uppercased()
+            return "\(firstInitial)\(lastInitial)"
+        }
+        
+        if let email = profile?.email, !email.isEmpty {
+            return String(email.prefix(1)).uppercased()
+        }
+        
+        return "U"
+    }
     
     private func getGenderDisplayText() -> String {
         switch editedGender {
@@ -1379,6 +1474,7 @@ struct EditProfileView: View {
         }
     }
     
+    // MARK: - Profile Actions
     private func saveProfile() {
         guard authVM.profileManager.currentProfile != nil else { return }
         
@@ -1404,17 +1500,20 @@ struct EditProfileView: View {
     
     private func uploadProfileImage(_ image: UIImage) {
         guard let imageData = image.jpegData(compressionQuality: 0.8) else { return }
-        
+
         isUpdatingAvatar = true
         
-        authVM.profileManager.uploadAvatar(
+        authVM.profileManager.uploadAvatarWithCache(
             imageData: imageData,
             context: modelContext
         ) { result in
             DispatchQueue.main.async {
                 isUpdatingAvatar = false
                 switch result {
-                case .success:
+                case .success(let userProfile):
+                    if let newAvatarUrl = userProfile.avatarUrl {
+                        AvatarImageCache.shared.updateAvatarCache(with: newAvatarUrl)
+                    }
                     print("Profile image updated successfully")
                 case .failure(let error):
                     print("Error uploading profile image: \(error)")
@@ -1426,11 +1525,12 @@ struct EditProfileView: View {
     private func removeAvatar() {
         isUpdatingAvatar = true
         
-        authVM.profileManager.deleteAvatar(context: modelContext) { result in
+        authVM.profileManager.deleteAvatarWithCache(context: modelContext) { result in
             DispatchQueue.main.async {
                 isUpdatingAvatar = false
                 switch result {
                 case .success:
+                    AvatarImageCache.shared.updateAvatarCache(with: nil)
                     print("Profile image removed successfully")
                 case .failure(let error):
                     print("Error removing profile image: \(error)")
@@ -1439,6 +1539,7 @@ struct EditProfileView: View {
         }
     }
 }
+
 
 // MARK: - Image Picker
 struct ImagePickerView: UIViewControllerRepresentable {
