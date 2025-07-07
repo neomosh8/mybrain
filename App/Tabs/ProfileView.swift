@@ -1011,9 +1011,8 @@ struct EditProfileView: View {
                             }
                         }
                         .padding(.horizontal, 20)
-                        
-                        Spacer(minLength: 60)
                     }
+                    .padding(.top, 20)
                 }
                 
                 // Date Picker
@@ -1217,7 +1216,7 @@ struct EditProfileView: View {
         }
     }
     
-    // MARK: - Avatar Section (Updated)
+    // MARK: - Avatar Section
     private var avatarSection: some View {
         VStack(spacing: 16) {
             ZStack {
@@ -1237,34 +1236,25 @@ struct EditProfileView: View {
                         .scaleEffect(1.2)
                 }
                 
-                // Edit button overlay
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        Button(action: {
-                            showAvatarActionSheet = true
-                        }) {
-                            ZStack {
-                                Circle()
-                                    .fill(Color.blue)
-                                    .frame(width: 36, height: 36)
-                                    .shadow(color: Color.blue.opacity(0.4), radius: 6, x: 0, y: 3)
-                                
-                                Image(systemName: "camera.fill")
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundColor(.white)
-                            }
-                        }
-                        .disabled(isUpdatingAvatar)
-                        .opacity(isUpdatingAvatar ? 0.6 : 1.0)
+                Button(action: {
+                    showAvatarActionSheet = true
+                }) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.blue)
+                            .frame(width: 36, height: 36)
+                            .shadow(color: Color.blue.opacity(0.4), radius: 6, x: 0, y: 3)
+                        
+                        Image(systemName: "camera.fill")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
                     }
                 }
+                .disabled(isUpdatingAvatar)
+                .opacity(isUpdatingAvatar ? 0.6 : 1.0)
+                .offset(x: 40, y: 40)
             }
-            
-            Text("Tap to change profile photo")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.secondary)
+            .frame(width: 120, height: 120)
         }
     }
     
