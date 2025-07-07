@@ -57,9 +57,7 @@ struct ProfileView: View {
         ZStack {
             ScrollView {
                 VStack(spacing: 24) {
-                    infoSection
-                    
-                    privacyTermsSection
+                    ProfileHeaderView()
                     
                     Spacer(minLength: 50)
                 }
@@ -175,84 +173,208 @@ struct ProfileView: View {
     }
 }
 
-// MARK: - Info Section
-extension ProfileView {
-    private var infoSection: some View {
-        VStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(Color.gray.opacity(0.2))
-                    .frame(width: 100, height: 100)
+// MARK: - Profile Header View
+struct ProfileHeaderView: View {
+    @EnvironmentObject var authVM: AuthViewModel
+    @State private var showingImagePicker = false
+    
+    private let memberSinceDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        return formatter
+    }()
+    
+    private let dateJoinedInputFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssXXXXX"
+        return formatter
+    }()
+    
+    private var memberSinceText: String {
+        guard let dateJoinedString = authVM.profileManager.currentProfile?.dateJoined else {
+            return "Member since unknown"
+        }
+        
+        if let date = dateJoinedInputFormatter.date(from: dateJoinedString) {
+            return "Member since \(memberSinceDateFormatter.string(from: date))"
+        }
+        
+        return "Member since unknown"
+    }
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Main horizontal stack container
+            HStack(spacing: 20) {
+                // Left side - Avatar
+                avatarSection
                 
-                if authVM.profileManager.hasAvatar,
-                   let avatarURL = authVM.profileManager.avatarURL {
-                    AsyncImage(url: avatarURL) { image in
+                // Right side - User info
+                userInfoSection
+                
+                Spacer()
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 24)
+            .background(
+                // Modern glass morphism background
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(.ultraThinMaterial)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                    )
+            )
+            .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 5)
+        }
+    }
+    
+    private var avatarSection: some View {
+        Button(action: {
+            showingImagePicker = true
+        }) {
+            ZStack {
+                // Avatar background with gradient
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color.blue.opacity(0.8),
+                                Color.purple.opacity(0.8)
+                            ]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 80, height: 80)
+                
+                // Avatar image or initials
+                if let avatarUrl = authVM.profileManager.currentProfile?.avatarUrl,
+                   !avatarUrl.isEmpty {
+                    AsyncImage(url: URL(string: avatarUrl)) { image in
                         image
                             .resizable()
                             .aspectRatio(contentMode: .fill)
-                            .frame(width: 100, height: 100)
+                            .frame(width: 80, height: 80)
                             .clipShape(Circle())
                     } placeholder: {
-                        Image(systemName: "person.circle.fill")
-                            .font(.system(size: 80))
-                            .foregroundColor(.gray)
+                        avatarPlaceholder
                     }
                 } else {
-                    Image(systemName: "person.circle.fill")
-                        .font(.system(size: 80))
-                        .foregroundColor(.gray)
+                    avatarPlaceholder
                 }
-            }
-            
-            VStack(spacing: 4) {
-                Text(authVM.profileManager.displayName)
-                    .font(.system(size: 24, weight: .semibold))
-                    .foregroundColor(.primary)
                 
-                Text(authVM.profileManager.currentProfile?.email ?? "")
-                    .font(.system(size: 16))
-                    .foregroundColor(.secondary)
-                
-                HStack(spacing: 4) {
-                    Image(systemName: "calendar")
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
-                    
-                    Text(memberSinceText)
-                        .font(.system(size: 14))
-                        .foregroundColor(.secondary)
-                }
-                .padding(.top, 4)
+                // Edit indicator
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: 26, height: 26)
+                    .overlay(
+                        Circle()
+                            .fill(Color.blue)
+                            .frame(width: 22, height: 22)
+                            .overlay(
+                                Image(systemName: "camera.fill")
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .foregroundColor(.white)
+                            )
+                    )
+                    .offset(x: 26, y: 26)
+                    .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: 1)
             }
         }
-        .padding(.top, 20)
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    private var avatarPlaceholder: some View {
+        ZStack {
+            Circle()
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color.blue.opacity(0.3),
+                            Color.purple.opacity(0.3)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 80, height: 80)
+            
+            Text(getInitials())
+                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .foregroundColor(.white)
+        }
+    }
+    
+    private var userInfoSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Full name with modern typography
+            Text(getDisplayName())
+                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .foregroundColor(.primary)
+                .lineLimit(1)
+            
+            // Email with subtle styling
+            Text(authVM.profileManager.currentProfile?.email ?? "")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+            
+            // Member since with modern badge design
+            HStack(spacing: 6) {
+                Image(systemName: "calendar.badge.plus")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.blue)
+                
+                Text(memberSinceText)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.secondary)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(
+                Capsule()
+                    .fill(Color.blue.opacity(0.1))
+            )
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+    
+    // Helper functions
+    private func getDisplayName() -> String {
+        let profile = authVM.profileManager.currentProfile
+        let firstName = profile?.firstName ?? ""
+        let lastName = profile?.lastName ?? ""
+        let fullName = "\(firstName) \(lastName)".trimmingCharacters(in: .whitespaces)
+        
+        if !fullName.isEmpty {
+            return fullName
+        }
+        
+        return profile?.email?.components(separatedBy: "@").first?.capitalized ?? "User"
+    }
+    
+    private func getInitials() -> String {
+        let profile = authVM.profileManager.currentProfile
+        let firstName = profile?.firstName ?? ""
+        let lastName = profile?.lastName ?? ""
+        
+        if !firstName.isEmpty && !lastName.isEmpty {
+            return "\(firstName.prefix(1))\(lastName.prefix(1))".uppercased()
+        }
+        
+        if !firstName.isEmpty {
+            return String(firstName.prefix(2)).uppercased()
+        }
+        
+        if let email = profile?.email {
+            return String(email.prefix(1)).uppercased()
+        }
+        
+        return "U"
     }
 }
 
-// MARK: - Privacy and Terms Section
-extension ProfileView {
-    private var privacyTermsSection: some View {
-        VStack(spacing: 12) {
-            actionRow(
-                icon: "doc.text",
-                title: "Terms of Service",
-                subtitle: "Read our terms and conditions",
-                iconColor: .blue
-            ) {
-                openURL("https://neocore.com/terms")
-            }
-            
-            actionRow(
-                icon: "shield",
-                title: "Privacy Policy",
-                subtitle: "How we protect your data",
-                iconColor: .green
-            ) {
-                openURL("https://neocore.com/privacy")
-            }
-        }
-    }
-}
 
 // MARK: - Helper Views
 extension ProfileView {
@@ -285,44 +407,7 @@ extension ProfileView {
         .padding(.vertical, 12)
         .contentShape(Rectangle())
     }
-    
-    private func actionRow(
-        icon: String,
-        title: String,
-        subtitle: String,
-        iconColor: Color,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                Image(systemName: icon)
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(iconColor)
-                    .frame(width: 24, height: 24)
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.primary)
-                    
-                    Text(subtitle)
-                        .font(.system(size: 14))
-                        .foregroundColor(.secondary)
-                }
-                
-                Spacer()
-                
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.secondary)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(Color(.systemGray6))
-            .cornerRadius(12)
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
+
 }
 
 // MARK: - Helper Functions
@@ -336,19 +421,6 @@ extension ProfileView {
         if let birthdateString = authVM.profileManager.currentProfile?.birthdate,
            let date = dateFormatter.date(from: birthdateString) {
             selectedDate = date
-        }
-    }
-    
-    private func startEditing() {
-        guard let profile = authVM.profileManager.currentProfile else { return }
-        
-        editedFirstName = profile.firstName ?? ""
-        editedLastName = profile.lastName ?? ""
-        editedBirthdate = profile.birthdate ?? ""
-        editedGender = authVM.profileManager.getGenderPickerValue()
-        
-        withAnimation(.easeInOut(duration: 0.3)) {
-            isEditingAccountDetails = true
         }
     }
     
@@ -416,11 +488,6 @@ extension ProfileView {
                 }
             }
         }
-    }
-    
-    private func openURL(_ urlString: String) {
-        guard let url = URL(string: urlString) else { return }
-        UIApplication.shared.open(url)
     }
 }
 
@@ -661,7 +728,7 @@ struct EditProfileView: View {
                 
                 // Date Picker
                 if showDatePicker {
-                    Color.black.opacity(0.3)
+                    Color.clear
                         .ignoresSafeArea()
                         .onTapGesture {
                             withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
@@ -673,20 +740,37 @@ struct EditProfileView: View {
                         Spacer()
                         
                         VStack(spacing: 0) {
-                            Text("Select Birthdate")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(.primary)
-                                .padding(.vertical, 16)
-                                .frame(maxWidth: .infinity)
-                                .background(
-                                    UnevenRoundedRectangle(
-                                        topLeadingRadius: 20,
-                                        bottomLeadingRadius: 0,
-                                        bottomTrailingRadius: 0,
-                                        topTrailingRadius: 20
-                                    )
-                                    .fill(Color(.systemGray6))
+                            HStack {
+                                Text("Select Birthdate")
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundColor(.primary)
+                                
+                                Spacer()
+                                
+                                Button(action: {
+                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                        showDatePicker = false
+                                    }
+                                }) {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.black)
+                                        .padding(8)
+                                        .background(Circle().fill(Color.gray.opacity(0.2)))
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 16)
+                            
+                            .background(
+                                UnevenRoundedRectangle(
+                                    topLeadingRadius: 20,
+                                    bottomLeadingRadius: 0,
+                                    bottomTrailingRadius: 0,
+                                    topTrailingRadius: 20
                                 )
+                                .fill(Color(.systemGray6))
+                            )
                             
                             DatePicker("", selection: $selectedDate, displayedComponents: .date)
                                 .datePickerStyle(WheelDatePickerStyle())
@@ -700,7 +784,7 @@ struct EditProfileView: View {
                         }
                         .background(
                             RoundedRectangle(cornerRadius: 20)
-                                .fill(Color(.systemBackground))
+                                .fill(Color(.systemBackground).opacity(0.95))
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 20)
                                         .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
@@ -715,7 +799,7 @@ struct EditProfileView: View {
                 
                 // Gender Picker
                 if showGenderPicker {
-                    Color.black.opacity(0.3)
+                    Color.clear
                         .ignoresSafeArea()
                         .onTapGesture {
                             withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
@@ -727,20 +811,37 @@ struct EditProfileView: View {
                         Spacer()
                         
                         VStack(spacing: 0) {
-                            Text("Select Gender")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(.primary)
-                                .padding(.vertical, 16)
-                                .frame(maxWidth: .infinity)
-                                .background(
-                                    UnevenRoundedRectangle(
-                                        topLeadingRadius: 20,
-                                        bottomLeadingRadius: 0,
-                                        bottomTrailingRadius: 0,
-                                        topTrailingRadius: 20
-                                    )
-                                    .fill(Color(.systemGray6))
+                            HStack {
+                                Text("Select Gender")
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundColor(.primary)
+                                
+                                Spacer()
+                                
+                                Button(action: {
+                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                        showGenderPicker = false
+                                    }
+                                }) {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.black)
+                                        .padding(8)
+                                        .background(Circle().fill(Color.gray.opacity(0.2)))
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 16)
+                            
+                            .background(
+                                UnevenRoundedRectangle(
+                                    topLeadingRadius: 20,
+                                    bottomLeadingRadius: 0,
+                                    bottomTrailingRadius: 0,
+                                    topTrailingRadius: 20
                                 )
+                                .fill(Color(.systemGray6))
+                            )
                             
                             ForEach([
                                 ("M", "Male"),
@@ -782,7 +883,7 @@ struct EditProfileView: View {
                         }
                         .background(
                             RoundedRectangle(cornerRadius: 20)
-                                .fill(Color(.systemBackground))
+                                .fill(Color(.systemBackground).opacity(0.95))
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 20)
                                         .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
@@ -988,8 +1089,7 @@ struct ImagePickerView: UIViewControllerRepresentable {
 }
 
 #Preview {
-    NavigationStack {
-        ProfileView()
-            .environmentObject(AuthViewModel())
-    }
+    ProfileHeaderView()
+        .environmentObject(AuthViewModel())
+        .padding()
 }
