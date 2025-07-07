@@ -178,6 +178,20 @@ struct ProfileHeaderView: View {
     @EnvironmentObject var authVM: AuthViewModel
     @State private var showingImagePicker = false
     
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 20) {
+                avatarSection
+                
+                userInfoSection
+                
+                Spacer()
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 24)
+        }
+    }
+    
     private let memberSinceDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMMM yyyy"
@@ -202,87 +216,36 @@ struct ProfileHeaderView: View {
         return "Member since unknown"
     }
     
-    var body: some View {
-        VStack(spacing: 0) {
-            // Main horizontal stack container
-            HStack(spacing: 20) {
-                // Left side - Avatar
-                avatarSection
-                
-                // Right side - User info
-                userInfoSection
-                
-                Spacer()
-            }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 24)
-            .background(
-                // Modern glass morphism background
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(.ultraThinMaterial)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                    )
-            )
-            .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 5)
-        }
-    }
-    
     private var avatarSection: some View {
-        Button(action: {
-            showingImagePicker = true
-        }) {
-            ZStack {
-                // Avatar background with gradient
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                Color.blue.opacity(0.8),
-                                Color.purple.opacity(0.8)
-                            ]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
+        ZStack {
+            Circle()
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color.blue.opacity(0.8),
+                            Color.purple.opacity(0.8)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
                     )
-                    .frame(width: 80, height: 80)
-                
-                // Avatar image or initials
-                if let avatarUrl = authVM.profileManager.currentProfile?.avatarUrl,
-                   !avatarUrl.isEmpty {
-                    AsyncImage(url: URL(string: avatarUrl)) { image in
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 80, height: 80)
-                            .clipShape(Circle())
-                    } placeholder: {
-                        avatarPlaceholder
-                    }
-                } else {
+                )
+                .frame(width: 80, height: 80)
+            
+            if let avatarUrl = authVM.profileManager.currentProfile?.avatarUrl,
+               !avatarUrl.isEmpty {
+                AsyncImage(url: URL(string: avatarUrl)) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 80, height: 80)
+                        .clipShape(Circle())
+                } placeholder: {
                     avatarPlaceholder
                 }
-                
-                // Edit indicator
-                Circle()
-                    .fill(Color.white)
-                    .frame(width: 26, height: 26)
-                    .overlay(
-                        Circle()
-                            .fill(Color.blue)
-                            .frame(width: 22, height: 22)
-                            .overlay(
-                                Image(systemName: "camera.fill")
-                                    .font(.system(size: 10, weight: .semibold))
-                                    .foregroundColor(.white)
-                            )
-                    )
-                    .offset(x: 26, y: 26)
-                    .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: 1)
+            } else {
+                avatarPlaceholder
             }
         }
-        .buttonStyle(PlainButtonStyle())
     }
     
     private var avatarPlaceholder: some View {
@@ -308,23 +271,20 @@ struct ProfileHeaderView: View {
     
     private var userInfoSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Full name with modern typography
             Text(getDisplayName())
-                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .font(.system(size: 22, weight: .bold))
                 .foregroundColor(.primary)
                 .lineLimit(1)
             
-            // Email with subtle styling
             Text(authVM.profileManager.currentProfile?.email ?? "")
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(.secondary)
                 .lineLimit(1)
             
-            // Member since with modern badge design
             HStack(spacing: 6) {
                 Image(systemName: "calendar.badge.plus")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.blue)
+                    .foregroundColor(.secondary)
                 
                 Text(memberSinceText)
                     .font(.system(size: 14, weight: .medium))
@@ -591,12 +551,6 @@ struct EditProfileView: View {
                                     }
                                 }
                                 .frame(width: 120, height: 120)
-                            }
-                            
-                            VStack(spacing: 4) {
-                                Text("Profile Photo")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.primary)
                             }
                         }
                         .padding(.top, 24)
