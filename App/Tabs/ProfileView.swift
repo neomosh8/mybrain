@@ -50,9 +50,7 @@ struct ProfileView: View {
                 VStack(spacing: 24) {
                     ProfileHeaderView()
                     
-                    // Analytics Sections
                     VStack(spacing: 24) {
-                        // Attention Capacity Card
                         AttentionCapacityCard(
                             currentPercentage: 78,
                             yesterdayChange: 5,
@@ -60,16 +58,12 @@ struct ProfileView: View {
                             totalSessions: 12
                         )
                         
-                        // Performance Overview
                         PerformanceOverviewSection()
                         
-                        // Insights & Recommendations
                         InsightsRecommendationsSection()
                         
-                        // Weekly Trends
                         WeeklyTrendsSection()
                         
-                        // Session History
                         SessionHistorySection()
                     }
                     
