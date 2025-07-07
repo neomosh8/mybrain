@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 import SwiftData
 import Combine
 
@@ -47,6 +48,10 @@ class ProfileManager: ObservableObject {
     // MARK: - Profile Saving
     
     func saveProfile(_ userProfile: UserProfile, context: ModelContext) {
+        let oldAvatarUrl = currentProfile?.avatarUrl
+        let newAvatarUrl = userProfile.avatarUrl
+        
+        // Call the original saveProfile method
         let fetchDescriptor = FetchDescriptor<UserProfileData>(
             predicate: #Predicate { $0.id == "user_profile_data" }
         )
@@ -64,6 +69,11 @@ class ProfileManager: ObservableObject {
             try context.save()
             self.currentProfile = profileData
             self.isProfileLoaded = true
+            
+            // Handle avatar cache update if URL changed
+            if oldAvatarUrl != newAvatarUrl {
+                AvatarImageCache.shared.updateAvatarCache(with: newAvatarUrl)
+            }
             
         } catch {
             print("Error saving profile: \(error)")
@@ -249,5 +259,54 @@ class ProfileManager: ObservableObject {
         } catch {
             print("Error clearing profile: \(error)")
         }
+    }
+    
+    
+    /// Enhanced upload avatar with cache management
+    func uploadAvatarWithCache(
+        imageData: Data,
+        context: ModelContext,
+        completion: @escaping (Result<UserProfile, Error>) -> Void
+    ) {
+        networkService.profile.uploadAvatar(imageData: imageData)
+            .sink { result in
+                switch result {
+                case .success(let userProfile):
+                    self.saveProfile(userProfile, context: context)
+                    
+                    // Pre-cache the uploaded image
+                    if let avatarUrl = userProfile.avatarUrl,
+                       let image = UIImage(data: imageData) {
+                        AvatarImageCache.shared.setImage(image, for: avatarUrl)
+                    }
+                    
+                    completion(.success(userProfile))
+                case .failure(let error):
+                    completion(.failure(error))
+                }
+            }
+            .store(in: &cancellables)
+    }
+    
+    /// Enhanced delete avatar with cache management
+    func deleteAvatarWithCache(
+        context: ModelContext,
+        completion: @escaping (Result<UserProfile, Error>) -> Void
+    ) {
+        networkService.profile.deleteAvatar()
+            .sink { result in
+                switch result {
+                case .success(let userProfile):
+                    self.saveProfile(userProfile, context: context)
+                    
+                    // Clear avatar cache
+                    AvatarImageCache.shared.updateAvatarCache(with: nil)
+                    
+                    completion(.success(userProfile))
+                case .failure(let error):
+                    completion(.failure(error))
+                }
+            }
+            .store(in: &cancellables)
     }
 }
