@@ -6,14 +6,12 @@ struct ProfileView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject var authVM: AuthViewModel
     
-    @State private var isEditingAccountDetails = false
     @State private var editedFirstName = ""
     @State private var editedLastName = ""
     @State private var editedBirthdate = ""
     @State private var editedGender = ""
     @State private var selectedDate = Date()
     
-    @State private var showingImagePicker = false
     @State private var showingLogoutAlert = false
     @State private var isLoggingOut = false
     @State private var showLogoutError = false
@@ -28,30 +26,22 @@ struct ProfileView: View {
         self.onNavigateToHome = onNavigateToHome
     }
     
-    private let dateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        return formatter
-    }()
-    
-    private let memberSinceDateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy"
-        return formatter
-    }()
-    
-    private let dateJoinedInputFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssXXXXX"
-        return formatter
-    }()
-    
-    private var memberSinceText: String {
-        guard let dateJoinedString = authVM.profileManager.currentProfile?.dateJoined,
-              let date = dateJoinedInputFormatter.date(from: dateJoinedString) else {
-            return "Member since unknown"
+    private func performLogout() {
+        isLoggingOut = true
+        
+        authVM.logout(context: modelContext) { result in
+            DispatchQueue.main.async {
+                isLoggingOut = false
+                
+                switch result {
+                case .success:
+                    print("Logout successful")
+                case .failure(let error):
+                    logoutErrorMessage = error.localizedDescription
+                    showLogoutError = true
+                }
+            }
         }
-        return "Member since \(memberSinceDateFormatter.string(from: date))"
     }
     
     var body: some View {
@@ -168,9 +158,6 @@ struct ProfileView: View {
                 Spacer()
             }
         }
-        .onAppear {
-            loadProfileData()
-        }
         .sheet(isPresented: $showingEditProfileSheet) {
             EditProfileView()
         }
@@ -200,7 +187,6 @@ struct ProfileView: View {
 // MARK: - Profile Header View
 struct ProfileHeaderView: View {
     @EnvironmentObject var authVM: AuthViewModel
-    @State private var showingImagePicker = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -906,87 +892,6 @@ struct SessionItem: Identifiable {
 
 
 
-// MARK: - Helper Functions
-extension ProfileView {
-    private func loadProfileData() {
-        editedFirstName = authVM.profileManager.currentProfile?.firstName ?? ""
-        editedLastName = authVM.profileManager.currentProfile?.lastName ?? ""
-        editedBirthdate = authVM.profileManager.currentProfile?.birthdate ?? ""
-        editedGender = authVM.profileManager.currentProfile?.gender ?? ""
-        
-        if let birthdateString = authVM.profileManager.currentProfile?.birthdate,
-           let date = dateFormatter.date(from: birthdateString) {
-            selectedDate = date
-        }
-    }
-    
-    private func cancelEditing() {
-        withAnimation(.easeInOut(duration: 0.3)) {
-            isEditingAccountDetails = false
-            loadProfileData()
-        }
-    }
-    
-    private func saveProfile() {
-        guard authVM.profileManager.currentProfile != nil else { return }
-        
-        authVM.updateProfile(
-            firstName: editedFirstName.isEmpty ? "" : editedFirstName,
-            lastName: editedLastName.isEmpty ? "" : editedLastName,
-            birthdate: editedBirthdate.isEmpty ? "" : editedBirthdate,
-            gender: editedGender.isEmpty ? nil : editedGender,
-            context: modelContext
-        ) { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success:
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        self.isEditingAccountDetails = false
-                    }
-                case .failure(let error):
-                    print("Error updating profile: \(error)")
-                }
-            }
-        }
-    }
-    
-    private func uploadProfileImage(_ image: UIImage) {
-        guard let imageData = image.jpegData(compressionQuality: 0.8) else { return }
-        
-        authVM.profileManager.uploadAvatar(
-            imageData: imageData,
-            context: modelContext
-        ) { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success:
-                    print("Profile image updated successfully")
-                case .failure(let error):
-                    print("Error uploading profile image: \(error)")
-                }
-            }
-        }
-    }
-    
-    private func performLogout() {
-        isLoggingOut = true
-        
-        authVM.logout(context: modelContext) { result in
-            DispatchQueue.main.async {
-                isLoggingOut = false
-                
-                switch result {
-                case .success:
-                    print("Logout successful")
-                case .failure(let error):
-                    logoutErrorMessage = error.localizedDescription
-                    showLogoutError = true
-                }
-            }
-        }
-    }
-}
-
 // MARK: - Edit Profile View
 struct EditProfileView: View {
     @Environment(\.dismiss) private var dismiss
@@ -1016,6 +921,18 @@ struct EditProfileView: View {
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter
     }()
+    
+    private func loadProfileData() {
+        editedFirstName = authVM.profileManager.currentProfile?.firstName ?? ""
+        editedLastName = authVM.profileManager.currentProfile?.lastName ?? ""
+        editedBirthdate = authVM.profileManager.currentProfile?.birthdate ?? ""
+        editedGender = authVM.profileManager.currentProfile?.gender ?? ""
+        
+        if let birthdateString = authVM.profileManager.currentProfile?.birthdate,
+           let date = serverDateFormatter.date(from: birthdateString) {
+            selectedDate = date
+        }
+    }
     
     var body: some View {
         NavigationView {
@@ -1457,17 +1374,6 @@ struct EditProfileView: View {
     }
     
     // MARK: - Helper Functions
-    private func loadProfileData() {
-        editedFirstName = authVM.profileManager.currentProfile?.firstName ?? ""
-        editedLastName = authVM.profileManager.currentProfile?.lastName ?? ""
-        editedBirthdate = authVM.profileManager.currentProfile?.birthdate ?? ""
-        editedGender = authVM.profileManager.currentProfile?.gender ?? ""
-        
-        if let birthdateString = authVM.profileManager.currentProfile?.birthdate,
-           let date = serverDateFormatter.date(from: birthdateString) {
-            selectedDate = date
-        }
-    }
     
     private func getGenderDisplayText() -> String {
         switch editedGender {
@@ -1480,6 +1386,8 @@ struct EditProfileView: View {
     }
     
     private func saveProfile() {
+        guard authVM.profileManager.currentProfile != nil else { return }
+        
         authVM.updateProfile(
             firstName: editedFirstName.isEmpty ? "" : editedFirstName,
             lastName: editedLastName.isEmpty ? "" : editedLastName,
