@@ -919,7 +919,6 @@ struct EditProfileView: View {
                 Divider()
                     .background(Color.secondary.opacity(0.3))
                 
-                // Form Content
                 ScrollView {
                     VStack(spacing: 24) {
                         // Avatar Section
