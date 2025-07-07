@@ -232,6 +232,18 @@ struct LoginScreen: View {
                                     .foregroundColor(.white)
                                 
                                 Spacer()
+                                
+                                Button(action: {
+                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                        showDatePicker = false
+                                    }
+                                }) {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.white)
+                                        .padding(8)
+                                        .background(Circle().fill(Color.gray.opacity(0.2)))
+                                }
                             }
                             .padding(.horizontal, 20)
                             .padding(.vertical, 16)
