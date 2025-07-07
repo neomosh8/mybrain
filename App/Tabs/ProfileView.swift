@@ -1017,156 +1017,12 @@ struct EditProfileView: View {
                 
                 // Date Picker
                 if showDatePicker {
-                    VStack {
-                        Spacer()
-                        
-                        VStack(spacing: 0) {
-                            HStack {
-                                Text("Select Birthdate")
-                                    .font(.system(size: 18, weight: .semibold))
-                                    .foregroundColor(.primary)
-                                
-                                Spacer()
-                                
-                                Button(action: {
-                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                        showDatePicker = false
-                                    }
-                                }) {
-                                    Image(systemName: "xmark")
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(.black)
-                                        .padding(8)
-                                        .background(Circle().fill(Color.gray.opacity(0.2)))
-                                }
-                            }
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 16)
-                            
-                            .background(
-                                UnevenRoundedRectangle(
-                                    topLeadingRadius: 20,
-                                    bottomLeadingRadius: 0,
-                                    bottomTrailingRadius: 0,
-                                    topTrailingRadius: 20
-                                )
-                                .fill(Color(.systemGray6))
-                            )
-                            
-                            DatePicker("", selection: $selectedDate, displayedComponents: .date)
-                                .datePickerStyle(WheelDatePickerStyle())
-                                .colorScheme(.light)
-                                .accentColor(.blue)
-                                .onChange(of: selectedDate) { _, newValue in
-                                    editedBirthdate = serverDateFormatter.string(from: newValue)
-                                }
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 16)
-                        }
-                        .background(
-                            RoundedRectangle(cornerRadius: 20)
-                                .fill(Color(.systemBackground).opacity(0.95))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 20)
-                                        .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
-                                )
-                        )
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 34)
-                    }
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                    .zIndex(100)
+                    datePickerView
                 }
                 
                 // Gender Picker
                 if showGenderPicker {
-                    VStack {
-                        Spacer()
-                        
-                        VStack(spacing: 0) {
-                            HStack {
-                                Text("Select Gender")
-                                    .font(.system(size: 18, weight: .semibold))
-                                    .foregroundColor(.primary)
-                                
-                                Spacer()
-                                
-                                Button(action: {
-                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                        showGenderPicker = false
-                                    }
-                                }) {
-                                    Image(systemName: "xmark")
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(.black)
-                                        .padding(8)
-                                        .background(Circle().fill(Color.gray.opacity(0.2)))
-                                }
-                            }
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 16)
-                            
-                            .background(
-                                UnevenRoundedRectangle(
-                                    topLeadingRadius: 20,
-                                    bottomLeadingRadius: 0,
-                                    bottomTrailingRadius: 0,
-                                    topTrailingRadius: 20
-                                )
-                                .fill(Color(.systemGray6))
-                            )
-                            
-                            ForEach([
-                                ("M", "Male"),
-                                ("F", "Female"),
-                                ("O", "Other"),
-                                ("P", "Prefer not to say")
-                            ], id: \.0) { value, label in
-                                Button(action: {
-                                    editedGender = value
-                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                        showGenderPicker = false
-                                    }
-                                }) {
-                                    HStack {
-                                        Text(label)
-                                            .foregroundColor(.primary)
-                                            .font(.system(size: 16))
-                                        
-                                        Spacer()
-                                        
-                                        if editedGender == value {
-                                            Image(systemName: "checkmark")
-                                                .foregroundColor(.primary)
-                                                .font(.system(size: 16, weight: .semibold))
-                                        }
-                                    }
-                                    .padding(.horizontal, 20)
-                                    .padding(.vertical, 16)
-                                    .background(
-                                        Color(.systemGray4).opacity(editedGender == value ? 1.0 : 0.0)
-                                    )
-                                }
-                                
-                                if value != "P" {
-                                    Divider()
-                                        .background(Color.secondary.opacity(0.2))
-                                }
-                            }
-                        }
-                        .background(
-                            RoundedRectangle(cornerRadius: 20)
-                                .fill(Color(.systemBackground).opacity(0.95))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 20)
-                                        .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
-                                )
-                        )
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 34)
-                    }
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                    .zIndex(100)
+                    genderPickerView
                 }
             }
         }
@@ -1244,117 +1100,135 @@ struct EditProfileView: View {
     
     // MARK: - Date Picker View
     private var datePickerView: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack {
-                Button("Cancel") {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        showDatePicker = false
+        VStack {
+            VStack(spacing: 0) {
+                HStack {
+                    Text("Select Birthdate")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.primary)
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                            showDatePicker = false
+                        }
+                    }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.black)
+                            .padding(8)
+                            .background(Circle().fill(Color.gray.opacity(0.2)))
                     }
                 }
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.blue)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
                 
-                Spacer()
+                .background(
+                    UnevenRoundedRectangle(
+                        topLeadingRadius: 20,
+                        bottomLeadingRadius: 0,
+                        bottomTrailingRadius: 0,
+                        topTrailingRadius: 20
+                    )
+                    .fill(Color(.systemGray6))
+                )
                 
-                Text("Select Birthdate")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
+                Divider()
                 
-                Spacer()
-                
-                Button("Done") {
-                    editedBirthdate = serverDateFormatter.string(from: selectedDate)
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        showDatePicker = false
+                DatePicker("", selection: $selectedDate, displayedComponents: .date)
+                    .datePickerStyle(WheelDatePickerStyle())
+                    .colorScheme(.light)
+                    .accentColor(.blue)
+                    .onChange(of: selectedDate) { _, newValue in
+                        editedBirthdate = serverDateFormatter.string(from: newValue)
                     }
-                }
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.blue)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
-            .background(Color(.systemBackground))
-            
-            Divider()
-            
-            // Date Picker
-            DatePicker("", selection: $selectedDate, displayedComponents: .date)
-                .datePickerStyle(WheelDatePickerStyle())
-                .background(Color(.systemBackground))
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color(.systemBackground))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                    )
+            )
+            .padding(.horizontal, 16)
+            .padding(.bottom, 34)
         }
-        .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(Color(.systemBackground))
-                .shadow(color: Color.black.opacity(0.1), radius: 20, x: 0, y: -5)
-        )
-        .padding(.horizontal, 16)
-        .padding(.bottom, 34)
         .transition(.move(edge: .bottom).combined(with: .opacity))
+        .zIndex(100)
+        .opacity(0.9)
     }
     
     // MARK: - Gender Picker View
     private var genderPickerView: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack {
-                Button("Cancel") {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        showGenderPicker = false
-                    }
-                }
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.blue)
-                
-                Spacer()
-                
-                Text("Select Gender")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
-                
-                Spacer()
-                
-                Button("Done") {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        showGenderPicker = false
-                    }
-                }
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.blue)
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
-            .background(Color(.systemBackground))
-            
-            Divider()
-            
-            // Gender Options
+        VStack {
             VStack(spacing: 0) {
-                ForEach(["M", "F", "O", "P"], id: \.self) { value in
+                HStack {
+                    Text("Select Gender")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.primary)
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                            showGenderPicker = false
+                        }
+                    }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.black)
+                            .padding(8)
+                            .background(Circle().fill(Color.gray.opacity(0.2)))
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+                
+                .background(
+                    UnevenRoundedRectangle(
+                        topLeadingRadius: 20,
+                        bottomLeadingRadius: 0,
+                        bottomTrailingRadius: 0,
+                        topTrailingRadius: 20
+                    )
+                    .fill(Color(.systemGray6))
+                )
+                
+                Divider()
+                
+                ForEach([
+                    ("M", "Male"),
+                    ("F", "Female"),
+                    ("O", "Other"),
+                    ("P", "Prefer not to say")
+                ], id: \.0) { value, label in
                     Button(action: {
                         editedGender = value
-                        withAnimation(.easeInOut(duration: 0.3)) {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                             showGenderPicker = false
                         }
                     }) {
                         HStack {
-                            Text(authVM.profileManager.getGenderDisplayName(value))
-                                .font(.system(size: 16))
+                            Text(label)
                                 .foregroundColor(.primary)
+                                .font(.system(size: 16))
                             
                             Spacer()
                             
                             if editedGender == value {
                                 Image(systemName: "checkmark")
+                                    .foregroundColor(.primary)
                                     .font(.system(size: 16, weight: .semibold))
-                                    .foregroundColor(.blue)
                             }
                         }
                         .padding(.horizontal, 20)
                         .padding(.vertical, 16)
                         .background(
-                            Color(.systemBackground)
-                                .opacity(editedGender == value ? 0.1 : 0.0)
+                            Color(.systemGray4).opacity(editedGender == value ? 1.0 : 0.0)
                         )
                     }
                     
@@ -1377,6 +1251,7 @@ struct EditProfileView: View {
         }
         .transition(.move(edge: .bottom).combined(with: .opacity))
         .zIndex(100)
+        .opacity(0.9)
     }
     
     // MARK: - Text Field Component
@@ -1419,7 +1294,7 @@ struct EditProfileView: View {
     }
     
     // MARK: - Helper Functions
-
+    
     private func getInitials() -> String {
         let profile = authVM.profileManager.currentProfile
         let firstName = profile?.firstName ?? ""
@@ -1474,7 +1349,7 @@ struct EditProfileView: View {
     
     private func uploadProfileImage(_ image: UIImage) {
         guard let imageData = image.jpegData(compressionQuality: 0.8) else { return }
-
+        
         isUpdatingAvatar = true
         
         authVM.profileManager.uploadAvatarWithCache(
