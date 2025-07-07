@@ -1100,63 +1100,61 @@ struct EditProfileView: View {
     
     // MARK: - Date Picker View
     private var datePickerView: some View {
-        VStack {
-            VStack(spacing: 0) {
-                HStack {
-                    Text("Select Birthdate")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.primary)
-                    
-                    Spacer()
-                    
-                    Button(action: {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                            showDatePicker = false
-                        }
-                    }) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.black)
-                            .padding(8)
-                            .background(Circle().fill(Color.gray.opacity(0.2)))
+        VStack(spacing: 0) {
+            HStack {
+                Text("Select Birthdate")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                Button(action: {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                        showDatePicker = false
                     }
+                }) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.black)
+                        .padding(8)
+                        .background(Circle().fill(Color.gray.opacity(0.2)))
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            
+            .background(
+                UnevenRoundedRectangle(
+                    topLeadingRadius: 20,
+                    bottomLeadingRadius: 0,
+                    bottomTrailingRadius: 0,
+                    topTrailingRadius: 20
+                )
+                .fill(Color(.systemGray6))
+            )
+            
+            Divider()
+            
+            DatePicker("", selection: $selectedDate, displayedComponents: .date)
+                .datePickerStyle(WheelDatePickerStyle())
+                .colorScheme(.light)
+                .accentColor(.blue)
+                .onChange(of: selectedDate) { _, newValue in
+                    editedBirthdate = serverDateFormatter.string(from: newValue)
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
-                
-                .background(
-                    UnevenRoundedRectangle(
-                        topLeadingRadius: 20,
-                        bottomLeadingRadius: 0,
-                        bottomTrailingRadius: 0,
-                        topTrailingRadius: 20
-                    )
-                    .fill(Color(.systemGray6))
-                )
-                
-                Divider()
-                
-                DatePicker("", selection: $selectedDate, displayedComponents: .date)
-                    .datePickerStyle(WheelDatePickerStyle())
-                    .colorScheme(.light)
-                    .accentColor(.blue)
-                    .onChange(of: selectedDate) { _, newValue in
-                        editedBirthdate = serverDateFormatter.string(from: newValue)
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 16)
-            }
-            .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(Color(.systemBackground))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
-                    )
-            )
-            .padding(.horizontal, 16)
-            .padding(.bottom, 34)
         }
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(.systemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                )
+        )
+        .padding(.horizontal, 16)
+        .padding(.bottom, 34)
         .transition(.move(edge: .bottom).combined(with: .opacity))
         .zIndex(100)
         .opacity(0.9)
@@ -1164,91 +1162,89 @@ struct EditProfileView: View {
     
     // MARK: - Gender Picker View
     private var genderPickerView: some View {
-        VStack {
-            VStack(spacing: 0) {
-                HStack {
-                    Text("Select Gender")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.primary)
-                    
-                    Spacer()
-                    
-                    Button(action: {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                            showGenderPicker = false
-                        }
-                    }) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.black)
-                            .padding(8)
-                            .background(Circle().fill(Color.gray.opacity(0.2)))
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
+        VStack(spacing: 0) {
+            HStack {
+                Text("Select Gender")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.primary)
                 
-                .background(
-                    UnevenRoundedRectangle(
-                        topLeadingRadius: 20,
-                        bottomLeadingRadius: 0,
-                        bottomTrailingRadius: 0,
-                        topTrailingRadius: 20
-                    )
-                    .fill(Color(.systemGray6))
-                )
+                Spacer()
                 
-                Divider()
-                
-                ForEach([
-                    ("M", "Male"),
-                    ("F", "Female"),
-                    ("O", "Other"),
-                    ("P", "Prefer not to say")
-                ], id: \.0) { value, label in
-                    Button(action: {
-                        editedGender = value
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                            showGenderPicker = false
-                        }
-                    }) {
-                        HStack {
-                            Text(label)
-                                .foregroundColor(.primary)
-                                .font(.system(size: 16))
-                            
-                            Spacer()
-                            
-                            if editedGender == value {
-                                Image(systemName: "checkmark")
-                                    .foregroundColor(.primary)
-                                    .font(.system(size: 16, weight: .semibold))
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 16)
-                        .background(
-                            Color(.systemGray4).opacity(editedGender == value ? 1.0 : 0.0)
-                        )
+                Button(action: {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                        showGenderPicker = false
                     }
-                    
-                    if value != "P" {
-                        Divider()
-                            .background(Color.secondary.opacity(0.2))
-                    }
+                }) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.black)
+                        .padding(8)
+                        .background(Circle().fill(Color.gray.opacity(0.2)))
                 }
             }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            
             .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(Color(.systemBackground).opacity(0.95))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
-                    )
+                UnevenRoundedRectangle(
+                    topLeadingRadius: 20,
+                    bottomLeadingRadius: 0,
+                    bottomTrailingRadius: 0,
+                    topTrailingRadius: 20
+                )
+                .fill(Color(.systemGray6))
             )
-            .padding(.horizontal, 16)
-            .padding(.bottom, 34)
+            
+            Divider()
+            
+            ForEach([
+                ("M", "Male"),
+                ("F", "Female"),
+                ("O", "Other"),
+                ("P", "Prefer not to say")
+            ], id: \.0) { value, label in
+                Button(action: {
+                    editedGender = value
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                        showGenderPicker = false
+                    }
+                }) {
+                    HStack {
+                        Text(label)
+                            .foregroundColor(.primary)
+                            .font(.system(size: 16))
+                        
+                        Spacer()
+                        
+                        if editedGender == value {
+                            Image(systemName: "checkmark")
+                                .foregroundColor(.primary)
+                                .font(.system(size: 16, weight: .semibold))
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
+                    .background(
+                        Color(.systemGray4).opacity(editedGender == value ? 1.0 : 0.0)
+                    )
+                }
+                
+                if value != "P" {
+                    Divider()
+                        .background(Color.secondary.opacity(0.2))
+                }
+            }
         }
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(.systemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                )
+        )
+        .padding(.horizontal, 16)
+        .padding(.bottom, 34)
         .transition(.move(edge: .bottom).combined(with: .opacity))
         .zIndex(100)
         .opacity(0.9)
