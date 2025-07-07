@@ -375,41 +375,6 @@ struct ProfileHeaderView: View {
     }
 }
 
-
-// MARK: - Helper Views
-extension ProfileView {
-    private func accountDetailRow(
-        title: String,
-        value: Binding<String>,
-        isEditing: Bool
-    ) -> some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.primary)
-                
-                if isEditing && title != "Email" {
-                    TextField(title, text: value)
-                        .textFieldStyle(PlainTextFieldStyle())
-                        .font(.system(size: 14))
-                        .foregroundColor(.primary)
-                } else {
-                    Text(value.wrappedValue)
-                        .font(.system(size: 14))
-                        .foregroundColor(.secondary)
-                }
-            }
-            
-            Spacer()
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .contentShape(Rectangle())
-    }
-
-}
-
 // MARK: - Helper Functions
 extension ProfileView {
     private func loadProfileData() {
@@ -491,7 +456,7 @@ extension ProfileView {
     }
 }
 
-// MARK: - Edit Profile Sheet View
+// MARK: - Edit Profile View
 struct EditProfileView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
