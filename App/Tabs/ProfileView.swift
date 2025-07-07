@@ -556,8 +556,8 @@ struct EditProfileView: View {
                         .padding(.top, 24)
                         
                         VStack(spacing: 20) {
-                            modernTextField(title: "First Name", text: $editedFirstName, icon: "person")
-                            modernTextField(title: "Last Name", text: $editedLastName, icon: "person.badge.plus")
+                            textField(title: "First Name", text: $editedFirstName, icon: "person")
+                            textField(title: "Last Name", text: $editedLastName, icon: "person.badge.plus")
                             
                             // Birthdate Field
                             VStack(alignment: .leading, spacing: 8) {
@@ -847,7 +847,7 @@ struct EditProfileView: View {
     }
     
     // MARK: - Text Field Component
-    private func modernTextField(title: String, text: Binding<String>, icon: String) -> some View {
+    private func textField(title: String, text: Binding<String>, icon: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.system(size: 14, weight: .medium))
