@@ -95,21 +95,16 @@ struct BottomSheetPicker<Content: View>: View {
     }
     
     private var pickerView: some View {
-        ZStack {
-            overlayBackground
-            pickerContent
-        }
-        .transition(.move(edge: .bottom).combined(with: .opacity))
-        .zIndex(100)
-    }
-    
-    private var overlayBackground: some View {
-        Color.black.opacity(0.4)
-            .ignoresSafeArea(.all)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .onTapGesture {
-                handleDismiss()
-            }
+        pickerContent
+            .background(
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea(.all)
+                    .onTapGesture {
+                        handleDismiss()
+                    }
+            )
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .zIndex(100)
     }
     
     private var pickerContent: some View {
