@@ -4,11 +4,6 @@ import Combine
 
 struct HomeView: View {
     @EnvironmentObject var bluetoothService: BluetoothService
-    
-    @StateObject private var thoughtsViewModel = ThoughtsViewModel()
-    @StateObject private var performanceVM = PerformanceViewModel()
-
-    
     @State private var selectedMode: ContentMode = .reading
     @State private var showDeviceCard = true
     @State private var selectedThought: Thought?
@@ -21,17 +16,20 @@ struct HomeView: View {
     @State private var showSearchField = false
     @State private var searchText = ""
     
+    @StateObject private var thoughtsViewModel = ThoughtsViewModel()
+    @StateObject private var performanceVM = PerformanceViewModel()
+    
     // Battery related states
     @State private var batteryLevel: Int?
     @State private var batteryCancellable: AnyCancellable?
     
+    // Timer for battery level
     private var batteryLevelTimer: Timer.TimerPublisher = Timer.publish(
         every: 300, // seconds
         on: .main,
         in: .common
     )
     
-        
     var onNavigateToDevice: (() -> Void)?
     
     init(onNavigateToDevice: (() -> Void)? = nil) {
@@ -150,7 +148,7 @@ struct HomeView: View {
         .onDisappear {
             stopBatteryLevelTimer()
         }
-        .onChange(of: bluetoothService.isConnected) { isConnected in
+        .onChange(of: bluetoothService.isConnected) { _, isConnected in
             if isConnected {
                 startBatteryLevelTimer()
                 fetchBatteryLevel()
@@ -160,7 +158,6 @@ struct HomeView: View {
             }
         }
         .refreshable {
-            // Pull to refresh functionality
             thoughtsViewModel.refreshData()
         }
     }
