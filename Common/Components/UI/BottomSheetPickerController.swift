@@ -57,7 +57,7 @@ struct BottomSheetPicker<Content: View>: View {
     private var titleBackgroundColor: Color {
         switch colorPalette {
         case .system:
-            return Color(.systemBackground)
+            return Color(.systemBackground).opacity(0.05)
         case .custom(_, let titleBg, _):
             return titleBg
         }
@@ -143,8 +143,13 @@ struct BottomSheetPicker<Content: View>: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
         .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(titleBackgroundColor)
+            UnevenRoundedRectangle(
+                topLeadingRadius: 20,
+                bottomLeadingRadius: 0,
+                bottomTrailingRadius: 0,
+                topTrailingRadius: 20
+            )
+            .fill(titleBackgroundColor)
         )
     }
     
@@ -162,7 +167,7 @@ struct BottomSheetPicker<Content: View>: View {
         Circle().fill(
             colorPalette == .system ?
             Color.gray.opacity(0.2) :
-            foregroundColor.opacity(0.2)
+                foregroundColor.opacity(0.2)
         )
     }
     
