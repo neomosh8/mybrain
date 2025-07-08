@@ -33,19 +33,6 @@
 //        _performanceVM = StateObject(wrappedValue: PerformanceViewModel())
 //    }
 //        // Navigation Destinations
-//        .navigationDestination(item: $selectedThought) { thought in
-//            if mode == .eye {
-//                ThoughtDetailView(
-//                    thought: thought,
-//                    webSocketService: viewModel.getWebSocketService()
-//                )
-//            } else {
-//                StreamThoughtView(
-//                    thought: thought,
-//                    webSocketService: viewModel.getWebSocketService()
-//                )
-//            }
-//        }
 //        .navigationDestination(isPresented: $showPerformanceView) {
 //            PerformanceView(viewModel: performanceVM)
 //        }
