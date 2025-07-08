@@ -4,6 +4,11 @@ import Combine
 
 struct HomeView: View {
     @EnvironmentObject var bluetoothService: BluetoothService
+    
+    @StateObject private var thoughtsViewModel = ThoughtsViewModel()
+    @StateObject private var performanceVM = PerformanceViewModel()
+
+    
     @State private var selectedMode: ContentMode = .reading
     @State private var showDeviceCard = true
     @State private var selectedThought: Thought?
@@ -16,7 +21,16 @@ struct HomeView: View {
     @State private var showSearchField = false
     @State private var searchText = ""
     
-    @StateObject private var thoughtsViewModel = ThoughtsViewModel()
+    // Battery related states
+    @State private var batteryLevel: Int?
+    @State private var batteryCancellable: AnyCancellable?
+    
+    private var batteryLevelTimer: Timer.TimerPublisher = Timer.publish(
+        every: 300, // seconds
+        on: .main,
+        in: .common
+    )
+    
         
     var onNavigateToDevice: (() -> Void)?
     
@@ -108,10 +122,18 @@ struct HomeView: View {
             }
         }
         .onAppear {
-            // for test
-            bluetoothService.isDevelopmentMode = true
-            bluetoothService.isConnected = true
-            bluetoothService.batteryLevel = 78
+            if bluetoothService.isConnected {
+                startBatteryLevelTimer()
+                fetchBatteryLevel()
+                
+                bluetoothService.isDevelopmentMode = false
+                bluetoothService.isConnected = true
+            } else{
+                bluetoothService.isDevelopmentMode = true
+                bluetoothService.isConnected = false
+                bluetoothService.batteryLevel = 0
+            }
+            
             
             if !AppStateManager.shared.hasShownHomeIntro {
                 AppStateManager.shared.hasShownHomeIntro = true
@@ -123,6 +145,18 @@ struct HomeView: View {
                 }
             } else {
                 showDeviceCard = false
+            }
+        }
+        .onDisappear {
+            stopBatteryLevelTimer()
+        }
+        .onChange(of: bluetoothService.isConnected) { isConnected in
+            if isConnected {
+                startBatteryLevelTimer()
+                fetchBatteryLevel()
+            } else {
+                stopBatteryLevelTimer()
+                batteryLevel = nil
             }
         }
         .refreshable {
@@ -185,6 +219,36 @@ struct HomeView: View {
         print("🎯 Navigating to thought: \(thought.name) in \(selectedMode.title) mode")
         selectedThought = thought
     }
+    
+    
+    // MARK: - Battery Functions
+    
+    private func fetchBatteryLevel() {
+        performanceVM.fetchBatteryLevel()
+            .sink(receiveCompletion: { completion in
+                if case .failure(let error) = completion {
+                    print("Failed to fetch battery level: \(error)")
+                }
+            }, receiveValue: { level in
+                self.batteryLevel = level
+                self.bluetoothService.batteryLevel = level
+            })
+            .store(in: &performanceVM.cancellables)
+    }
+    
+    private func startBatteryLevelTimer() {
+        batteryCancellable = batteryLevelTimer
+            .autoconnect()
+            .sink { _ in
+                fetchBatteryLevel()
+            }
+    }
+    
+    private func stopBatteryLevelTimer() {
+        batteryCancellable?.cancel()
+        batteryCancellable = nil
+    }
+    
 }
 
 // MARK: - Loading View
@@ -331,8 +395,8 @@ struct DeviceStatusCard: View {
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(bluetoothService.isConnected ?
-                         (bluetoothService.connectedDevice?.name ?? "NeuroLink Pro") :
-                         "NeuroLink Pro")
+                         (bluetoothService.connectedDevice?.name ?? "Unknown Device") :
+                         "Not Connected")
                         .font(.headline)
                         .fontWeight(.semibold)
                     
