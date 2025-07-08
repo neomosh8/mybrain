@@ -11,6 +11,9 @@ struct LoginScreen: View {
     @EnvironmentObject var authVM: AuthViewModel
     @Environment(\.modelContext) private var modelContext
     
+    @StateObject private var birthdatePicker = BottomSheetPickerController()
+    @StateObject private var genderPicker = BottomSheetPickerController()
+    
     @State private var email = ""
     @State private var verificationCode = ""
     @State private var firstName = ""
@@ -18,8 +21,6 @@ struct LoginScreen: View {
     @State private var birthdate = Date()
     @State private var selectedGender = ""
     
-    @State private var showDatePicker = false
-    @State private var showGenderPicker = false
     @State private var tempBirthdate = Date()
     @State private var birthdateSelected = false
     
@@ -141,170 +142,71 @@ struct LoginScreen: View {
                 }
                 
                 
-                // Date Picker
-                if showDatePicker {
-                    Color.black.opacity(0.5)
-                        .ignoresSafeArea()
-                        .onTapGesture {
-                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                showDatePicker = false
-                            }
+                // Pickers
+                
+                BottomSheetPicker(
+                    title: "Select Birthdate",
+                    controller: birthdatePicker,
+                    colorPalette: .custom(
+                        foreground: .white,
+                        titleBackground: Color.white.opacity(0.05),
+                        contentBackground: Color(red: 0.05, green: 0.05, blue: 0.1)
+                    )
+                ) {
+                    DatePicker("", selection: $birthdate, in: maximumDate...minimumDate, displayedComponents: .date)
+                        .datePickerStyle(WheelDatePickerStyle())
+                        .colorScheme(.dark)
+                        .accentColor(.blue)
+                        .onChange(of: birthdate) { _, newValue in
+                            birthdateSelected = true
                         }
-                    
-                    VStack {
-                        Spacer()
-                        
-                        VStack(spacing: 0) {
-                            HStack {
-                                Text("Select Birthdate")
-                                    .font(.system(size: 18, weight: .semibold))
-                                    .foregroundColor(.white)
-                                
-                                Spacer()
-                                
-                                Button(action: {
-                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                        showDatePicker = false
-                                    }
-                                }) {
-                                    Image(systemName: "xmark")
-                                        .font(.system(size: 14, weight: .medium))
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 16)
+                }
+
+                BottomSheetPicker(
+                    title: "Select Gender",
+                    controller: genderPicker,
+                    colorPalette: .custom(
+                        foreground: .white,
+                        titleBackground: Color.white.opacity(0.05),
+                        contentBackground: Color(red: 0.05, green: 0.05, blue: 0.1)
+                    )
+                ) {
+                    VStack(spacing: 0) {
+                        ForEach(genderOptions.dropFirst()) { option in
+                            Button(action: {
+                                selectedGender = option.value
+                                genderPicker.close()
+                            }) {
+                                HStack {
+                                    Text(option.label)
                                         .foregroundColor(.white)
-                                        .padding(8)
-                                        .background(Circle().fill(Color.gray.opacity(0.2)))
-                                }
-                            }
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 16)
-                            .background(
-                                UnevenRoundedRectangle(
-                                    topLeadingRadius: 20,
-                                    bottomLeadingRadius: 0,
-                                    bottomTrailingRadius: 0,
-                                    topTrailingRadius: 20
-                                )
-                                .fill(Color(.white.opacity(0.05)))
-                            )
-                            
-                            DatePicker("", selection: $birthdate, in: maximumDate...minimumDate, displayedComponents: .date)
-                                .datePickerStyle(WheelDatePickerStyle())
-                                .colorScheme(.dark)
-                                .accentColor(.blue)
-                                .onChange(of: birthdate) { _, newValue in
-                                    birthdateSelected = true
+                                        .font(.system(size: 16))
+                                    
+                                    Spacer()
+                                    
+                                    if selectedGender == option.value {
+                                        Image(systemName: "checkmark")
+                                            .foregroundColor(.white)
+                                            .font(.system(size: 16, weight: .semibold))
+                                    }
                                 }
                                 .padding(.horizontal, 20)
                                 .padding(.vertical, 16)
-                        }
-                        .background(
-                            RoundedRectangle(cornerRadius: 20)
-                                .fill(Color(red: 0.05, green: 0.05, blue: 0.1))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 20)
-                                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                .background(
+                                    Color.white.opacity(selectedGender == option.value ? 0.1 : 0.0)
                                 )
-                        )
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 34)
-                    }
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                    .zIndex(100)
-                }
-                
-                
-                // Gender Picker
-                if showGenderPicker {
-                    Color.black.opacity(0.5)
-                        .ignoresSafeArea()
-                        .onTapGesture {
-                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                showGenderPicker = false
                             }
-                        }
-                    
-                    VStack {
-                        Spacer()
-                        
-                        VStack(spacing: 0) {
-                            HStack {
-                                Text("Select Gender")
-                                    .font(.system(size: 18, weight: .semibold))
-                                    .foregroundColor(.white)
-                                
-                                Spacer()
-                                
-                                Button(action: {
-                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                        showDatePicker = false
-                                    }
-                                }) {
-                                    Image(systemName: "xmark")
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(.white)
-                                        .padding(8)
-                                        .background(Circle().fill(Color.gray.opacity(0.2)))
-                                }
-                            }
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 16)
-                            .background(
-                                UnevenRoundedRectangle(
-                                    topLeadingRadius: 20,
-                                    bottomLeadingRadius: 0,
-                                    bottomTrailingRadius: 0,
-                                    topTrailingRadius: 20
-                                )
-                                .fill(Color(.white.opacity(0.05)))
-                            )
+                            .buttonStyle(PlainButtonStyle())
                             
-                            ForEach(genderOptions.dropFirst()) { option in
-                                Button(action: {
-                                    selectedGender = option.value
-                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                        showGenderPicker = false
-                                    }
-                                }) {
-                                    HStack {
-                                        Text(option.label)
-                                            .foregroundColor(.white)
-                                            .font(.system(size: 16))
-                                        
-                                        Spacer()
-                                        
-                                        if selectedGender == option.value {
-                                            Image(systemName: "checkmark")
-                                                .foregroundColor(.white)
-                                                .font(.system(size: 16, weight: .semibold))
-                                        }
-                                    }
-                                    .padding(.horizontal, 20)
-                                    .padding(.vertical, 16)
-                                    .background(
-                                        Color.white.opacity(selectedGender == option.value ? 0.1 : 0.0)
-                                    )
-                                }
-                                
-                                if option.id != genderOptions.dropFirst().last?.id {
-                                    Divider()
-                                        .background(Color.white.opacity(0.1))
-                                }
+                            if option.id != genderOptions.dropFirst().last?.id {
+                                Divider()
+                                    .background(Color.white.opacity(0.1))
                             }
                         }
-                        .background(
-                            RoundedRectangle(cornerRadius: 20)
-                                .fill(Color(red: 0.05, green: 0.05, blue: 0.1))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 20)
-                                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                                )
-                        )
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 34)
                     }
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                    .zIndex(100)
                 }
-
             }
         }
         .onAppear {
@@ -638,9 +540,7 @@ struct LoginScreen: View {
                 
                 // MARK: - Birthdate Selection
                 Button(action: {
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                        showDatePicker.toggle()
-                    }
+                    birthdatePicker.open()
                 }) {
                     HStack {
                         Image(systemName: "calendar")
@@ -655,11 +555,9 @@ struct LoginScreen: View {
                         
                         Spacer()
                         
-                        Image(systemName: "chevron.down")
-                            .foregroundColor(.white.opacity(0.6))
-                            .font(.system(size: 12))
-                            .rotationEffect(.degrees(showDatePicker ? 180 : 0))
-                            .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showDatePicker)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.secondary.opacity(0.6))
                     }
                 }
                 .padding(.horizontal, 20)
@@ -675,9 +573,7 @@ struct LoginScreen: View {
                 
                 // MARK: - Gender Selection
                 Button(action: {
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                        showGenderPicker.toggle()
-                    }
+                    genderPicker.open()
                 }) {
                     HStack {
                         Image(systemName: "person.2")
@@ -690,11 +586,9 @@ struct LoginScreen: View {
                         
                         Spacer()
                         
-                        Image(systemName: "chevron.down")
-                            .foregroundColor(.white.opacity(0.6))
-                            .font(.system(size: 12))
-                            .rotationEffect(.degrees(showGenderPicker ? 180 : 0))
-                            .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showGenderPicker)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.secondary.opacity(0.6))
                     }
                 }
                 .padding(.horizontal, 20)
