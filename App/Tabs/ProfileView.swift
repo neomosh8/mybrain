@@ -146,7 +146,7 @@ struct ProfileView: View {
                 Spacer()
             }
         }
-        .sheet(isPresented: $showingEditProfileSheet) {
+        .fullScreenCover(isPresented: $showingEditProfileSheet) {
             EditProfileView()
         }
         .onTapGesture {
@@ -839,13 +839,13 @@ struct EditProfileView: View {
     @StateObject private var genderPicker = BottomSheetPickerController()
     @StateObject private var birthdatePicker = BottomSheetPickerController()
     @StateObject private var avatarPicker = BottomSheetPickerController()
-
+    
     @State private var editedFirstName = ""
     @State private var editedLastName = ""
     @State private var editedBirthdate = ""
     @State private var editedGender = ""
     @State private var editedDate = Date()
-
+    
     @State private var showImagePicker = false
     @State private var imagePickerSourceType: UIImagePickerController.SourceType = .photoLibrary
     @State private var isUpdatingAvatar = false
@@ -876,135 +876,138 @@ struct EditProfileView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
-                HStack {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.secondary)
-                    
-                    Spacer()
-                    
-                    Text("Edit Profile")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.primary)
-                    
-                    Spacer()
-                    
-                    Button("Save") {
-                        saveProfile()
-                    }
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(
-                        LinearGradient(
-                            gradient: Gradient(colors: [Color.blue, Color.purple]),
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .cornerRadius(20)
-                    .shadow(color: Color.blue.opacity(0.3), radius: 4, x: 0, y: 2)
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
-                
-                Divider()
-                    .background(Color.secondary.opacity(0.3))
-                
-                ScrollView {
-                    VStack(spacing: 24) {
-                        // Avatar Section
-                        avatarSection
-                        
-                        // Form Fields
-                        VStack(spacing: 20) {
-                            textField(title: "First Name", text: $editedFirstName, icon: "person")
-                            textField(title: "Last Name", text: $editedLastName, icon: "person.badge.plus")
-                            
-                            // Birthdate Field
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Birthdate")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(.secondary)
-
-                                Button(action: {
-                                    birthdatePicker.open()
-                                }) {
-                                    HStack {
-                                        Image(systemName: "calendar")
-                                            .foregroundColor(.secondary.opacity(0.7))
-                                            .frame(width: 20)
-                                        
-                                        Text(editedBirthdate.isEmpty ? "Select birthdate" : dateFormatter.string(from: editedDate))
-                                            .font(.system(size: 16, weight: .medium))
-                                            .foregroundColor(editedBirthdate.isEmpty ? .secondary.opacity(0.6) : .primary)
-                                        
-                                        Spacer()
-                                        
-                                        Image(systemName: "chevron.right")
-                                            .font(.system(size: 12, weight: .medium))
-                                            .foregroundColor(.secondary.opacity(0.6))
-                                    }
-                                    .padding(.horizontal, 20)
-                                    .padding(.vertical, 16)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 16)
-                                            .fill(Color.secondary.opacity(0.08))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 16)
-                                                    .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
-                                            )
-                                    )
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                            }
-                            
-                            // Gender Field
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Gender")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(.secondary)
-                                
-                                Button(action: {
-                                    genderPicker.open()
-                                }) {
-                                    HStack {
-                                        Image(systemName: "person.2")
-                                            .foregroundColor(.secondary.opacity(0.7))
-                                            .frame(width: 20)
-                                        
-                                        Text(getGenderDisplayText())
-                                            .font(.system(size: 16, weight: .medium))
-                                            .foregroundColor(editedGender.isEmpty ? .secondary.opacity(0.6) : .primary)
-                                        
-                                        Spacer()
-                                        
-                                        Image(systemName: "chevron.right")
-                                            .font(.system(size: 12, weight: .medium))
-                                            .foregroundColor(.secondary.opacity(0.6))
-                                    }
-                                    .padding(.horizontal, 20)
-                                    .padding(.vertical, 16)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 16)
-                                            .fill(Color.secondary.opacity(0.08))
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 16)
-                                                    .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
-                                            )
-                                    )
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                            }
+            ZStack {
+                VStack(spacing: 0) {
+                    HStack {
+                        Button("Cancel") {
+                            dismiss()
                         }
-                        .padding(.horizontal, 20)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.secondary)
+                        
+                        Spacer()
+                        
+                        Text("Edit Profile")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(.primary)
+                        
+                        Spacer()
+                        
+                        Button("Save") {
+                            saveProfile()
+                        }
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.blue, Color.purple]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(20)
+                        .shadow(color: Color.blue.opacity(0.3), radius: 4, x: 0, y: 2)
                     }
-                    .padding(.top, 20)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
+                    
+                    Divider()
+                        .background(Color.secondary.opacity(0.3))
+                    
+                    ScrollView {
+                        VStack(spacing: 24) {
+                            // Avatar Section
+                            avatarSection
+                            
+                            // Form Fields
+                            VStack(spacing: 20) {
+                                textField(title: "First Name", text: $editedFirstName, icon: "person")
+                                textField(title: "Last Name", text: $editedLastName, icon: "person.badge.plus")
+                                
+                                // Birthdate Field
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Birthdate")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.secondary)
+                                    
+                                    Button(action: {
+                                        birthdatePicker.open()
+                                    }) {
+                                        HStack {
+                                            Image(systemName: "calendar")
+                                                .foregroundColor(.secondary.opacity(0.7))
+                                                .frame(width: 20)
+                                            
+                                            Text(editedBirthdate.isEmpty ? "Select birthdate" : dateFormatter.string(from: editedDate))
+                                                .font(.system(size: 16, weight: .medium))
+                                                .foregroundColor(editedBirthdate.isEmpty ? .secondary.opacity(0.6) : .primary)
+                                            
+                                            Spacer()
+                                            
+                                            Image(systemName: "chevron.right")
+                                                .font(.system(size: 12, weight: .medium))
+                                                .foregroundColor(.secondary.opacity(0.6))
+                                        }
+                                        .padding(.horizontal, 20)
+                                        .padding(.vertical, 16)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 16)
+                                                .fill(Color.secondary.opacity(0.08))
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 16)
+                                                        .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                                                )
+                                        )
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                }
+                                
+                                // Gender Field
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Gender")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.secondary)
+                                    
+                                    Button(action: {
+                                        genderPicker.open()
+                                    }) {
+                                        HStack {
+                                            Image(systemName: "person.2")
+                                                .foregroundColor(.secondary.opacity(0.7))
+                                                .frame(width: 20)
+                                            
+                                            Text(getGenderDisplayText())
+                                                .font(.system(size: 16, weight: .medium))
+                                                .foregroundColor(editedGender.isEmpty ? .secondary.opacity(0.6) : .primary)
+                                            
+                                            Spacer()
+                                            
+                                            Image(systemName: "chevron.right")
+                                                .font(.system(size: 12, weight: .medium))
+                                                .foregroundColor(.secondary.opacity(0.6))
+                                        }
+                                        .padding(.horizontal, 20)
+                                        .padding(.vertical, 16)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 16)
+                                                .fill(Color.secondary.opacity(0.08))
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 16)
+                                                        .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                                                )
+                                        )
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                        }
+                        .padding(.top, 20)
+                    }
                 }
+                
                 
                 // Date Picker
                 BottomSheetPicker(
@@ -1072,7 +1075,7 @@ struct EditProfileView: View {
                         }
                     }
                 }
-
+                
                 // Avatar Picker
                 BottomSheetPicker(
                     title: "Change Profile Photo",
