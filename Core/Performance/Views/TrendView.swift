@@ -61,8 +61,6 @@ struct TrendView: View {
                 height: 160
             ) // Enough space to hold circle & text horizontally
             
-            // Inside PerformanceView or a ViewModel
-            
             let insights: [Insight] = [
                 Insight(
                     title: "Enhanced Attention Span",
