@@ -37,86 +37,96 @@ struct HomeView: View {
     }
     
     var body: some View {
-        ZStack {
-            VStack(spacing: 0) {
-                TopAppBar(
-                    showDeviceCard: $showDeviceCard,
-                    onDeviceCardTapped: {
-                        if showDeviceCard {
-                            hideDeviceCardWithAnimation()
-                        } else {
-                            showDeviceCardWithAnimation()
-                        }
-                    }
-                )
-                
-                ScrollView {
-                    VStack(spacing: 20) {
-                        ModeSelectionView(selectedMode: $selectedMode)
-                        
-                        // Thoughts Section
-                        if thoughtsViewModel.isLoading && thoughtsViewModel.thoughts.isEmpty {
-                            LoadingThoughtsView()
-                        } else if let errorMessage = thoughtsViewModel.errorMessage, thoughtsViewModel.thoughts.isEmpty {
-                            ErrorThoughtsView(message: errorMessage) {
-                                thoughtsViewModel.refreshData()
-                            }
-                        } else {
-                            VStack(spacing: 12) {
-                                ThoughtsListSection(
-                                    showSearchField: $showSearchField,
-                                    searchText: $searchText,
-                                    thoughts: filteredThoughts,
-                                    selectedMode: selectedMode,
-                                    onThoughtTap: { thought in
-                                        handleThoughtSelection(thought)
-                                    },
-                                    onDelete: { thought in
-                                        thoughtsViewModel.deleteThought(thought)
-                                    },
-                                    onRetry: { thought in
-                                        thoughtsViewModel.retryThought(thought)
-                                    }
-                                )
+        NavigationStack {
+            ZStack {
+                VStack(spacing: 0) {
+                    TopAppBar(
+                        showDeviceCard: $showDeviceCard,
+                        onDeviceCardTapped: {
+                            if showDeviceCard {
+                                hideDeviceCardWithAnimation()
+                            } else {
+                                showDeviceCardWithAnimation()
                             }
                         }
-                        
-                        Color.clear.frame(height: 50)
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
-                }
-            }
-            .onTapGesture {
-                if showDeviceCard {
-                    hideDeviceCardWithAnimation()
-                }
-            }
-            
-            if showDeviceCard {
-                VStack {
-                    HStack {
-                        Spacer()
-                        
-                        DeviceStatusCard(onCardTapped: {
-                            onNavigateToDevice?()
-                        })
-                        .environmentObject(bluetoothService)
-                        .scaleEffect(cardScale)
-                        .opacity(cardOpacity)
-                        .offset(cardOffset)
-                        .padding(.horizontal, 20)
-                        .onTapGesture {
-                            // Prevent tap from propagating to background
-                        }
-                        
-                        Spacer()
-                    }
-                    .padding(.top, 80)
+                    )
                     
-                    Spacer()
+                    ScrollView {
+                        VStack(spacing: 20) {
+                            ModeSelectionView(selectedMode: $selectedMode)
+                            
+                            // Thoughts Section
+                            if thoughtsViewModel.isLoading && thoughtsViewModel.thoughts.isEmpty {
+                                LoadingThoughtsView()
+                            } else if let errorMessage = thoughtsViewModel.errorMessage, thoughtsViewModel.thoughts.isEmpty {
+                                ErrorThoughtsView(message: errorMessage) {
+                                    thoughtsViewModel.refreshData()
+                                }
+                            } else {
+                                VStack(spacing: 12) {
+                                    ThoughtsListSection(
+                                        showSearchField: $showSearchField,
+                                        searchText: $searchText,
+                                        thoughts: filteredThoughts,
+                                        selectedMode: selectedMode,
+                                        onThoughtTap: { thought in
+                                            handleThoughtSelection(thought)
+                                        },
+                                        onDelete: { thought in
+                                            thoughtsViewModel.deleteThought(thought)
+                                        },
+                                        onRetry: { thought in
+                                            thoughtsViewModel.retryThought(thought)
+                                        }
+                                    )
+                                }
+                            }
+                            
+                            Color.clear.frame(height: 50)
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 20)
+                    }
                 }
-                .transition(.opacity)
+                .onTapGesture {
+                    if showDeviceCard {
+                        hideDeviceCardWithAnimation()
+                    }
+                }
+                
+                if showDeviceCard {
+                    VStack {
+                        HStack {
+                            Spacer()
+                            
+                            DeviceStatusCard(onCardTapped: {
+                                onNavigateToDevice?()
+                            })
+                            .environmentObject(bluetoothService)
+                            .scaleEffect(cardScale)
+                            .opacity(cardOpacity)
+                            .offset(cardOffset)
+                            .padding(.horizontal, 20)
+                            .onTapGesture {
+                                // Prevent tap from propagating to background
+                            }
+                            
+                            Spacer()
+                        }
+                        .padding(.top, 80)
+                        
+                        Spacer()
+                    }
+                    .transition(.opacity)
+                }
+            }
+        }
+        .navigationDestination(item: $selectedThought) { thought in
+            switch selectedMode {
+            case .reading:
+                ThoughtDetailView(thought: thought)
+            case .listening:
+                StreamThoughtView(thought: thought)
             }
         }
         .onAppear {
