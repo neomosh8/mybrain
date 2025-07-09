@@ -22,6 +22,7 @@ protocol ProfileAPI {
     func updatePreferences(types: [PreferenceItem]?, genres: [PreferenceItem]?, contexts: [PreferenceItem]?) -> AnyPublisher<NetworkResult<SimpleStringResponse>, Never>
     func listDevices() -> AnyPublisher<NetworkResult<[UserDevice]>, Never>
     func terminateDevice(deviceId: String, currentDeviceId: String) -> AnyPublisher<NetworkResult<DeviceTerminationResponse>, Never>
+    func deleteAccount() -> AnyPublisher<NetworkResult<DeleteAccountResponse>, Never>
 }
 
 protocol ThoughtsAPI {
