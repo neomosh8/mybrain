@@ -113,4 +113,18 @@ extension HTTPNetworkService: ProfileAPI {
         )
         return request(endpoint, responseType: DeviceTerminationResponse.self)
     }
+    
+    func deleteAccount() -> AnyPublisher<NetworkResult<DeleteAccountResponse>, Never> {
+        let endpoint = APIEndpoint(
+            path: NetworkConstants.Paths.deleteAccount,
+            method: .DELETE
+        )
+        return request(endpoint, responseType: DeleteAccountResponse.self)
+            .handleEvents(receiveOutput: { [weak self] result in
+                if case .success = result {
+                    self?.tokenStorage.clearTokens()
+                }
+            })
+            .eraseToAnyPublisher()
+    }
 }
