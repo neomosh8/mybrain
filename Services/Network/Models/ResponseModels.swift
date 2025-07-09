@@ -30,6 +30,10 @@ struct LogoutResponse: Codable {
     let detail: String
 }
 
+struct DeleteAccountResponse: Codable {
+    let detail: String
+}
+
 // MARK: - Profile Responses
 
 struct UserProfile: Codable {
