@@ -3,8 +3,6 @@ import Combine
 
 // MARK: - PerformanceView
 struct PerformanceView: View {
-    @ObservedObject var viewModel: PerformanceViewModel
-    
     var body: some View {
         ZStack {
             Color.gray.opacity(0.3)
@@ -16,12 +14,9 @@ struct PerformanceView: View {
                     HStack {
                         Text("Your Current Attention Capacity level: ")
                             .font(.headline) +
-                        Text("\(viewModel.batteryLevel ?? -1)%")
+                        Text("9%")
                             .font(.headline)
-                            .foregroundColor(
-                                viewModel.batteryLevel ?? 0 > 70 ? .green :
-                                    viewModel.batteryLevel ?? 0 >= 40 ? .yellow : .red
-                            )
+                            .foregroundColor(.green)
                     }
                     .padding(.bottom, 8)
                     .padding(.top, 45)
@@ -105,18 +100,5 @@ struct PerformanceView: View {
                 .padding(.vertical)
             }
         }
-        .onAppear(perform: loadData)
-    }
-    
-    func loadData() {
-        viewModel.fetchBatteryLevel()
-            .sink(receiveCompletion: { completion in
-                if case .failure(let error) = completion {
-                    print("Failed to fetch battery level: \(error)")
-                }
-            }, receiveValue: { level in
-                viewModel.batteryLevel = level
-            })
-            .store(in: &viewModel.cancellables)
     }
 }
