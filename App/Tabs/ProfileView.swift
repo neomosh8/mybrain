@@ -576,13 +576,6 @@ struct InsightsRecommendationsSection: View {
                 .background(.ultraThinMaterial)
                 .cornerRadius(10)
                 .shadow(radius: 1)
-            
-            HistoryView()
-                .frame(maxWidth: .infinity)
-                .frame(height: 400)
-                .background(.ultraThinMaterial)
-                .cornerRadius(10)
-                .shadow(radius: 1)
         }
         .padding(.horizontal, 16)
     }

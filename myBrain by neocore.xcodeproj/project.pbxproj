@@ -32,14 +32,12 @@
 		74263C372DDADAE800953598 /* ThoughtNavigationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C222DDADAE800953598 /* ThoughtNavigationView.swift */; };
 		74263C382DDADAE800953598 /* OnboardingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C162DDADAE800953598 /* OnboardingViewModel.swift */; };
 		74263C392DDADAE800953598 /* SubtitleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C1D2DDADAE800953598 /* SubtitleView.swift */; };
-		74263C3A2DDADAE800953598 /* HistoryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C102DDADAE800953598 /* HistoryCard.swift */; };
 		74263C3B2DDADAE800953598 /* InsightCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C122DDADAE800953598 /* InsightCard.swift */; };
 		74263C3C2DDADAE800953598 /* LoginScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C132DDADAE800953598 /* LoginScreen.swift */; };
 		74263C3D2DDADAE800953598 /* ThoughtDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C212DDADAE800953598 /* ThoughtDetailView.swift */; };
 		74263C3E2DDADAE800953598 /* TestSignalViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C1F2DDADAE800953598 /* TestSignalViewModel.swift */; };
 		74263C3F2DDADAE800953598 /* SceneKitUSDZView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C192DDADAE800953598 /* SceneKitUSDZView.swift */; };
 		74263C402DDADAE800953598 /* ChapterCompletionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C0D2DDADAE800953598 /* ChapterCompletionView.swift */; };
-		74263C412DDADAE800953598 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C112DDADAE800953598 /* HistoryView.swift */; };
 		74263C422DDADAE800953598 /* StreamThoughtView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C1C2DDADAE800953598 /* StreamThoughtView.swift */; };
 		74263C4D2DDADAE800953598 /* LottieView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C462DDADAE800953598 /* LottieView.swift */; };
 		74263C4E2DDADAE800953598 /* ShareExtensionProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C4A2DDADAE800953598 /* ShareExtensionProgressView.swift */; };
@@ -134,8 +132,6 @@
 		74263C0D2DDADAE800953598 /* ChapterCompletionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChapterCompletionView.swift; sourceTree = "<group>"; };
 		74263C0E2DDADAE800953598 /* DeviceDetailsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceDetailsView.swift; sourceTree = "<group>"; };
 		74263C0F2DDADAE800953598 /* FeedbackPlotView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackPlotView.swift; sourceTree = "<group>"; };
-		74263C102DDADAE800953598 /* HistoryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryCard.swift; sourceTree = "<group>"; };
-		74263C112DDADAE800953598 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		74263C122DDADAE800953598 /* InsightCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightCard.swift; sourceTree = "<group>"; };
 		74263C132DDADAE800953598 /* LoginScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginScreen.swift; sourceTree = "<group>"; };
 		74263C152DDADAE800953598 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
@@ -416,7 +412,6 @@
 			isa = PBXGroup;
 			children = (
 				747A54B22DFDC0A900BD9541 /* ThoughtCard.swift */,
-				74263C102DDADAE800953598 /* HistoryCard.swift */,
 				74263C122DDADAE800953598 /* InsightCard.swift */,
 			);
 			path = Cards;
@@ -470,7 +465,6 @@
 		74263C6A2DDADEAF00953598 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				74263C112DDADAE800953598 /* HistoryView.swift */,
 				74263C242DDADAE800953598 /* TrendView.swift */,
 			);
 			path = Views;
@@ -822,7 +816,6 @@
 				7499D9082E02A652007E8C92 /* Thought+URLProcessing.swift in Sources */,
 				74263C382DDADAE800953598 /* OnboardingViewModel.swift in Sources */,
 				74263C392DDADAE800953598 /* SubtitleView.swift in Sources */,
-				74263C3A2DDADAE800953598 /* HistoryCard.swift in Sources */,
 				74263C3B2DDADAE800953598 /* InsightCard.swift in Sources */,
 				74263C3C2DDADAE800953598 /* LoginScreen.swift in Sources */,
 				74263C892DDAF66400953598 /* Constants.swift in Sources */,
@@ -833,7 +826,6 @@
 				74BC7E762E0013B300A9C2F4 /* UsageExample.swift in Sources */,
 				74263C402DDADAE800953598 /* ChapterCompletionView.swift in Sources */,
 				74BC7E782E0013D500A9C2F4 /* ThoughtsAPI+Implementation.swift in Sources */,
-				74263C412DDADAE800953598 /* HistoryView.swift in Sources */,
 				74D58B382E152780008B62DC /* CustomNavigationBar.swift in Sources */,
 				74263C422DDADAE800953598 /* StreamThoughtView.swift in Sources */,
 				74B3FDAD2E1CD6AF00173269 /* BottomSheetPickerController.swift in Sources */,
