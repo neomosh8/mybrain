@@ -309,4 +309,22 @@ class ProfileManager: ObservableObject {
             }
             .store(in: &cancellables)
     }
+    
+    func deleteAccount(
+        context: ModelContext,
+        completion: @escaping (Result<DeleteAccountResponse, Error>) -> Void
+    ) {
+        networkService.profile.deleteAccount()
+            .sink { result in
+                switch result {
+                case .success(let response):
+                    self.clearProfile(context: context)
+                    completion(.success(response))
+                case .failure(let error):
+                    completion(.failure(error))
+                }
+            }
+            .store(in: &cancellables)
+    }
+
 }
