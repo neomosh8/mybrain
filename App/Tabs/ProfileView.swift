@@ -49,7 +49,7 @@ struct ProfileView: View {
                             currentPercentage: 78,
                             yesterdayChange: 5,
                             activeHours: 2.5,
-                            totalSessions: 12
+                            totalThoughts: 12
                         )
                         
                         PerformanceOverviewSection()
@@ -58,7 +58,7 @@ struct ProfileView: View {
                         
                         WeeklyTrendsSection()
                         
-                        SessionHistorySection()
+                        ThoughtHistorySection()
                     }
                     
                     Spacer(minLength: 50)
@@ -290,7 +290,7 @@ struct AttentionCapacityCard: View {
     let currentPercentage: Int
     let yesterdayChange: Int
     let activeHours: Double
-    let totalSessions: Int
+    let totalThoughts: Int
     
     var body: some View {
         VStack(spacing: 0) {
@@ -360,11 +360,11 @@ struct AttentionCapacityCard: View {
                 .frame(maxWidth: .infinity)
                 
                 VStack(spacing: 4) {
-                    Text("\(totalSessions)")
+                    Text("\(totalThoughts)")
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.white)
                     
-                    Text("sessions")
+                    Text("thoughts")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.white.opacity(0.8))
                 }
@@ -645,11 +645,11 @@ struct TrendItem: Identifiable {
     let color: Color
 }
 
-struct SessionHistorySection: View {
+struct ThoughtHistorySection: View {
     @State private var showFilter = false
     
-    let sessions: [SessionItem] = [
-        SessionItem(
+    let thoughts: [ThoughtItem] = [
+        ThoughtItem(
             title: "Productivity Mastery",
             subtitle: "Chapter 8 • Today 2:30 PM",
             score: 89,
@@ -657,7 +657,7 @@ struct SessionHistorySection: View {
             progress: 1.0,
             color: .green
         ),
-        SessionItem(
+        ThoughtItem(
             title: "Deep Work Principles",
             subtitle: "Audio • Today 10:15 AM",
             score: 76,
@@ -665,7 +665,7 @@ struct SessionHistorySection: View {
             progress: 0.75,
             color: .blue
         ),
-        SessionItem(
+        ThoughtItem(
             title: "Neuroscience Basics",
             subtitle: "Chapter 3 • Yesterday 4:45 PM",
             score: 82,
@@ -678,7 +678,7 @@ struct SessionHistorySection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text("Session History")
+                Text("Thought History")
                     .font(.system(size: 20, weight: .bold))
                     .foregroundColor(.primary)
                 
@@ -694,25 +694,25 @@ struct SessionHistorySection: View {
             }
             
             LazyVStack(spacing: 12) {
-                ForEach(sessions) { session in
-                    SessionRowView(session: session)
+                ForEach(thoughts) { thought in
+                    ThoughtRowView(thought: thought)
                 }
             }
         }
     }
 }
 
-struct SessionRowView: View {
-    let session: SessionItem
+struct ThoughtRowView: View {
+    let thought: ThoughtItem
     
     var body: some View {
         HStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(session.title)
+                Text(thought.title)
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.primary)
                 
-                Text(session.subtitle)
+                Text(thought.subtitle)
                     .font(.system(size: 14))
                     .foregroundColor(.secondary)
                 
@@ -724,13 +724,13 @@ struct SessionRowView: View {
                             .frame(height: 4)
                         
                         RoundedRectangle(cornerRadius: 2)
-                            .fill(session.color)
-                            .frame(width: geometry.size.width * session.progress, height: 4)
+                            .fill(thought.color)
+                            .frame(width: geometry.size.width * thought.progress, height: 4)
                     }
                 }
                 .frame(height: 4)
                 
-                Text("\(Int(session.progress * 100))%")
+                Text("\(Int(thought.progress * 100))%")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.secondary)
             }
@@ -738,11 +738,11 @@ struct SessionRowView: View {
             Spacer()
             
             VStack(alignment: .trailing, spacing: 4) {
-                Text("\(session.score)%")
+                Text("\(thought.score)%")
                     .font(.system(size: 20, weight: .bold))
                     .foregroundColor(.primary)
                 
-                Text(session.scoreType)
+                Text(thought.scoreType)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.secondary)
             }
@@ -755,7 +755,7 @@ struct SessionRowView: View {
     }
 }
 
-struct SessionItem: Identifiable {
+struct ThoughtItem: Identifiable {
     let id = UUID()
     let title: String
     let subtitle: String
