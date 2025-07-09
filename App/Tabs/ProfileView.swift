@@ -422,6 +422,26 @@ struct PerformanceOverviewSection: View {
                 Spacer()
             }
             
+            Text(
+                "Below is a representation your attention capacity for the first minute of typical listening."
+            )
+            .font(.body)
+            .foregroundColor(.gray)
+            .multilineTextAlignment(.center)
+            .padding(.bottom, 42)
+            
+            
+            Text("Your Average Attention Capacity Per Minutes")
+                .font(.subheadline)
+                .padding(.bottom, 8)
+            
+            
+            AnimatedLineChartView()
+                .frame(height: 300)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
+            
+            
             // Chart placeholder
             AttentionChartView()
                 .frame(height: 200)
@@ -548,6 +568,23 @@ struct InsightsRecommendationsSection: View {
                 InsightCardView(insight: insight)
             }
         }
+        
+        
+        VStack(spacing: 16) {
+            TrendView()
+                .frame(maxWidth: .infinity)
+                .background(.ultraThinMaterial)
+                .cornerRadius(10)
+                .shadow(radius: 1)
+            
+            HistoryView()
+                .frame(maxWidth: .infinity)
+                .frame(height: 400)
+                .background(.ultraThinMaterial)
+                .cornerRadius(10)
+                .shadow(radius: 1)
+        }
+        .padding(.horizontal, 16)
     }
 }
 
