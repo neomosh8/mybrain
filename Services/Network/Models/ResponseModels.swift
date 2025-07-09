@@ -12,7 +12,7 @@ struct TokenResponse: Codable {
     let device: UserDevice?
     let profileComplete: Bool
     let profile: UserProfile?
-    
+
     enum CodingKeys: String, CodingKey {
         case access = "access"
         case refresh = "refresh"
@@ -45,7 +45,7 @@ struct UserProfile: Codable {
     let isActive: Bool?
     let isStaff: Bool?
     let dateJoined: String?
-    
+
     enum CodingKeys: String, CodingKey {
         case id, email, birthdate, gender, onboarded
         case firstName = "first_name"
@@ -66,7 +66,7 @@ struct UserDevice: Codable {
     let uniqueDeviceId: String
     let createdAt: String
     let lastLogin: String
-    
+
     enum CodingKeys: String, CodingKey {
         case id = "id"
         case deviceName = "device_name"
@@ -92,7 +92,7 @@ struct ThoughtCreationResponse: Codable {
     let createdAt: String
     let updatedAt: String
     let status: String
-    
+
     enum CodingKeys: String, CodingKey {
         case id, name, cover, status
         case model3d = "model_3d"
@@ -101,7 +101,7 @@ struct ThoughtCreationResponse: Codable {
     }
 }
 
-struct Thought: Codable, Identifiable {
+struct Thought: Codable, Identifiable, Hashable {
     let id: String
     let name: String
     let description: String?
@@ -112,13 +112,21 @@ struct Thought: Codable, Identifiable {
     let progress: ThoughtProgress
     let createdAt: String
     let updatedAt: String
-    
+
     enum CodingKeys: String, CodingKey {
         case id, name, description, cover, status, progress
         case contentType = "content_type"
         case model3d = "model_3d"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+
+    static func == (lhs: Thought, rhs: Thought) -> Bool {
+        lhs.id == rhs.id
     }
 }
 
@@ -133,7 +141,7 @@ struct Chapter: Codable {
     let title: String?
     let content: String?
     let status: String
-    
+
     enum CodingKeys: String, CodingKey {
         case title, content, status
         case chapterNumber = "chapter_number"
@@ -146,7 +154,7 @@ struct ThoughtStatus: Codable {
     let status: String
     let progress: ThoughtProgress
     let chapters: [Chapter]?
-    
+
     enum CodingKeys: String, CodingKey {
         case status, progress, chapters
         case thoughtId = "thought_id"
@@ -166,7 +174,7 @@ struct ThoughtOperationData: Codable {
     let thoughtId: String?
     let error: String?
     let originalStatus: String?
-    
+
     enum CodingKeys: String, CodingKey {
         case error
         case thoughtId = "thought_id"
@@ -195,7 +203,7 @@ struct ThoughtFeedbacksResponse: Codable {
     let status: String
     let message: String
     let feedbacks: [String: AnyCodable]
-    
+
     private enum CodingKeys: String, CodingKey {
         case status, message, feedbacks
     }
@@ -205,7 +213,7 @@ struct ThoughtBookmarksResponse: Codable {
     let status: String
     let message: String
     let bookmarks: [String: AnyCodable]
-    
+
     private enum CodingKeys: String, CodingKey {
         case status, message, bookmarks
     }
@@ -215,7 +223,7 @@ struct RetentionIssuesResponse: Codable {
     let status: String
     let message: String
     let retentions: [String: AnyCodable]
-    
+
     private enum CodingKeys: String, CodingKey {
         case status, message, retentions
     }
@@ -224,14 +232,14 @@ struct RetentionIssuesResponse: Codable {
 // MARK: - AnyCodable Helper
 struct AnyCodable: Codable {
     let value: Any
-    
+
     init(_ value: Any) {
         self.value = value
     }
-    
+
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
-        
+
         if let intValue = try? container.decode(Int.self) {
             value = intValue
         } else if let doubleValue = try? container.decode(Double.self) {
@@ -242,16 +250,24 @@ struct AnyCodable: Codable {
             value = boolValue
         } else if let arrayValue = try? container.decode([AnyCodable].self) {
             value = arrayValue.map { $0.value }
-        } else if let dictValue = try? container.decode([String: AnyCodable].self) {
+        } else if let dictValue = try? container.decode(
+            [String: AnyCodable].self
+        ) {
             value = dictValue.mapValues { $0.value }
         } else {
-            throw DecodingError.typeMismatch(AnyCodable.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Unsupported type"))
+            throw DecodingError.typeMismatch(
+                AnyCodable.self,
+                DecodingError.Context(
+                    codingPath: decoder.codingPath,
+                    debugDescription: "Unsupported type"
+                )
+            )
         }
     }
-    
+
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
-        
+
         switch value {
         case let intValue as Int:
             try container.encode(intValue)
@@ -262,7 +278,13 @@ struct AnyCodable: Codable {
         case let boolValue as Bool:
             try container.encode(boolValue)
         default:
-            throw EncodingError.invalidValue(value, EncodingError.Context(codingPath: encoder.codingPath, debugDescription: "Unsupported type"))
+            throw EncodingError.invalidValue(
+                value,
+                EncodingError.Context(
+                    codingPath: encoder.codingPath,
+                    debugDescription: "Unsupported type"
+                )
+            )
         }
     }
 }
@@ -274,7 +296,7 @@ struct APIErrorResponse: Codable {
     let error: String?
     let status: String?
     let message: String?
-    
+
     private struct DynamicCodingKeys: CodingKey {
         var stringValue: String
         init?(stringValue: String) {
@@ -285,22 +307,46 @@ struct APIErrorResponse: Codable {
             return nil
         }
     }
-    
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: DynamicCodingKeys.self)
-        
-        detail = try container.decodeIfPresent(String.self, forKey: DynamicCodingKeys(stringValue: "detail")!)
-        error = try container.decodeIfPresent(String.self, forKey: DynamicCodingKeys(stringValue: "error")!)
-        status = try container.decodeIfPresent(String.self, forKey: DynamicCodingKeys(stringValue: "status")!)
-        message = try container.decodeIfPresent(String.self, forKey: DynamicCodingKeys(stringValue: "message")!)
+
+        detail = try container.decodeIfPresent(
+            String.self,
+            forKey: DynamicCodingKeys(stringValue: "detail")!
+        )
+        error = try container.decodeIfPresent(
+            String.self,
+            forKey: DynamicCodingKeys(stringValue: "error")!
+        )
+        status = try container.decodeIfPresent(
+            String.self,
+            forKey: DynamicCodingKeys(stringValue: "status")!
+        )
+        message = try container.decodeIfPresent(
+            String.self,
+            forKey: DynamicCodingKeys(stringValue: "message")!
+        )
     }
-    
+
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: DynamicCodingKeys.self)
-        try container.encodeIfPresent(detail, forKey: DynamicCodingKeys(stringValue: "detail")!)
-        try container.encodeIfPresent(error, forKey: DynamicCodingKeys(stringValue: "error")!)
-        try container.encodeIfPresent(status, forKey: DynamicCodingKeys(stringValue: "status")!)
-        try container.encodeIfPresent(message, forKey: DynamicCodingKeys(stringValue: "message")!)
+        try container.encodeIfPresent(
+            detail,
+            forKey: DynamicCodingKeys(stringValue: "detail")!
+        )
+        try container.encodeIfPresent(
+            error,
+            forKey: DynamicCodingKeys(stringValue: "error")!
+        )
+        try container.encodeIfPresent(
+            status,
+            forKey: DynamicCodingKeys(stringValue: "status")!
+        )
+        try container.encodeIfPresent(
+            message,
+            forKey: DynamicCodingKeys(stringValue: "message")!
+        )
     }
 }
 
@@ -309,12 +355,12 @@ struct APIErrorResponse: Codable {
 /// For endpoints that return just "ok" string
 struct SimpleStringResponse: Codable {
     let value: String
-    
+
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         value = try container.decode(String.self)
     }
-    
+
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(value)
@@ -330,7 +376,7 @@ extension ThoughtOperationResponse {
     var isSuccess: Bool {
         status.lowercased() == "success"
     }
-    
+
     var errorMessage: String {
         if isSuccess {
             return message
