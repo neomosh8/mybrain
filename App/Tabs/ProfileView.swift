@@ -541,22 +541,49 @@ struct AttentionData: Identifiable {
 struct InsightsRecommendationsSection: View {
     let insights: [InsightItem] = [
         InsightItem(
-            icon: "clock.fill",
+            icon: "timer",
             iconColor: .blue,
-            title: "Peak Performance",
-            subtitle: "Timing optimization",
-            description: "Your attention peaks at 10:30 AM. Schedule important reading sessions during this time for 25% better results.",
-            timeInfo: "7+ hours better adjustment"
+            title: "Enhanced Attention",
+            subtitle: "Focus development",
+            description: "Your attention span has improved from 12 to 19 seconds, increasing your capacity to stay engaged in tasks longer."
         ),
         InsightItem(
             icon: "moon.fill",
-            iconColor: .purple,
-            title: "Evening Focus",
+            iconColor: .indigo,
+            title: "Optimal Focus Time",
+            subtitle: "Timing optimization",
+            description: "You're most attentive after 11 PM. Prioritize deep work or creative tasks during this period."
+        ),
+        InsightItem(
+            icon: "bolt.fill",
+            iconColor: .yellow,
+            title: "Energy Peaks",
             subtitle: "Energy management",
-            description: "Consider scheduling lighter content in the evening when attention naturally decreases.",
-            timeInfo: "4+ hours optimal"
+            description: "Your energy levels spike in the early afternoon—ideal for critical thinking and high-effort tasks."
+        ),
+        InsightItem(
+            icon: "leaf.arrow.circlepath",
+            iconColor: .green,
+            title: "Relaxation Reminder",
+            subtitle: "Stress recovery",
+            description: "Incorporate short, mindful pauses throughout your day to reset focus and prevent burnout."
+        ),
+        InsightItem(
+            icon: "checkmark.seal.fill",
+            iconColor: .teal,
+            title: "Routine Strength",
+            subtitle: "Consistency building",
+            description: "Sustain your performance improvements by sticking to regular habits and schedules."
+        ),
+        InsightItem(
+            icon: "chart.bar.fill",
+            iconColor: .purple,
+            title: "Milestone Tracking",
+            subtitle: "Goal motivation",
+            description: "Track progress toward your goals and celebrate achievements to reinforce momentum and commitment."
         )
     ]
+
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -564,20 +591,19 @@ struct InsightsRecommendationsSection: View {
                 .font(.system(size: 20, weight: .bold))
                 .foregroundColor(.primary)
             
-            ForEach(insights) { insight in
-                InsightCardView(insight: insight)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 16) {
+                    ForEach(insights) { insight in
+                        InsightCardView(insight: insight)
+                    }
+                }
+                .padding(.horizontal)
             }
+//            
+//            ForEach(insights) { insight in
+//                InsightCardView(insight: insight)
+//            }
         }
-        
-        
-        VStack(spacing: 16) {
-            TrendView()
-                .frame(maxWidth: .infinity)
-                .background(.ultraThinMaterial)
-                .cornerRadius(10)
-                .shadow(radius: 1)
-        }
-        .padding(.horizontal, 16)
     }
 }
 
@@ -602,12 +628,6 @@ struct InsightCardView: View {
                     Text(insight.title)
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.primary)
-                    
-                    Spacer()
-                    
-                    Text(insight.timeInfo)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.secondary)
                 }
                 
                 Text(insight.subtitle)
@@ -637,7 +657,6 @@ struct InsightItem: Identifiable {
     let title: String
     let subtitle: String
     let description: String
-    let timeInfo: String
 }
 
 struct WeeklyTrendsSection: View {
