@@ -120,11 +120,5 @@ extension HTTPNetworkService: ProfileAPI {
             method: .DELETE
         )
         return request(endpoint, responseType: DeleteAccountResponse.self)
-            .handleEvents(receiveOutput: { [weak self] result in
-                if case .success = result {
-                    self?.tokenStorage.clearTokens()
-                }
-            })
-            .eraseToAnyPublisher()
     }
 }
