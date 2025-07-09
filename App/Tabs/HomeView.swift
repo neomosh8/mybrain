@@ -17,7 +17,6 @@ struct HomeView: View {
     @State private var searchText = ""
     
     @StateObject private var thoughtsViewModel = ThoughtsViewModel()
-    @StateObject private var performanceVM = PerformanceViewModel()
     
     // Battery related states
     @State private var batteryLevel: Int?
@@ -231,16 +230,17 @@ struct HomeView: View {
     // MARK: - Battery Functions
     
     private func fetchBatteryLevel() {
-        performanceVM.fetchBatteryLevel()
-            .sink(receiveCompletion: { completion in
-                if case .failure(let error) = completion {
-                    print("Failed to fetch battery level: \(error)")
-                }
-            }, receiveValue: { level in
+        let level = 30
+//        performanceVM.fetchBatteryLevel()
+//            .sink(receiveCompletion: { completion in
+//                if case .failure(let error) = completion {
+//                    print("Failed to fetch battery level: \(error)")
+//                }
+//            }, receiveValue: { level in
                 self.batteryLevel = level
                 self.bluetoothService.batteryLevel = level
-            })
-            .store(in: &performanceVM.cancellables)
+//            })
+//            .store(in: &performanceVM.cancellables)
     }
     
     private func startBatteryLevelTimer() {
