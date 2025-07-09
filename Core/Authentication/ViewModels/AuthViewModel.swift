@@ -15,6 +15,8 @@ class AuthViewModel: ObservableObject {
     @Published var appleAuthManager = AppleAuthManager()
     @Published var googleAuthManager = GoogleAuthManager()
     
+    @Published var isDeletingAccount = false
+    
     // MARK: - Private Properties
     
     private var cancellables = Set<AnyCancellable>()
@@ -257,6 +259,30 @@ class AuthViewModel: ObservableObject {
         .store(in: &cancellables)
     }
     
+    func deleteAccount(context: ModelContext, completion: @escaping (Result<Void, Error>) -> Void) {
+        isDeletingAccount = true
+        
+        NetworkServiceManager.shared.profile.deleteAccount()
+            .sink { result in
+                DispatchQueue.main.async {
+                    self.isDeletingAccount = false
+                    
+                    switch result {
+                    case .success:
+                        self.performLocalLogout(context: context)
+                        
+                        
+                        completion(.success(()))
+                        
+                    case .failure(let error):
+                        completion(.failure(error))
+                    }
+                }
+            }
+            .store(in: &cancellables)
+    }
+
+    
     // MARK: - Helper Methods
     private func handleSuccessfulAuth(tokenResponse: TokenResponse, context: ModelContext) {
         print("Handling successful auth...")
@@ -341,7 +367,7 @@ class AuthViewModel: ObservableObject {
         
         SharedDataManager.saveToken(nil)
         clearFromSwiftData(context: context)
-        
+        AvatarImageCache.shared.clearCache()
         profileManager.clearProfile(context: context)
     }
     
@@ -362,10 +388,7 @@ class AuthViewModel: ObservableObject {
             print("Error clearing auth data: \(error)")
         }
     }
-}
-
-extension AuthViewModel {
-    /// Force logout when tokens are invalid/expired
+    
     func forceLogout(context: ModelContext) {
         print("Force logout due to invalid tokens")
         performLocalLogout(context: context)
