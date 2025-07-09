@@ -14,6 +14,9 @@ struct ProfileView: View {
     @State private var showMenu = false
     @State private var showingEditProfileSheet = false
     
+    @State private var showingDeleteAccountAlert = false
+    @State private var showingDeleteConfirmationAlert = false
+    
     var onNavigateToHome: (() -> Void)?
     
     init(onNavigateToHome: (() -> Void)? = nil) {
@@ -37,6 +40,22 @@ struct ProfileView: View {
             }
         }
     }
+    
+    
+    private func performDeleteAccount() {
+        authVM.deleteAccount(context: modelContext) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    print("Account deleted successfully")
+                case .failure(let error):
+                    logoutErrorMessage = "Failed to delete account: \(error.localizedDescription)"
+                    showLogoutError = true
+                }
+            }
+        }
+    }
+    
     
     var body: some View {
         ZStack {
@@ -130,6 +149,26 @@ struct ProfileView: View {
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
                         }
+                        
+                        Divider().padding(.horizontal, 8)
+                        
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.2)) { showMenu = false }
+                            showingDeleteAccountAlert = true
+                        }) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "trash")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.red)
+                                    .frame(width: 20)
+                                Text("Delete Account")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.red)
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                        }
                     }
                     .frame(width: 180)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -168,6 +207,22 @@ struct ProfileView: View {
             Button("OK") { }
         } message: {
             Text(logoutErrorMessage)
+        }
+        .alert("Delete Account", isPresented: $showingDeleteAccountAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Continue", role: .destructive) {
+                showingDeleteConfirmationAlert = true
+            }
+        } message: {
+            Text("Are you sure you want to delete your account? This action cannot be undone and will permanently remove all your data.")
+        }
+        .alert("Final Confirmation", isPresented: $showingDeleteConfirmationAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete Forever", role: .destructive) {
+                performDeleteAccount()
+            }
+        } message: {
+            Text("This is your final confirmation. Your account and all associated data will be permanently deleted. This action is irreversible.")
         }
     }
 }
