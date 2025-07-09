@@ -240,6 +240,8 @@ struct ProfileHeaderView: View {
                 Text(memberSinceText)
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
