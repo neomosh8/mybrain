@@ -57,9 +57,10 @@
 		747A54B32DFDC0B400BD9541 /* ThoughtCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747A54B22DFDC0A900BD9541 /* ThoughtCard.swift */; };
 		748DF72A2E1BA15400FD4080 /* AvatarImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748DF7292E1BA15100FD4080 /* AvatarImageCache.swift */; };
 		748DF72C2E1BA17600FD4080 /* CachedAvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748DF72B2E1BA17400FD4080 /* CachedAvatarView.swift */; };
+		748E387F2E1E822E004FADCA /* PopupMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748E387E2E1E822D004FADCA /* PopupMenu.swift */; };
 		74929B2D2E0BD17F008DA6A6 /* ProfileManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74929B2C2E0BD17C008DA6A6 /* ProfileManager.swift */; };
 		7499D9082E02A652007E8C92 /* Thought+URLProcessing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7499D9072E02A64E007E8C92 /* Thought+URLProcessing.swift */; };
-		74B3FDAD2E1CD6AF00173269 /* BottomSheetPickerController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74B3FDAC2E1CD6AC00173269 /* BottomSheetPickerController.swift */; };
+		74B3FDAD2E1CD6AF00173269 /* BottomSheetPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74B3FDAC2E1CD6AC00173269 /* BottomSheetPicker.swift */; };
 		74BC7E582E000DB400A9C2F4 /* NetworkServiceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74BC7E572E000DAD00A9C2F4 /* NetworkServiceManager.swift */; };
 		74BC7E5A2E000DB900A9C2F4 /* HTTPNetworkService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74BC7E592E000DB700A9C2F4 /* HTTPNetworkService.swift */; };
 		74BC7E5C2E000DC100A9C2F4 /* WebSocketNetworkService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74BC7E5B2E000DBE00A9C2F4 /* WebSocketNetworkService.swift */; };
@@ -165,9 +166,10 @@
 		747A54B22DFDC0A900BD9541 /* ThoughtCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtCard.swift; sourceTree = "<group>"; };
 		748DF7292E1BA15100FD4080 /* AvatarImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarImageCache.swift; sourceTree = "<group>"; };
 		748DF72B2E1BA17400FD4080 /* CachedAvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CachedAvatarView.swift; sourceTree = "<group>"; };
+		748E387E2E1E822D004FADCA /* PopupMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopupMenu.swift; sourceTree = "<group>"; };
 		74929B2C2E0BD17C008DA6A6 /* ProfileManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileManager.swift; sourceTree = "<group>"; };
 		7499D9072E02A64E007E8C92 /* Thought+URLProcessing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Thought+URLProcessing.swift"; sourceTree = "<group>"; };
-		74B3FDAC2E1CD6AC00173269 /* BottomSheetPickerController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomSheetPickerController.swift; sourceTree = "<group>"; };
+		74B3FDAC2E1CD6AC00173269 /* BottomSheetPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomSheetPicker.swift; sourceTree = "<group>"; };
 		74BC7E572E000DAD00A9C2F4 /* NetworkServiceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkServiceManager.swift; sourceTree = "<group>"; };
 		74BC7E592E000DB700A9C2F4 /* HTTPNetworkService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPNetworkService.swift; sourceTree = "<group>"; };
 		74BC7E5B2E000DBE00A9C2F4 /* WebSocketNetworkService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSocketNetworkService.swift; sourceTree = "<group>"; };
@@ -638,7 +640,8 @@
 		74D58B362E15276C008B62DC /* UI */ = {
 			isa = PBXGroup;
 			children = (
-				74B3FDAC2E1CD6AC00173269 /* BottomSheetPickerController.swift */,
+				748E387E2E1E822D004FADCA /* PopupMenu.swift */,
+				74B3FDAC2E1CD6AC00173269 /* BottomSheetPicker.swift */,
 				748DF72B2E1BA17400FD4080 /* CachedAvatarView.swift */,
 				74D58B372E152776008B62DC /* CustomNavigationBar.swift */,
 			);
@@ -764,6 +767,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				748E387F2E1E822E004FADCA /* PopupMenu.swift in Sources */,
 				74BC7E6E2E000E1F00A9C2F4 /* NetworkConstants.swift in Sources */,
 				74BC7E602E000DE700A9C2F4 /* NetworkProtocols.swift in Sources */,
 				74BC7E7A2E0027DB00A9C2F4 /* GlobalServices.swift in Sources */,
@@ -808,7 +812,7 @@
 				74BC7E782E0013D500A9C2F4 /* ThoughtsAPI+Implementation.swift in Sources */,
 				74D58B382E152780008B62DC /* CustomNavigationBar.swift in Sources */,
 				74263C422DDADAE800953598 /* StreamThoughtView.swift in Sources */,
-				74B3FDAD2E1CD6AF00173269 /* BottomSheetPickerController.swift in Sources */,
+				74B3FDAD2E1CD6AF00173269 /* BottomSheetPicker.swift in Sources */,
 				74BC7E622E000DEF00A9C2F4 /* WebSocketProtocols.swift in Sources */,
 				74C2860D2DB4C32400CF836B /* GoogleAuthManager.swift in Sources */,
 				74BC7E662E000E0000A9C2F4 /* RequestModels.swift in Sources */,
