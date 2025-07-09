@@ -440,11 +440,6 @@ struct PerformanceOverviewSection: View {
                 .frame(height: 300)
                 .padding(.horizontal, 16)
                 .padding(.bottom, 8)
-            
-            
-            // Chart placeholder
-            AttentionChartView()
-                .frame(height: 200)
                 .background(
                     RoundedRectangle(cornerRadius: 16)
                         .fill(Color(.systemGray6))
@@ -478,65 +473,6 @@ struct PerformanceOverviewSection: View {
     }
 }
 
-struct AttentionChartView: View {
-    @State private var animateChart = false
-    
-    let dataPoints: [AttentionData] = [
-        AttentionData(time: "9:00", utilized: 65, usual: 45),
-        AttentionData(time: "10:00", utilized: 78, usual: 50),
-        AttentionData(time: "11:00", utilized: 82, usual: 55),
-        AttentionData(time: "12:00", utilized: 75, usual: 48),
-        AttentionData(time: "1:00", utilized: 88, usual: 60),
-        AttentionData(time: "2:00", utilized: 92, usual: 65),
-        AttentionData(time: "3:00", utilized: 85, usual: 58)
-    ]
-    
-    var body: some View {
-        Chart {
-            ForEach(dataPoints) { data in
-                LineMark(
-                    x: .value("Time", data.time),
-                    y: .value("Attention", animateChart ? data.utilized : 0)
-                )
-                .foregroundStyle(Color.blue)
-                .lineStyle(StrokeStyle(lineWidth: 3))
-                
-                LineMark(
-                    x: .value("Time", data.time),
-                    y: .value("Attention", animateChart ? data.usual : 0)
-                )
-                .foregroundStyle(Color.gray)
-                .lineStyle(StrokeStyle(lineWidth: 2))
-            }
-        }
-        .chartYScale(domain: 0...100)
-        .chartXAxis {
-            AxisMarks(values: .automatic) { _ in
-                AxisValueLabel()
-                    .font(.system(size: 10))
-            }
-        }
-        .chartYAxis {
-            AxisMarks(values: .automatic) { _ in
-                AxisValueLabel()
-                    .font(.system(size: 10))
-            }
-        }
-        .padding()
-        .onAppear {
-            withAnimation(.easeInOut(duration: 1.5)) {
-                animateChart = true
-            }
-        }
-    }
-}
-
-struct AttentionData: Identifiable {
-    let id = UUID()
-    let time: String
-    let utilized: Double
-    let usual: Double
-}
 
 struct InsightsRecommendationsSection: View {
     let insights: [InsightItem] = [
