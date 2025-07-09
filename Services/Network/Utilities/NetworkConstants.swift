@@ -27,6 +27,7 @@ struct NetworkConstants {
         static let entertainmentOptions = "/api/v1/profiles/entertainment/options/"
         static let thoughts = "/api/v1/thoughts/"
         static let createThought = "/api/v1/thoughts/create/"
+        static let deleteAccount = "/api/v1/profiles/account/delete/"
         
         static func thoughtDetail(_ id: String) -> String { "/api/v1/thoughts/\(id)/" }
         static func resetThought(_ id: String) -> String { "/api/v1/thoughts/\(id)/reset/" }
