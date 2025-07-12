@@ -45,16 +45,10 @@ struct ActionRow: View {
                 }
                 
                 Spacer()
-                
-                if !isDestructive {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.secondary)
-                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
-            .background(Color(.systemGray6))
+            .background(isDestructive ? Color.red.opacity(0.1) : Color(.systemGray6))
             .cornerRadius(12)
         }
         .buttonStyle(PlainButtonStyle())
