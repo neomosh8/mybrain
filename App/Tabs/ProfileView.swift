@@ -41,7 +41,6 @@ struct ProfileView: View {
         }
     }
     
-    
     private func performDeleteAccount() {
         authVM.deleteAccount(context: modelContext) { result in
             DispatchQueue.main.async {
@@ -56,9 +55,32 @@ struct ProfileView: View {
         }
     }
     
-    
     var body: some View {
-        ZStack {
+        PopupMenuContainer(
+            isPresented: $showMenu,
+            menuItems: [
+                PopupMenuItem(
+                    icon: "pencil",
+                    title: "Edit Profile"
+                ) {
+                    showingEditProfileSheet = true
+                },
+                PopupMenuItem(
+                    icon: "rectangle.portrait.and.arrow.right",
+                    title: "Logout",
+                    isDestructive: true
+                ) {
+                    showingLogoutAlert = true
+                },
+                PopupMenuItem(
+                    icon: "trash",
+                    title: "Delete Account",
+                    isDestructive: true
+                ) {
+                    showingDeleteAccountAlert = true
+                }
+            ]
+        ) {
             ScrollView {
                 VStack(spacing: 24) {
                     ProfileHeaderView()
@@ -90,110 +112,11 @@ struct ProfileView: View {
                     onNavigateToHome?()
                 }
             ) {
-                Button(action: {
-                    withAnimation(.easeInOut(duration: 0.25)) {
-                        showMenu.toggle()
-                    }
-                }) {
-                    Image(systemName: "ellipsis")
-                        .font(.title2)
-                        .foregroundColor(.primary)
-                        .frame(width: 40, height: 40)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Color(.systemGray6))
-                        )
-                }
-            }
-            
-            // Popup Menu
-            VStack {
-                HStack {
-                    Spacer()
-                    
-                    VStack(spacing: 0) {
-                        Button(action: {
-                            withAnimation(.easeInOut(duration: 0.2)) { showMenu = false }
-                            showingEditProfileSheet = true
-                        }) {
-                            HStack(spacing: 12) {
-                                Image(systemName: "pencil")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.primary)
-                                    .frame(width: 20)
-                                Text("Edit Profile")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.primary)
-                                Spacer()
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
-                        }
-                        
-                        Divider().padding(.horizontal, 8)
-                        
-                        Button(action: {
-                            withAnimation(.easeInOut(duration: 0.2)) { showMenu = false }
-                            showingLogoutAlert = true
-                        }) {
-                            HStack(spacing: 12) {
-                                Image(systemName: "rectangle.portrait.and.arrow.right")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.red)
-                                    .frame(width: 20)
-                                Text("Logout")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.red)
-                                Spacer()
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
-                        }
-                        
-                        Divider().padding(.horizontal, 8)
-                        
-                        Button(action: {
-                            withAnimation(.easeInOut(duration: 0.2)) { showMenu = false }
-                            showingDeleteAccountAlert = true
-                        }) {
-                            HStack(spacing: 12) {
-                                Image(systemName: "trash")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.red)
-                                    .frame(width: 20)
-                                Text("Delete Account")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.red)
-                                Spacer()
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
-                        }
-                    }
-                    .frame(width: 180)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color(.systemBackground))
-                            .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
-                    )
-                    .scaleEffect(x: 1, y: showMenu ? 1 : 0, anchor: .top)
-                    .animation(.easeInOut(duration: 0.2), value: showMenu)
-                    .padding(.trailing, 16)
-                    .padding(.top, 60)
-                }
-                Spacer()
+                PopupMenuButton(isPresented: $showMenu)
             }
         }
         .fullScreenCover(isPresented: $showingEditProfileSheet) {
             EditProfileView()
-        }
-        .onTapGesture {
-            if showMenu {
-                withAnimation {
-                    showMenu = false
-                }
-            }
         }
         .alert("Logout", isPresented: $showingLogoutAlert) {
             Button("Cancel", role: .cancel) { }
