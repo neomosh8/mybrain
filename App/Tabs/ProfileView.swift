@@ -6,18 +6,15 @@ struct ProfileView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject var authVM: AuthViewModel
     
-    @State private var showingLogoutAlert = false
-    @State private var isLoggingOut = false
-    @State private var showLogoutError = false
-    @State private var logoutErrorMessage = ""
-    
-    @State private var showMenu = false
     @State private var showingEditProfileSheet = false
-    
+    @State private var showingLogoutAlert = false
     @State private var showingDeleteAccountAlert = false
     @State private var showingDeleteConfirmationAlert = false
+    @State private var showLogoutError = false
+    @State private var logoutErrorMessage = ""
+    @State private var isLoggingOut = false
     
-    var onNavigateToHome: (() -> Void)?
+    let onNavigateToHome: (() -> Void)?
     
     init(onNavigateToHome: (() -> Void)? = nil) {
         self.onNavigateToHome = onNavigateToHome
@@ -56,63 +53,50 @@ struct ProfileView: View {
     }
     
     var body: some View {
-        PopupMenuContainer(
-            isPresented: $showMenu,
-            menuItems: [
-                PopupMenuItem(
-                    icon: "pencil",
-                    title: "Edit Profile"
-                ) {
-                    showingEditProfileSheet = true
-                },
-                PopupMenuItem(
-                    icon: "rectangle.portrait.and.arrow.right",
-                    title: "Logout",
-                    isDestructive: true
-                ) {
-                    showingLogoutAlert = true
-                },
-                PopupMenuItem(
-                    icon: "trash",
-                    title: "Delete Account",
-                    isDestructive: true
-                ) {
-                    showingDeleteAccountAlert = true
-                }
-            ]
-        ) {
-            ScrollView {
+        ScrollView {
+            VStack(spacing: 24) {
+                ProfileHeaderView()
+                
                 VStack(spacing: 24) {
-                    ProfileHeaderView()
+                    AttentionCapacityCard(
+                        currentPercentage: 78,
+                        yesterdayChange: 5,
+                        activeHours: 2.5,
+                        totalThoughts: 12
+                    )
                     
-                    VStack(spacing: 24) {
-                        AttentionCapacityCard(
-                            currentPercentage: 78,
-                            yesterdayChange: 5,
-                            activeHours: 2.5,
-                            totalThoughts: 12
-                        )
-                        
-                        PerformanceOverviewSection()
-                        
-                        InsightsRecommendationsSection()
-                        
-                        WeeklyTrendsSection()
-                        
-                        ThoughtHistorySection()
-                    }
+                    PerformanceOverviewSection()
                     
-                    Spacer(minLength: 50)
+                    InsightsRecommendationsSection()
+                    
+                    WeeklyTrendsSection()
+                    
+                    ThoughtHistorySection()
+                    
+                    dangerZoneSection
                 }
-                .padding(.horizontal, 16)
+                
+                Spacer(minLength: 70)
             }
-            .customNavigationBar(
-                title: "Profile",
-                onBackTap: {
-                    onNavigateToHome?()
-                }
-            ) {
-                PopupMenuButton(isPresented: $showMenu)
+            .padding(.horizontal, 16)
+        }
+        .customNavigationBar(
+            title: "Profile",
+            onBackTap: {
+                onNavigateToHome?()
+            }
+        ) {
+            Button(action: {
+                showingEditProfileSheet = true
+            }) {
+                Image(systemName: "pencil")
+                    .font(.title2)
+                    .foregroundColor(.primary)
+                    .frame(width: 40, height: 40)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color(.systemGray6))
+                    )
             }
         }
         .fullScreenCover(isPresented: $showingEditProfileSheet) {
@@ -147,6 +131,40 @@ struct ProfileView: View {
         } message: {
             Text("This is your final confirmation. Your account and all associated data will be permanently deleted. This action is irreversible.")
         }
+    }
+    
+    // MARK: - Danger Zone Section
+    private var dangerZoneSection: some View {
+        VStack(spacing: 12) {
+            ActionRow(
+                icon: "rectangle.portrait.and.arrow.right",
+                title: "Logout",
+                subtitle: "Sign out of your account",
+                iconColor: .red,
+                isDestructive: true
+            ) {
+                showingLogoutAlert = true
+            }
+            
+            ActionRow(
+                icon: "trash",
+                title: "Delete Account",
+                subtitle: "Permanently delete your account",
+                iconColor: .red,
+                isDestructive: true
+            ) {
+                showingDeleteAccountAlert = true
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.red.opacity(0.05))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.red.opacity(0.2), lineWidth: 1)
+                )
+        )
     }
 }
 
