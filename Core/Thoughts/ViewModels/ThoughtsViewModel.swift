@@ -58,10 +58,6 @@ class ThoughtsViewModel: ObservableObject {
             .store(in: &cancellables)
     }
     
-    func refreshData() {
-        fetchThoughts()
-    }
-    
     // MARK: - WebSocket Methods (for other features that still use WebSocket)
     
     func observeConnectionState(onStateChange: @escaping (WebSocketConnectionState) -> Void) -> AnyCancellable {
