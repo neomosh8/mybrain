@@ -59,7 +59,7 @@ struct HomeView: View {
                                 LoadingThoughtsView()
                             } else if let errorMessage = thoughtsViewModel.errorMessage, thoughtsViewModel.thoughts.isEmpty {
                                 ErrorThoughtsView(message: errorMessage) {
-                                    thoughtsViewModel.refreshData()
+                                    thoughtsViewModel.fetchThoughts()
                                 }
                             } else {
                                 VStack(spacing: 12) {
@@ -145,7 +145,7 @@ struct HomeView: View {
             if !AppStateManager.shared.hasShownHomeIntro {
                 AppStateManager.shared.hasShownHomeIntro = true
                 
-                thoughtsViewModel.refreshData()
+                thoughtsViewModel.fetchThoughts()
                 
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                     hideDeviceCardWithAnimation()
@@ -167,7 +167,7 @@ struct HomeView: View {
             }
         }
         .refreshable {
-            thoughtsViewModel.refreshData()
+            thoughtsViewModel.fetchThoughts()
         }
     }
     
