@@ -60,6 +60,7 @@
 		748E387F2E1E822E004FADCA /* PopupMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748E387E2E1E822D004FADCA /* PopupMenu.swift */; };
 		74929B2D2E0BD17F008DA6A6 /* ProfileManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74929B2C2E0BD17C008DA6A6 /* ProfileManager.swift */; };
 		7499D9082E02A652007E8C92 /* Thought+URLProcessing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7499D9072E02A64E007E8C92 /* Thought+URLProcessing.swift */; };
+		74AA48072E221C3700B6D017 /* ActionRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74AA48062E221C3600B6D017 /* ActionRow.swift */; };
 		74B3FDAD2E1CD6AF00173269 /* BottomSheetPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74B3FDAC2E1CD6AC00173269 /* BottomSheetPicker.swift */; };
 		74BC7E582E000DB400A9C2F4 /* NetworkServiceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74BC7E572E000DAD00A9C2F4 /* NetworkServiceManager.swift */; };
 		74BC7E5A2E000DB900A9C2F4 /* HTTPNetworkService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74BC7E592E000DB700A9C2F4 /* HTTPNetworkService.swift */; };
@@ -169,6 +170,7 @@
 		748E387E2E1E822D004FADCA /* PopupMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopupMenu.swift; sourceTree = "<group>"; };
 		74929B2C2E0BD17C008DA6A6 /* ProfileManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileManager.swift; sourceTree = "<group>"; };
 		7499D9072E02A64E007E8C92 /* Thought+URLProcessing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Thought+URLProcessing.swift"; sourceTree = "<group>"; };
+		74AA48062E221C3600B6D017 /* ActionRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionRow.swift; sourceTree = "<group>"; };
 		74B3FDAC2E1CD6AC00173269 /* BottomSheetPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomSheetPicker.swift; sourceTree = "<group>"; };
 		74BC7E572E000DAD00A9C2F4 /* NetworkServiceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkServiceManager.swift; sourceTree = "<group>"; };
 		74BC7E592E000DB700A9C2F4 /* HTTPNetworkService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPNetworkService.swift; sourceTree = "<group>"; };
@@ -640,6 +642,7 @@
 		74D58B362E15276C008B62DC /* UI */ = {
 			isa = PBXGroup;
 			children = (
+				74AA48062E221C3600B6D017 /* ActionRow.swift */,
 				748E387E2E1E822D004FADCA /* PopupMenu.swift */,
 				74B3FDAC2E1CD6AC00173269 /* BottomSheetPicker.swift */,
 				748DF72B2E1BA17400FD4080 /* CachedAvatarView.swift */,
@@ -767,6 +770,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				74AA48072E221C3700B6D017 /* ActionRow.swift in Sources */,
 				748E387F2E1E822E004FADCA /* PopupMenu.swift in Sources */,
 				74BC7E6E2E000E1F00A9C2F4 /* NetworkConstants.swift in Sources */,
 				74BC7E602E000DE700A9C2F4 /* NetworkProtocols.swift in Sources */,
