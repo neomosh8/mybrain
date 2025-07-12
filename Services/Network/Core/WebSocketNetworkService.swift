@@ -160,15 +160,49 @@ final class WebSocketNetworkService: WebSocketAPI {
     
     private func handleIncomingMessage(_ text: String) {
         guard let data = text.data(using: .utf8),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let action = json["action"] as? String,
-              let messageData = json["data"] as? [String: Any] else {
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            print("Failed to parse WebSocket message JSON")
             return
         }
         
-        let message = WebSocketMessage.response(action: action, data: messageData)
-        messageSubject.send(message)
+        guard let messageType = json["type"] as? String,
+              let status = json["status"] as? String,
+              let message = json["message"] as? String,
+              let messageData = json["data"] as? [String: Any] else {
+            print("Invalid WebSocket message format: \(json)")
+            return
+        }
+        
+        print("Received WebSocket message - Type: \(messageType), Status: \(status), Message: \(message)")
+        
+        let webSocketMessage: WebSocketMessage
+        
+        switch messageType {
+        case "connection_response":
+            webSocketMessage = .response(action: "connection", data: messageData)
+        case "thoughts_list":
+            webSocketMessage = .response(action: "list_thoughts", data: messageData)
+        case "next_chapter_response":
+            webSocketMessage = .response(action: "next_chapter", data: messageData)
+        case "streaming_links_response":
+            webSocketMessage = .response(action: "streaming_links", data: messageData)
+        case "thought_chapters_response":
+            webSocketMessage = .response(action: "thought_chapters", data: messageData)
+        case "thought_update":
+            webSocketMessage = .response(action: "thought_update", data: messageData)
+        case "error":
+            webSocketMessage = .response(action: "error", data: [
+                "status": status,
+                "message": message,
+                "details": messageData
+            ])
+        default:
+            webSocketMessage = .response(action: messageType, data: messageData)
+        }
+        
+        messageSubject.send(webSocketMessage)
     }
+
     
     private func setupPingTimer() {
         pingTimer = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: true) { [weak self] _ in
