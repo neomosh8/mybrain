@@ -141,7 +141,6 @@ struct ProfileView: View {
                 title: "Logout",
                 subtitle: "Sign out of your account",
                 iconColor: .red,
-                isDestructive: true
             ) {
                 showingLogoutAlert = true
             }
@@ -156,15 +155,6 @@ struct ProfileView: View {
                 showingDeleteAccountAlert = true
             }
         }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.red.opacity(0.05))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.red.opacity(0.2), lineWidth: 1)
-                )
-        )
     }
 }
 
