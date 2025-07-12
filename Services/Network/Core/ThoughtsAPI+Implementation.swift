@@ -52,16 +52,13 @@ extension HTTPNetworkService: ThoughtsAPI {
         contentType: String,
         fileName: String
     ) -> AnyPublisher<NetworkResult<ThoughtCreationResponse>, Never> {
-        // Create multipart form data
         let boundary = UUID().uuidString
         var body = Data()
         
-        // Add content_type field
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
         body.append("Content-Disposition: form-data; name=\"content_type\"\r\n\r\n".data(using: .utf8)!)
         body.append("\(contentType)\r\n".data(using: .utf8)!)
         
-        // Add file field
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
         body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(fileName)\"\r\n".data(using: .utf8)!)
         body.append("Content-Type: application/octet-stream\r\n\r\n".data(using: .utf8)!)
