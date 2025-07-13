@@ -10,8 +10,7 @@ struct TestSignalView: View {
     @State private var startTime: Date?
     @State private var recordingDuration: TimeInterval = 0
     @State private var timer: Timer?
-    private var fftTimer = Timer.publish(every: 0.5, on: .main, in: .common)
-    @State private var fftCancellable: AnyCancellable?
+    private let fftTimer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
     @State private var normalized = true
     @State private var selectedChannel = 0 // 0 = both, 1 = channel1, 2 = channel2
     @State private var useTestSignal = true // Toggle between test signal and normal mode
@@ -179,6 +178,11 @@ struct TestSignalView: View {
         }
         .onChange(of: selectedChannel) { _ in
             computeFFT()
+        }
+        .onReceive(fftTimer) { _ in
+            if isRecording {
+                computeFFT()
+            }
         }
     }
     
@@ -438,13 +442,8 @@ struct TestSignalView: View {
             recordingDuration = Date().timeIntervalSince(startTime)
         }
 
-        // Start FFT updates
-        fftCancellable = fftTimer
-            .autoconnect()
-            .sink { _ in
-                computeFFT()
-            }
-        computeFFT() // initial FFT
+        // Initial FFT calculation
+        computeFFT()
         
         // Start recording with current mode settings
         bluetoothService.startRecording(
@@ -457,8 +456,6 @@ struct TestSignalView: View {
         isRecording = false
         timer?.invalidate()
         timer = nil
-        fftCancellable?.cancel()
-        fftCancellable = nil
 
         // Stop recording
         bluetoothService.stopRecording()
