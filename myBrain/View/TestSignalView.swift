@@ -19,7 +19,7 @@ struct TestSignalView: View {
 
     @State private var psdData: [Double] = [] // FFT data
 
-    init(bluetoothService: BluetoothService) {
+    public init(bluetoothService: BluetoothService) {
         self.bluetoothService = bluetoothService
     }
     var body: some View {
@@ -481,7 +481,14 @@ struct TestSignalView: View {
             let count = min(bluetoothService.eegChannel1.count, bluetoothService.eegChannel2.count)
             let ch1Segment = bluetoothService.eegChannel1.suffix(count)
             let ch2Segment = bluetoothService.eegChannel2.suffix(count)
-            source = zip(ch1Segment, ch2Segment).map { ($0 + $1) / 2 }
+            source = zip(ch1Segment, ch2Segment).compactMap { val1, val2 in
+                let sum = Int64(val1) + Int64(val2)
+                let average = sum / 2
+                guard average >= Int64(Int32.min), average <= Int64(Int32.max) else {
+                    return nil
+                }
+                return Int32(average)
+            }
         }
 
         guard source.count >= 256 else {
@@ -500,68 +507,74 @@ struct WaveformView: View {
     let dataPoints: [Int32]
     let normalized: Bool
     let color: Color
-    
+
     var body: some View {
         GeometryReader { geo in
             Canvas { context, size in
                 guard !dataPoints.isEmpty else { return }
-                
+
                 let width = size.width
                 let height = size.height
-                
+
                 var path = Path()
-                
+
+                // Convert to Double to avoid overflow when dealing with large Int32 values
+                let doubleDataPoints = dataPoints.map { Double($0) }
+
                 if normalized {
                     // Find min and max for normalization
-                    let minValue = CGFloat(dataPoints.min() ?? 0)
-                    let maxValue = CGFloat(dataPoints.max() ?? 1)
+                    let minValue = doubleDataPoints.min() ?? 0.0
+                    let maxValue = doubleDataPoints.max() ?? 1.0
                     let range = maxValue - minValue
-                    
+
                     // Avoid division by zero
                     let scaleFactor = range != 0 ? 1.0 / range : 1.0
-                    
+
                     // Scale to 80% of height with 10% padding top and bottom
                     let heightPadding = height * 0.1
                     let drawingHeight = height - (2 * heightPadding)
-                    
+
                     // Calculate step size for x-axis
-                    let step = width / CGFloat(dataPoints.count - 1)
-                    
+                    let step = width / CGFloat(doubleDataPoints.count - 1)
+
                     // Start path at first point
-                    let y1 = height - heightPadding - (CGFloat(dataPoints[0]) - minValue) * scaleFactor * drawingHeight
+                    let normalizedY1 = (doubleDataPoints[0] - minValue) * scaleFactor
+                    let y1 = height - heightPadding - CGFloat(normalizedY1) * drawingHeight
                     path.move(to: CGPoint(x: 0, y: y1))
-                    
+
                     // Add lines to all other points
-                    for i in 1..<dataPoints.count {
+                    for i in 1..<doubleDataPoints.count {
                         let x = step * CGFloat(i)
-                        let normalizedValue = (CGFloat(dataPoints[i]) - minValue) * scaleFactor
-                        let y = height - heightPadding - (normalizedValue * drawingHeight)
+                        let normalizedValue = (doubleDataPoints[i] - minValue) * scaleFactor
+                        let y = height - heightPadding - CGFloat(normalizedValue) * drawingHeight
                         path.addLine(to: CGPoint(x: x, y: y))
                     }
                 } else {
                     // Raw values - use a simple auto-scaling approach
-                    let minValue = CGFloat(dataPoints.min() ?? 0)
-                    let maxValue = CGFloat(dataPoints.max() ?? 1)
+                    let minValue = doubleDataPoints.min() ?? 0.0
+                    let maxValue = doubleDataPoints.max() ?? 1.0
                     let range = maxValue - minValue
-                    
+
                     // Avoid division by zero with fallback
-                    let scaleFactor = range != 0 ? height / range : 1.0
-                    
+                    let scaleFactor = range != 0 ? Double(height) / range : 1.0
+
                     // Calculate step size for x-axis
-                    let step = width / CGFloat(dataPoints.count - 1)
-                    
+                    let step = width / CGFloat(doubleDataPoints.count - 1)
+
                     // Start path at first point
-                    let y1 = height - ((CGFloat(dataPoints[0]) - minValue) * scaleFactor)
+                    let scaledY1 = (doubleDataPoints[0] - minValue) * scaleFactor
+                    let y1 = height - CGFloat(scaledY1)
                     path.move(to: CGPoint(x: 0, y: y1))
-                    
+
                     // Add lines to all other points
-                    for i in 1..<dataPoints.count {
+                    for i in 1..<doubleDataPoints.count {
                         let x = step * CGFloat(i)
-                        let y = height - ((CGFloat(dataPoints[i]) - minValue) * scaleFactor)
+                        let scaledY = (doubleDataPoints[i] - minValue) * scaleFactor
+                        let y = height - CGFloat(scaledY)
                         path.addLine(to: CGPoint(x: x, y: y))
                     }
                 }
-                
+
                 // Draw the path
                 context.stroke(
                     path,
