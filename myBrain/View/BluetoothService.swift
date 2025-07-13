@@ -443,14 +443,10 @@ class BluetoothService: NSObject, ObservableObject {
                 self.eegChannel1.append(contentsOf: channel1Samples)
                 self.eegChannel2.append(contentsOf: channel2Samples)
                 
-                // Limit total points to prevent memory issues
-                let maxStoredSamples = 2000
-                if self.eegChannel1.count > maxStoredSamples {
-                    self.eegChannel1.removeFirst(self.eegChannel1.count - maxStoredSamples)
-                }
-                if self.eegChannel2.count > maxStoredSamples {
-                    self.eegChannel2.removeFirst(self.eegChannel2.count - maxStoredSamples)
-                }
+
+                // Previously we limited stored samples to the last 2000 points
+                // which truncated longer recordings when exporting.
+                // Remove this cap so we preserve all recorded data for export.
                 
                 print("Updated EEG channels: CH1=\(self.eegChannel1.count), CH2=\(self.eegChannel2.count)")
             }
