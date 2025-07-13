@@ -451,7 +451,7 @@ struct TestSignalView: View {
             stopRecording()
         }
     }
-}
+
     private func computeFFT() {
         let data: [Int32]
         switch selectedChannel {
@@ -464,6 +464,7 @@ struct TestSignalView: View {
         }
         psdData = SignalProcessing.welchPowerSpectrum(data: data, sampleRate: 250.0, maxFrequency: 100.0)
     }
+}
 
 
 // MARK: - Waveform View for Signal Display
