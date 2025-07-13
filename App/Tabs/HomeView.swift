@@ -121,12 +121,12 @@ struct HomeView: View {
             }
         }
         .navigationDestination(item: $selectedThought) { thought in
-            switch selectedMode {
-            case .reading:
-                ThoughtDetailView(thought: thought)
-            case .listening:
-                StreamThoughtView(thought: thought)
-            }
+//            switch selectedMode {
+//            case .reading:
+                ReadingContainerView(thought: thought)
+//            case .listening:
+//                StreamThoughtView(thought: thought)
+//            }
         }
         .onAppear {
             if bluetoothService.isConnected {
