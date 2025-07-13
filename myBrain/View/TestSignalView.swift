@@ -14,6 +14,7 @@ struct TestSignalView: View {
     @State private var useTestSignal = true // Toggle between test signal and normal mode
     @State private var enableLeadOffDetection = false // Toggle for lead-off detection
     
+    @State private var psdData: [Double] = [] // FFT data
     var body: some View {
         VStack(spacing: 16) {
             // Header
@@ -42,111 +43,12 @@ struct TestSignalView: View {
             .padding(.horizontal)
             
             // Signal plot
-            ZStack {
-                // Background
-                Rectangle()
-                    .fill(Color.black.opacity(0.05))
-                    .cornerRadius(8)
-                
-                if bluetoothService.eegChannel1.isEmpty && bluetoothService.eegChannel2.isEmpty {
-                    if isRecording {
-                        ProgressView("Waiting for data...")
-                    } else {
-                        Text("No signal data - Press Start Recording")
-                            .foregroundColor(.gray)
-                    }
-                } else {
-                    VStack {
-                        // Status bar with channel and mode info
-                        HStack {
-                            if selectedChannel == 0 {
-                                Text("Ch 1 & 2")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            } else if selectedChannel == 1 {
-                                Text("Ch 1")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            } else {
-                                Text("Ch 2")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                            Spacer()
-                            
-                            // Mode indicators
-                            HStack(spacing: 4) {
-                                if useTestSignal {
-                                    Text("Test Signal")
-                                        .font(.caption)
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 6)
-                                        .padding(.vertical, 2)
-                                        .background(Color.blue.opacity(0.7))
-                                        .cornerRadius(4)
-                                }
-                                
-                                if bluetoothService.isLeadOffDetectionEnabled {
-                                    Text("Lead-Off")
-                                        .font(.caption)
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 6)
-                                        .padding(.vertical, 2)
-                                        .background(Color.orange.opacity(0.7))
-                                        .cornerRadius(4)
-                                }
-                                
-                                if !useTestSignal && !bluetoothService.isLeadOffDetectionEnabled {
-                                    Text("Normal Mode")
-                                        .font(.caption)
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 6)
-                                        .padding(.vertical, 2)
-                                        .background(Color.green.opacity(0.7))
-                                        .cornerRadius(4)
-                                }
-                            }
-                        }
-                        .padding(.leading, 12)
-                        .padding(.trailing, 12)
-                        .padding(.top, 4)
-                        
-                        // Channel waveforms
-                        if selectedChannel == 0 {
-                            // Both channels
-                            ZStack {
-                                // Channel 1 (blue)
-                                WaveformView(
-                                    dataPoints: bluetoothService.eegChannel1,
-                                    normalized: normalized,
-                                    color: .blue
-                                )
-                                
-                                // Channel 2 (green)
-                                WaveformView(
-                                    dataPoints: bluetoothService.eegChannel2,
-                                    normalized: normalized,
-                                    color: .green
-                                )
-                            }
-                        } else if selectedChannel == 1 {
-                            // Only Channel 1
-                            WaveformView(
-                                dataPoints: bluetoothService.eegChannel1,
-                                normalized: normalized,
-                                color: .blue
-                            )
-                        } else {
-                            // Only Channel 2
-                            WaveformView(
-                                dataPoints: bluetoothService.eegChannel2,
-                                normalized: normalized,
-                                color: .green
-                            )
-                        }
-                    }
-                    .padding(8)
-                }
+            TabView {
+                signalPlot
+                    .tabItem { Label("Signal", systemImage: "waveform.path.ecg") }
+
+                fftPlot
+                    .tabItem { Label("FFT", systemImage: "chart.bar") }
             }
             .frame(height: 260)
             .padding(.horizontal)
@@ -388,6 +290,125 @@ struct TestSignalView: View {
             return .red
         }
     }
+
+    // MARK: - Plot Components
+
+    private var signalPlot: some View {
+        ZStack {
+            Rectangle()
+                .fill(Color.black.opacity(0.05))
+                .cornerRadius(8)
+
+            if bluetoothService.eegChannel1.isEmpty && bluetoothService.eegChannel2.isEmpty {
+                if isRecording {
+                    ProgressView("Waiting for data...")
+                } else {
+                    Text("No signal data - Press Start Recording")
+                        .foregroundColor(.gray)
+                }
+            } else {
+                VStack {
+                    HStack {
+                        if selectedChannel == 0 {
+                            Text("Ch 1 & 2")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        } else if selectedChannel == 1 {
+                            Text("Ch 1")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        } else {
+                            Text("Ch 2")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        Spacer()
+
+                        HStack(spacing: 4) {
+                            if useTestSignal {
+                                Text("Test Signal")
+                                    .font(.caption)
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Color.blue.opacity(0.7))
+                                    .cornerRadius(4)
+                            }
+
+                            if bluetoothService.isLeadOffDetectionEnabled {
+                                Text("Lead-Off")
+                                    .font(.caption)
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Color.orange.opacity(0.7))
+                                    .cornerRadius(4)
+                            }
+
+                            if !useTestSignal && !bluetoothService.isLeadOffDetectionEnabled {
+                                Text("Normal Mode")
+                                    .font(.caption)
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Color.green.opacity(0.7))
+                                    .cornerRadius(4)
+                            }
+                        }
+                    }
+                    .padding(.leading, 12)
+                    .padding(.trailing, 12)
+                    .padding(.top, 4)
+
+                    if selectedChannel == 0 {
+                        ZStack {
+                            WaveformView(
+                                dataPoints: bluetoothService.eegChannel1,
+                                normalized: normalized,
+                                color: .blue
+                            )
+                            WaveformView(
+                                dataPoints: bluetoothService.eegChannel2,
+                                normalized: normalized,
+                                color: .green
+                            )
+                        }
+                    } else if selectedChannel == 1 {
+                        WaveformView(
+                            dataPoints: bluetoothService.eegChannel1,
+                            normalized: normalized,
+                            color: .blue
+                        )
+                    } else {
+                        WaveformView(
+                            dataPoints: bluetoothService.eegChannel2,
+                            normalized: normalized,
+                            color: .green
+                        )
+                    }
+                }
+                .padding(8)
+            }
+        }
+    }
+
+    private var fftPlot: some View {
+        ZStack {
+            Rectangle()
+                .fill(Color.black.opacity(0.05))
+                .cornerRadius(8)
+
+            if psdData.isEmpty {
+                Button("Compute FFT") {
+                    computeFFT()
+                }
+                .padding()
+            } else {
+                SpectrumView(psd: psdData)
+                    .padding(8)
+            }
+        }
+    }
     
     // MARK: - Recording Control Methods
     
@@ -431,6 +452,19 @@ struct TestSignalView: View {
         }
     }
 }
+    private func computeFFT() {
+        let data: [Int32]
+        switch selectedChannel {
+        case 1:
+            data = bluetoothService.eegChannel1
+        case 2:
+            data = bluetoothService.eegChannel2
+        default:
+            data = bluetoothService.eegChannel1
+        }
+        psdData = SignalProcessing.welchPowerSpectrum(data: data, sampleRate: 250.0, maxFrequency: 100.0)
+    }
+
 
 // MARK: - Waveform View for Signal Display
 
