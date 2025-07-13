@@ -479,7 +479,9 @@ struct TestSignalView: View {
             source = bluetoothService.eegChannel2
         default:
             let count = min(bluetoothService.eegChannel1.count, bluetoothService.eegChannel2.count)
-            source = zip(bluetoothService.eegChannel1.prefix(count), bluetoothService.eegChannel2.prefix(count)).map { ($0 + $1) / 2 }
+            let ch1Segment = bluetoothService.eegChannel1.suffix(count)
+            let ch2Segment = bluetoothService.eegChannel2.suffix(count)
+            source = zip(ch1Segment, ch2Segment).map { ($0 + $1) / 2 }
         }
 
         guard source.count >= 256 else {
