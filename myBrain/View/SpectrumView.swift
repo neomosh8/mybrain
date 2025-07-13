@@ -2,13 +2,13 @@ import SwiftUI
 
 struct SpectrumView: View {
     let psd: [Double]
-    var yLimit: Double = 100.0
+    var yLimit: Double? = nil
 
     var body: some View {
         GeometryReader { geo in
             Canvas { context, size in
                 guard psd.count > 1 else { return }
-                let maxVal = yLimit
+                let maxVal = yLimit ?? (psd.max() ?? 1)
                 let stepX = size.width / CGFloat(psd.count - 1)
                 var path = Path()
                 for i in 0..<psd.count {

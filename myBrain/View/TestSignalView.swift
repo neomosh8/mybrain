@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 struct TestSignalView: View {
     @ObservedObject var bluetoothService: BluetoothService
@@ -9,7 +10,8 @@ struct TestSignalView: View {
     @State private var startTime: Date?
     @State private var recordingDuration: TimeInterval = 0
     @State private var timer: Timer?
-    @State private var fftTimer: Timer?
+    private var fftTimer = Timer.publish(every: 0.5, on: .main, in: .common)
+    @State private var fftCancellable: AnyCancellable?
     @State private var normalized = true
     @State private var selectedChannel = 0 // 0 = both, 1 = channel1, 2 = channel2
     @State private var useTestSignal = true // Toggle between test signal and normal mode
@@ -170,6 +172,9 @@ struct TestSignalView: View {
         }
         .onDisappear {
             stopRecordingIfNeeded()
+        }
+        .onChange(of: selectedChannel) { _ in
+            computeFFT()
         }
     }
     
@@ -403,7 +408,7 @@ struct TestSignalView: View {
                 Text("Waiting for FFT data...")
                     .foregroundColor(.gray)
             } else {
-                SpectrumView(psd: psdData, yLimit: 100)
+                SpectrumView(psd: psdData)
                     .padding(8)
             }
         }
@@ -429,15 +434,12 @@ struct TestSignalView: View {
             recordingDuration = Date().timeIntervalSince(startTime)
         }
 
-        // Start FFT updates on the main run loop
-        fftTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
-            DispatchQueue.main.async {
+        // Start FFT updates
+        fftCancellable = fftTimer
+            .autoconnect()
+            .sink { _ in
                 computeFFT()
             }
-        }
-        if let fftTimer = fftTimer {
-            RunLoop.main.add(fftTimer, forMode: .common)
-        }
         computeFFT() // initial FFT
         
         // Start recording with current mode settings
@@ -451,8 +453,8 @@ struct TestSignalView: View {
         isRecording = false
         timer?.invalidate()
         timer = nil
-        fftTimer?.invalidate()
-        fftTimer = nil
+        fftCancellable?.cancel()
+        fftCancellable = nil
 
         // Stop recording
         bluetoothService.stopRecording()
@@ -472,7 +474,8 @@ struct TestSignalView: View {
         case 2:
             source = bluetoothService.eegChannel2
         default:
-            source = bluetoothService.eegChannel1
+            let count = min(bluetoothService.eegChannel1.count, bluetoothService.eegChannel2.count)
+            source = zip(bluetoothService.eegChannel1.prefix(count), bluetoothService.eegChannel2.prefix(count)).map { ($0 + $1) / 2 }
         }
 
         guard source.count >= 256 else {
