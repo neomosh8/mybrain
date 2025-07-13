@@ -313,14 +313,13 @@ class BluetoothService: NSObject, ObservableObject {
                 self?.peripheral?.setNotifyValue(false, for: notifyCharacteristic)
             }
             
-            // Clear data and reset flags after everything is stopped
+            // Reset flags after everything is stopped
             DispatchQueue.main.async {
-                self?.eegChannel1 = []
-                self?.eegChannel2 = []
                 self?.isInNormalMode = false
                 self?.isLeadOffDetectionEnabled = false
                 self?.ch1ConnectionStatus = (false, 0.0)
                 self?.ch2ConnectionStatus = (false, 0.0)
+                // Don't clear EEG data here so it can be exported after recording
             }
         }
     }

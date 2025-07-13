@@ -18,7 +18,7 @@ struct TestSignalView: View {
 
     @State private var psdData: [Double] = [] // FFT data
     @State private var showShareSheet = false
-    @State private var exportText = ""
+    @State private var exportUrl: URL?
 
     public init(bluetoothService: BluetoothService) {
         self.bluetoothService = bluetoothService
@@ -82,8 +82,8 @@ struct TestSignalView: View {
                 }
 
                 Button(action: {
-                    exportText = exportSignalText()
-                    showShareSheet = true
+                    exportUrl = exportSignalFile()
+                    showShareSheet = exportUrl != nil
                 }) {
                     HStack {
                         Image(systemName: "square.and.arrow.up")
@@ -203,7 +203,9 @@ struct TestSignalView: View {
             }
         }
         .sheet(isPresented: $showShareSheet) {
-            ActivityView(activityItems: [exportText])
+            if let url = exportUrl {
+                ActivityView(activityItems: [url])
+            }
         }
     }
     
@@ -529,6 +531,21 @@ struct TestSignalView: View {
             lines.append("\(ch1),\(ch2)")
         }
         return lines.joined(separator: "\n")
+    }
+
+    private func exportSignalFile() -> URL? {
+        let text = exportSignalText()
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMdd_HHmmss"
+        let fileName = "eeg_\(formatter.string(from: Date())).csv"
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+        do {
+            try text.write(to: url, atomically: true, encoding: .utf8)
+            return url
+        } catch {
+            print("Failed to write export file: \(error)")
+            return nil
+        }
     }
 }
 
