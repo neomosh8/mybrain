@@ -17,6 +17,8 @@ struct TestSignalView: View {
     @State private var enableLeadOffDetection = false // Toggle for lead-off detection
 
     @State private var psdData: [Double] = [] // FFT data
+    @State private var showShareSheet = false
+    @State private var exportText = ""
 
     public init(bluetoothService: BluetoothService) {
         self.bluetoothService = bluetoothService
@@ -76,6 +78,22 @@ struct TestSignalView: View {
                     .padding()
                     .frame(minWidth: 200)
                     .background(isRecording ? Color.red : Color.green)
+                    .cornerRadius(10)
+                }
+
+                Button(action: {
+                    exportText = exportSignalText()
+                    showShareSheet = true
+                }) {
+                    HStack {
+                        Image(systemName: "square.and.arrow.up")
+                        Text("Share Data")
+                    }
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .padding()
+                    .frame(minWidth: 150)
+                    .background(Color.blue)
                     .cornerRadius(10)
                 }
             }
@@ -183,6 +201,9 @@ struct TestSignalView: View {
             if isRecording {
                 computeFFT()
             }
+        }
+        .sheet(isPresented: $showShareSheet) {
+            ActivityView(activityItems: [exportText])
         }
     }
     
@@ -497,6 +518,17 @@ struct TestSignalView: View {
         }
         let window = Array(source.suffix(256))
         psdData = SignalProcessing.welchPowerSpectrum(data: window, sampleRate: 250.0, maxFrequency: 100.0)
+    }
+
+    private func exportSignalText() -> String {
+        let count = max(bluetoothService.eegChannel1.count, bluetoothService.eegChannel2.count)
+        var lines: [String] = ["ch1,ch2"]
+        for i in 0..<count {
+            let ch1 = i < bluetoothService.eegChannel1.count ? bluetoothService.eegChannel1[i] : 0
+            let ch2 = i < bluetoothService.eegChannel2.count ? bluetoothService.eegChannel2[i] : 0
+            lines.append("\(ch1),\(ch2)")
+        }
+        return lines.joined(separator: "\n")
     }
 }
 
