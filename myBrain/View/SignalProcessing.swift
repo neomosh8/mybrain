@@ -335,3 +335,41 @@ class SignalProcessing {
         return sqrt(variance)
     }
 }
+
+extension SignalProcessing {
+    static func welchPowerSpectrum(data: [Int32], sampleRate: Double, maxFrequency: Double = 100.0) -> [Double] {
+        let doubleData = data.map { Double($0) }
+        let windowSize = 256
+        let overlap = 0.5
+        guard doubleData.count >= windowSize else { return [] }
+        let step = Int(Double(windowSize) * (1.0 - overlap))
+        let log2n = vDSP_Length(log2(Double(windowSize)))
+        let window = vDSP.window(ofType: Double.self,
+                                 usingSequence: .hanningDenormalized,
+                                 count: windowSize,
+                                 isHalfWindow: false)
+        var accumulated = [Double](repeating: 0.0, count: windowSize / 2)
+        var segmentCount = 0
+        var real = [Double](repeating: 0.0, count: windowSize)
+        var imag = [Double](repeating: 0.0, count: windowSize)
+        for start in stride(from: 0, through: doubleData.count - windowSize, by: step) {
+            let segment = Array(doubleData[start..<start+windowSize])
+            vDSP_vmulD(segment, 1, window, 1, &real, 1, vDSP_Length(windowSize))
+            imag = [Double](repeating: 0.0, count: windowSize)
+            var split = DSPDoubleSplitComplex(realp: &real, imagp: &imag)
+            guard let setup = vDSP_create_fftsetupD(log2n, FFTRadix(kFFTRadix2)) else { continue }
+            vDSP_fft_zripD(setup, &split, 1, log2n, FFTDirection(FFT_FORWARD))
+            var mags = [Double](repeating: 0.0, count: windowSize/2)
+            vDSP_zvmagsD(&split, 1, &mags, 1, vDSP_Length(windowSize/2))
+            vDSP_destroy_fftsetupD(setup)
+            vDSP_vaddD(mags, 1, accumulated, 1, &accumulated, 1, vDSP_Length(windowSize/2))
+            segmentCount += 1
+        }
+        guard segmentCount > 0 else { return [] }
+        var scale = 1.0 / Double(segmentCount)
+        vDSP_vsmulD(accumulated, 1, &scale, &accumulated, 1, vDSP_Length(accumulated.count))
+        let freqResolution = sampleRate / Double(windowSize)
+        let maxIndex = min(accumulated.count - 1, Int(maxFrequency / freqResolution))
+        return Array(accumulated[0...maxIndex])
+    }
+}
