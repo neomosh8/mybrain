@@ -10,7 +10,7 @@ struct TestSignalView: View {
     @State private var startTime: Date?
     @State private var recordingDuration: TimeInterval = 0
     @State private var timer: Timer?
-    private let fftTimer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
+    @State private var fftTimer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
     @State private var normalized = true
     @State private var selectedChannel = 0 // 0 = both, 1 = channel1, 2 = channel2
     @State private var useTestSignal = true // Toggle between test signal and normal mode
@@ -475,16 +475,19 @@ struct TestSignalView: View {
         case 2:
             source = bluetoothService.eegChannel2
         default:
-            let count = min(bluetoothService.eegChannel1.count, bluetoothService.eegChannel2.count)
-            let ch1Segment = bluetoothService.eegChannel1.suffix(count)
-            let ch2Segment = bluetoothService.eegChannel2.suffix(count)
-            source = zip(ch1Segment, ch2Segment).compactMap { val1, val2 in
-                let sum = Int64(val1) + Int64(val2)
-                let average = sum / 2
-                guard average >= Int64(Int32.min), average <= Int64(Int32.max) else {
-                    return nil
+            if bluetoothService.eegChannel1.isEmpty {
+                source = bluetoothService.eegChannel2
+            } else if bluetoothService.eegChannel2.isEmpty {
+                source = bluetoothService.eegChannel1
+            } else {
+                let count = min(bluetoothService.eegChannel1.count, bluetoothService.eegChannel2.count)
+                let ch1Segment = bluetoothService.eegChannel1.suffix(count)
+                let ch2Segment = bluetoothService.eegChannel2.suffix(count)
+                source = zip(ch1Segment, ch2Segment).map { val1, val2 in
+                    let sum = Int64(val1) + Int64(val2)
+                    let average = sum / 2
+                    return Int32(clamping: average)
                 }
-                return Int32(average)
             }
         }
 
