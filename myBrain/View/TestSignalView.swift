@@ -9,6 +9,7 @@ struct TestSignalView: View {
     @State private var startTime: Date?
     @State private var recordingDuration: TimeInterval = 0
     @State private var timer: Timer?
+    @State private var fftTimer: Timer?
     @State private var normalized = true
     @State private var selectedChannel = 0 // 0 = both, 1 = channel1, 2 = channel2
     @State private var useTestSignal = true // Toggle between test signal and normal mode
@@ -399,10 +400,8 @@ struct TestSignalView: View {
                 .cornerRadius(8)
 
             if psdData.isEmpty {
-                Button("Compute FFT") {
-                    computeFFT()
-                }
-                .padding()
+                Text("Waiting for FFT data...")
+                    .foregroundColor(.gray)
             } else {
                 SpectrumView(psd: psdData)
                     .padding(8)
@@ -423,11 +422,16 @@ struct TestSignalView: View {
     private func startRecording() {
         isRecording = true
         startTime = Date()
-        
+
         // Start the timer
         timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
             guard let startTime = startTime else { return }
             recordingDuration = Date().timeIntervalSince(startTime)
+        }
+
+        // Start FFT updates
+        fftTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
+            computeFFT()
         }
         
         // Start recording with current mode settings
@@ -441,7 +445,9 @@ struct TestSignalView: View {
         isRecording = false
         timer?.invalidate()
         timer = nil
-        
+        fftTimer?.invalidate()
+        fftTimer = nil
+
         // Stop recording
         bluetoothService.stopRecording()
     }
@@ -453,16 +459,22 @@ struct TestSignalView: View {
     }
 
     private func computeFFT() {
-        let data: [Int32]
+        let source: [Int32]
         switch selectedChannel {
         case 1:
-            data = bluetoothService.eegChannel1
+            source = bluetoothService.eegChannel1
         case 2:
-            data = bluetoothService.eegChannel2
+            source = bluetoothService.eegChannel2
         default:
-            data = bluetoothService.eegChannel1
+            source = bluetoothService.eegChannel1
         }
-        psdData = SignalProcessing.welchPowerSpectrum(data: data, sampleRate: 250.0, maxFrequency: 100.0)
+
+        guard source.count >= 256 else {
+            psdData = []
+            return
+        }
+        let window = Array(source.suffix(256))
+        psdData = SignalProcessing.welchPowerSpectrum(data: window, sampleRate: 250.0, maxFrequency: 100.0)
     }
 }
 
