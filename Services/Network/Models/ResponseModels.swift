@@ -165,6 +165,23 @@ struct ThoughtStatus: Codable {
         case thoughtId = "thought_id"
         case thoughtName = "thought_name"
     }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        if let stringId = try? container.decode(String.self, forKey: .thoughtId) {
+            thoughtId = stringId
+        } else if let intId = try? container.decode(Int.self, forKey: .thoughtId) {
+            thoughtId = String(intId)
+        } else {
+            throw DecodingError.typeMismatch(String.self, DecodingError.Context(codingPath: [CodingKeys.thoughtId], debugDescription: "Expected String or Int for thought_id"))
+        }
+        
+        thoughtName = try container.decode(String.self, forKey: .thoughtName)
+        status = try container.decode(String.self, forKey: .status)
+        progress = try container.decode(ThoughtProgress.self, forKey: .progress)
+        chapters = try container.decodeIfPresent([Chapter].self, forKey: .chapters)
+    }
 }
 
 // MARK: - Thought Operation Responses
