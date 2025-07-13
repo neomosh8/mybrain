@@ -144,9 +144,7 @@ struct HomeView: View {
             
             if !AppStateManager.shared.hasShownHomeIntro {
                 AppStateManager.shared.hasShownHomeIntro = true
-                
-                thoughtsViewModel.fetchThoughts()
-                
+                                
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                     hideDeviceCardWithAnimation()
                 }
