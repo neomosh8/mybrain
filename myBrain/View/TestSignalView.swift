@@ -16,8 +16,12 @@ struct TestSignalView: View {
     @State private var selectedChannel = 0 // 0 = both, 1 = channel1, 2 = channel2
     @State private var useTestSignal = true // Toggle between test signal and normal mode
     @State private var enableLeadOffDetection = false // Toggle for lead-off detection
-    
+
     @State private var psdData: [Double] = [] // FFT data
+
+    init(bluetoothService: BluetoothService) {
+        self.bluetoothService = bluetoothService
+    }
     var body: some View {
         VStack(spacing: 16) {
             // Header
