@@ -1,0 +1,243 @@
+import Foundation
+
+// MARK: - Audio Streaming State
+
+enum AudioStreamingState {
+    case idle
+    case fetchingLinks
+    case ready
+    case playing
+    case paused
+    case buffering
+    case error(Error)
+    case completed
+}
+
+// MARK: - Streaming Response Models
+
+struct StreamingLinksResponse {
+    let masterPlaylist: String
+    let audioPlaylist: String?
+    let subtitlesPlaylist: String?
+    
+    init?(from data: [String: Any]) {
+        guard let masterPlaylist = data["master_playlist"] as? String else {
+            return nil
+        }
+        
+        self.masterPlaylist = masterPlaylist
+        self.audioPlaylist = data["audio_playlist"] as? String
+        self.subtitlesPlaylist = data["subtitles_playlist"] as? String
+    }
+}
+
+struct ChapterResponse {
+    let chapterNumber: Int
+    let title: String?
+    let audioDuration: Double?
+    let generationTime: Double?
+    let isComplete: Bool
+    
+    init?(from data: [String: Any]) {
+        guard let chapterNumber = data["chapter_number"] as? Int else {
+            return nil
+        }
+        
+        self.chapterNumber = chapterNumber
+        self.title = data["title"] as? String
+        self.audioDuration = data["audio_duration"] as? Double
+        self.generationTime = data["generation_time"] as? Double
+        self.isComplete = data["complete"] as? Bool ?? false
+    }
+}
+
+// MARK: - Audio Progress Tracking
+
+struct AudioProgress {
+    let currentTime: TimeInterval
+    let duration: TimeInterval
+    let chapterNumber: Int
+    let totalChapters: Int?
+    
+    var progress: Double {
+        guard duration > 0 else { return 0 }
+        return currentTime / duration
+    }
+    
+    var remainingTime: TimeInterval {
+        return max(0, duration - currentTime)
+    }
+}
+
+// MARK: - Chapter Management
+
+struct ChapterInfo {
+    let number: Int
+    let title: String?
+    let duration: TimeInterval?
+    let startTime: TimeInterval
+    let isComplete: Bool
+    
+    init(number: Int, title: String? = nil, duration: TimeInterval? = nil, startTime: TimeInterval = 0, isComplete: Bool = false) {
+        self.number = number
+        self.title = title
+        self.duration = duration
+        self.startTime = startTime
+        self.isComplete = isComplete
+    }
+}
+
+class ChapterManager: ObservableObject {
+    @Published var chapters: [ChapterInfo] = []
+    @Published var currentChapter: ChapterInfo?
+    @Published var totalDuration: TimeInterval = 0
+    
+    func addChapter(_ chapter: ChapterInfo) {
+        // Remove existing chapter with same number if any
+        chapters.removeAll { $0.number == chapter.number }
+        
+        // Add new chapter and sort by number
+        chapters.append(chapter)
+        chapters.sort { $0.number < $1.number }
+        
+        // Update total duration
+        updateTotalDuration()
+    }
+    
+    func updateCurrentChapter(for currentTime: TimeInterval) {
+        let activeChapter = chapters.first { chapter in
+            let endTime = chapter.startTime + (chapter.duration ?? 0)
+            return currentTime >= chapter.startTime && currentTime < endTime
+        }
+        
+        if currentChapter?.number != activeChapter?.number {
+            currentChapter = activeChapter
+        }
+    }
+    
+    private func updateTotalDuration() {
+        totalDuration = chapters.reduce(0) { total, chapter in
+            total + (chapter.duration ?? 0)
+        }
+    }
+    
+    func getChapter(number: Int) -> ChapterInfo? {
+        return chapters.first { $0.number == number }
+    }
+    
+    func getNextChapter(after currentNumber: Int) -> ChapterInfo? {
+        return chapters.first { $0.number > currentNumber }
+    }
+    
+    func getPreviousChapter(before currentNumber: Int) -> ChapterInfo? {
+        return chapters.last { $0.number < currentNumber }
+    }
+}
+
+// MARK: - Audio Error Types
+
+enum AudioStreamingError: LocalizedError {
+    case invalidURL(String)
+    case networkError(Error)
+    case playerSetupFailed(Error)
+    case streamingLinksUnavailable
+    case chapterLoadFailed
+    case audioSessionFailed(Error)
+    
+    var errorDescription: String? {
+        switch self {
+        case .invalidURL(let url):
+            return "Invalid streaming URL: \(url)"
+        case .networkError(let error):
+            return "Network error: \(error.localizedDescription)"
+        case .playerSetupFailed(let error):
+            return "Player setup failed: \(error.localizedDescription)"
+        case .streamingLinksUnavailable:
+            return "Streaming links are not available"
+        case .chapterLoadFailed:
+            return "Failed to load chapter content"
+        case .audioSessionFailed(let error):
+            return "Audio session error: \(error.localizedDescription)"
+        }
+    }
+    
+    var recoverySuggestion: String? {
+        switch self {
+        case .invalidURL, .streamingLinksUnavailable:
+            return "Please try again or contact support if the problem persists."
+        case .networkError:
+            return "Check your internet connection and try again."
+        case .playerSetupFailed, .audioSessionFailed:
+            return "Restart the app and try again."
+        case .chapterLoadFailed:
+            return "Skip to the next chapter or try again."
+        }
+    }
+}
+
+// MARK: - Playback Configuration
+
+struct AudioPlaybackConfig {
+    let bufferDuration: TimeInterval
+    let chapterRequestBuffer: TimeInterval
+    let skipForwardInterval: TimeInterval
+    let skipBackwardInterval: TimeInterval
+    let enableBackgroundPlayback: Bool
+    let enableLockScreenControls: Bool
+    
+    static let `default` = AudioPlaybackConfig(
+        bufferDuration: 30.0,
+        chapterRequestBuffer: 60.0,
+        skipForwardInterval: 30.0,
+        skipBackwardInterval: 15.0,
+        enableBackgroundPlayback: true,
+        enableLockScreenControls: true
+    )
+}
+
+// MARK: - Subtitle Integration Models
+
+struct SubtitleSegment {
+    let startTime: TimeInterval
+    let endTime: TimeInterval
+    let text: String
+    let chapterNumber: Int
+    
+    var duration: TimeInterval {
+        return endTime - startTime
+    }
+    
+    func contains(time: TimeInterval) -> Bool {
+        return time >= startTime && time <= endTime
+    }
+}
+
+
+///// A single link in the subtitles .m3u8, e.g. (vttURL, duration).
+//struct SubtitleSegmentLink {
+//    let urlString: String
+//    let duration: Double
+//    var minStart: Double
+//    var maxEnd: Double
+//}
+
+struct SubtitleSegmentLink {
+    let urlString: String
+    let minStart: Double
+    let maxEnd: Double
+}
+
+struct SubtitlePlaylist {
+    let segments: [SubtitleSegment]
+    let totalDuration: TimeInterval
+    
+    func getActiveSubtitle(at time: TimeInterval) -> SubtitleSegment? {
+        return segments.first { $0.contains(time: time) }
+    }
+    
+    func getSubtitles(in range: ClosedRange<TimeInterval>) -> [SubtitleSegment] {
+        return segments.filter { subtitle in
+            subtitle.startTime <= range.upperBound && subtitle.endTime >= range.lowerBound
+        }
+    }
+}
