@@ -26,6 +26,9 @@ struct myBrainApp: App {
                 .onOpenURL { url in
                     GIDSignIn.sharedInstance.handle(url)
                 }
+                .onAppear {
+                    _ = AudioSessionManager.shared
+                }
         }
     }
 }
