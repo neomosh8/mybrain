@@ -373,3 +373,22 @@ extension SignalProcessing {
         return Array(accumulated[0...maxIndex])
     }
 }
+
+extension SignalProcessing {
+    static func thetaBetaRatio(psd: [Double], sampleRate: Double) -> Double {
+        guard !psd.isEmpty else { return 0.0 }
+        let windowSize = 256.0
+        let binWidth = sampleRate / windowSize
+        func power(in range: ClosedRange<Double>) -> Double {
+            let start = Int(range.lowerBound / binWidth)
+            let end = Int(range.upperBound / binWidth)
+            let clampedStart = max(0, start)
+            let clampedEnd = min(psd.count - 1, end)
+            guard clampedEnd >= clampedStart else { return 0.0 }
+            return psd[clampedStart...clampedEnd].reduce(0, +)
+        }
+        let thetaPower = power(in: 4.0...8.0)
+        let betaPower = power(in: 13.0...30.0)
+        return betaPower != 0 ? thetaPower / betaPower : 0.0
+    }
+}

@@ -17,6 +17,8 @@ struct TestSignalView: View {
     @State private var enableLeadOffDetection = false // Toggle for lead-off detection
 
     @State private var psdData: [Double] = [] // FFT data
+    @State private var tbrCh1: [Double] = []
+    @State private var tbrCh2: [Double] = []
     @State private var showShareSheet = false
     @State private var exportUrl: URL?
 
@@ -57,6 +59,9 @@ struct TestSignalView: View {
 
                 fftPlot
                     .tabItem { Label("FFT", systemImage: "chart.bar") }
+
+                tbrPlot
+                    .tabItem { Label("TBR", systemImage: "chart.xyaxis.line") }
             }
             .frame(height: 260)
             .padding(.horizontal)
@@ -444,6 +449,31 @@ struct TestSignalView: View {
             }
         }
     }
+
+    private var tbrPlot: some View {
+        ZStack {
+            Rectangle()
+                .fill(Color.black.opacity(0.05))
+                .cornerRadius(8)
+
+            if tbrCh1.isEmpty && tbrCh2.isEmpty {
+                Text("Waiting for TBR data...")
+                    .foregroundColor(.gray)
+            } else {
+                ZStack {
+                    if selectedChannel == 0 {
+                        TBRPlotView(values: tbrCh1, color: .blue)
+                        TBRPlotView(values: tbrCh2, color: .green)
+                    } else if selectedChannel == 1 {
+                        TBRPlotView(values: tbrCh1, color: .blue)
+                    } else {
+                        TBRPlotView(values: tbrCh2, color: .green)
+                    }
+                }
+                .padding(8)
+            }
+        }
+    }
     
     // MARK: - Recording Control Methods
     
@@ -520,6 +550,22 @@ struct TestSignalView: View {
         }
         let window = Array(source.suffix(256))
         psdData = SignalProcessing.welchPowerSpectrum(data: window, sampleRate: 250.0, maxFrequency: 100.0)
+
+        // Update TBR values for each channel
+        if bluetoothService.eegChannel1.count >= 256 {
+            let w1 = Array(bluetoothService.eegChannel1.suffix(256))
+            let psd1 = SignalProcessing.welchPowerSpectrum(data: w1, sampleRate: 250.0, maxFrequency: 40.0)
+            let ratio1 = SignalProcessing.thetaBetaRatio(psd: psd1, sampleRate: 250.0)
+            tbrCh1.append(ratio1)
+            if tbrCh1.count > 100 { tbrCh1.removeFirst(tbrCh1.count - 100) }
+        }
+        if bluetoothService.eegChannel2.count >= 256 {
+            let w2 = Array(bluetoothService.eegChannel2.suffix(256))
+            let psd2 = SignalProcessing.welchPowerSpectrum(data: w2, sampleRate: 250.0, maxFrequency: 40.0)
+            let ratio2 = SignalProcessing.thetaBetaRatio(psd: psd2, sampleRate: 250.0)
+            tbrCh2.append(ratio2)
+            if tbrCh2.count > 100 { tbrCh2.removeFirst(tbrCh2.count - 100) }
+        }
     }
 
     private func exportSignalText() -> String {
