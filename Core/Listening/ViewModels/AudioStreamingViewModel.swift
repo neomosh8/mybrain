@@ -148,41 +148,43 @@ class AudioStreamingViewModel: ObservableObject {
     }
     
     private func handleStreamingLinksResponse(_ data: [String: Any]) {
-        isFetchingLinks = false
-        
-        guard let status = data["status"] as? String,
-              status == "success",
-              let responseData = data["data"] as? [String: Any],
-              let masterPlaylistPath = responseData["master_playlist"] as? String
-        else {
-            let errorMessage = data["message"] as? String ?? "Failed to get streaming URLs"
-            playerError = NSError(
-                domain: "StreamingError",
-                code: -1,
-                userInfo: [NSLocalizedDescriptionKey: errorMessage]
-            )
-            return
+        DispatchQueue.main.async {
+            self.isFetchingLinks = false
+            
+
+            guard let masterPlaylistPath = data["master_playlist"] as? String else {
+                let errorMessage = "master_playlist not found in response"
+                self.playerError = NSError(
+                    domain: "StreamingError",
+                    code: -1,
+                    userInfo: [NSLocalizedDescriptionKey: errorMessage]
+                )
+                print("Streaming links parsing error: \(errorMessage)")
+                print("Received data: \(data)")
+                return
+            }
+            
+            let baseURL = "https://\(self.getBaseURL())"
+            guard let url = URL(string: baseURL + masterPlaylistPath) else {
+                let errorMessage = "Invalid URL: \(baseURL + masterPlaylistPath)"
+                self.playerError = NSError(
+                    domain: "StreamingError",
+                    code: -3,
+                    userInfo: [NSLocalizedDescriptionKey: errorMessage]
+                )
+                return
+            }
+            
+            self.masterPlaylistURL = url
+            
+            // Setup subtitles if available
+            if let subsPath = data["subtitles_playlist"] as? String, !subsPath.isEmpty {
+                self.subtitlesURL = baseURL + subsPath
+            }
+            
+            print("Successfully parsed streaming links - Master: \(url)")
+            self.setupPlayer(with: url)
         }
-        
-        let baseURL = "https://\(getBaseURL())"
-        guard let url = URL(string: baseURL + masterPlaylistPath) else {
-            let errorMessage = "Invalid URL: \(baseURL + masterPlaylistPath)"
-            playerError = NSError(
-                domain: "StreamingError",
-                code: -3,
-                userInfo: [NSLocalizedDescriptionKey: errorMessage]
-            )
-            return
-        }
-        
-        masterPlaylistURL = url
-        
-        // Setup subtitles if available
-        if let subsPath = responseData["subtitles_playlist"] as? String, !subsPath.isEmpty {
-            subtitlesURL = baseURL + subsPath
-        }
-        
-        setupPlayer(with: url)
     }
     
     private func setupPlayer(with url: URL) {
@@ -221,6 +223,7 @@ class AudioStreamingViewModel: ObservableObject {
         
         // Observe player item status
         playerItemObservation = player.currentItem?.publisher(for: \.status)
+            .receive(on: DispatchQueue.main)
             .sink { [weak self] status in
                 switch status {
                 case .failed:
@@ -272,39 +275,43 @@ class AudioStreamingViewModel: ObservableObject {
     }
     
     private func handleChapterResponse(_ data: [String: Any]) {
-        guard let responseData = data["data"] as? [String: Any] else { return }
-        
-        let chapterNumber = responseData["chapter_number"] as? Int ?? 0
-        let audioDuration = responseData["audio_duration"] as? Double ?? 0.0
-        let generationTime = responseData["generation_time"] as? Double ?? 0.0
-        let isComplete = responseData["complete"] as? Bool ?? false
-        
-        currentChapterNumber = chapterNumber
-        
-        if audioDuration > 0 {
-            let playableDuration = audioDuration - generationTime
-            nextChapterTime = durationsSoFar + (playableDuration * (1 - chapterBuffer))
-            durationsSoFar += audioDuration
-        }
-        
-        nextChapterRequested = false
-        lastChapterComplete = isComplete
-        
-        // Refresh subtitles if available
-        if let subtitlesURL = subtitlesURL {
-            // Notify subtitle view model to refresh
-            NotificationCenter.default.post(
-                name: Notification.Name("RefreshSubtitles"),
-                object: subtitlesURL
-            )
+        DispatchQueue.main.async {
+            let chapterNumber = data["chapter_number"] as? Int ?? 0
+            let audioDuration = data["audio_duration"] as? Double ?? 0.0
+            let generationTime = data["generation_time"] as? Double ?? 0.0
+            let isComplete = data["complete"] as? Bool ?? false
+            
+            print("Chapter response - Number: \(chapterNumber), Duration: \(audioDuration), Complete: \(isComplete)")
+            
+            self.currentChapterNumber = chapterNumber
+            
+            if audioDuration > 0 {
+                let playableDuration = audioDuration - generationTime
+                self.nextChapterTime = self.durationsSoFar + (playableDuration * (1 - self.chapterBuffer))
+                self.durationsSoFar += audioDuration
+            }
+            
+            self.nextChapterRequested = false
+            self.lastChapterComplete = isComplete
+            
+            // Refresh subtitles if available
+            if let subtitlesURL = self.subtitlesURL {
+                // Notify subtitle view model to refresh
+                NotificationCenter.default.post(
+                    name: Notification.Name("RefreshSubtitles"),
+                    object: subtitlesURL
+                )
+            }
         }
     }
     
     private func handlePlaybackCompletion() {
-        if lastChapterComplete {
-            hasCompletedPlayback = true
-            isPlaying = false
-            audioSessionManager.deactivateAudioSession()
+        DispatchQueue.main.async {
+            if self.lastChapterComplete {
+                self.hasCompletedPlayback = true
+                self.isPlaying = false
+                self.audioSessionManager.deactivateAudioSession()
+            }
         }
     }
     
@@ -454,3 +461,4 @@ class AudioStreamingViewModel: ObservableObject {
         return "brain.sorenapp.ir"
     }
 }
+
