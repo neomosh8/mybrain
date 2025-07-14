@@ -25,7 +25,10 @@ class AudioSessionManager: ObservableObject {
             )
             
             try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-            isActive = true
+            
+            DispatchQueue.main.async {
+                self.isActive = true
+            }
             
             print("Audio session activated successfully")
         } catch {
@@ -36,7 +39,10 @@ class AudioSessionManager: ObservableObject {
     func deactivateAudioSession() {
         do {
             try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
-            isActive = false
+            
+            DispatchQueue.main.async {
+                self.isActive = false
+            }
             
             // Clear now playing info
             MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
