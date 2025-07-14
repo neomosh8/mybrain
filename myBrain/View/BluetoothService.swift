@@ -27,6 +27,8 @@ class BluetoothService: NSObject, ObservableObject {
     @Published var ch1ConnectionStatus: (connected: Bool, quality: Double) = (false, 0.0)
     @Published var ch2ConnectionStatus: (connected: Bool, quality: Double) = (false, 0.0)
     private var leadOffAnalysisTimer: Timer?
+    private var notchFiltersCh1: [NotchFilter] = []
+    private var notchFiltersCh2: [NotchFilter] = []
     // MARK: - Neocore Protocol Constants
     private let serviceUUID = CBUUID(string: "6E400001-B5A3-F393-E0A9-E50E24DCCA9E")
     private let writeCharacteristicUUID = CBUUID(string: "6E400002-B5A3-F393-E0A9-E50E24DCCA9E")
@@ -200,6 +202,7 @@ class BluetoothService: NSObject, ObservableObject {
         ch2ConnectionStatus = (false, 0.0)
         leadOffAnalysisTimer?.invalidate()
         leadOffAnalysisTimer = nil
+        setupNotchFilters()
         
         print("Starting recording in \(useTestSignal ? "test signal" : "normal") mode with lead-off detection \(enableLeadOff ? "enabled" : "disabled")")
         
@@ -278,6 +281,13 @@ class BluetoothService: NSObject, ObservableObject {
         }
     }
 
+    private func setupNotchFilters() {
+        let freqs = [50.0, 60.0, 100.0, 120.0]
+        let q = 35.0
+        notchFiltersCh1 = freqs.map { NotchFilter(sampleRate: 250.0, frequency: $0, q: q) }
+        notchFiltersCh2 = freqs.map { NotchFilter(sampleRate: 250.0, frequency: $0, q: q) }
+    }
+
     // Update stopRecording to clean up lead-off analysis
     func stopRecording() {
         print("Stopping recording")
@@ -319,6 +329,8 @@ class BluetoothService: NSObject, ObservableObject {
                 self?.isLeadOffDetectionEnabled = false
                 self?.ch1ConnectionStatus = (false, 0.0)
                 self?.ch2ConnectionStatus = (false, 0.0)
+                self?.notchFiltersCh1.removeAll()
+                self?.notchFiltersCh2.removeAll()
                 // Don't clear EEG data here so it can be exported after recording
             }
         }
@@ -438,10 +450,18 @@ class BluetoothService: NSObject, ObservableObject {
         
         // Only append data if we're in test mode and receiving data
         if isReceivingTestData && isInTestMode {
+            var filteredCh1 = channel1Samples
+            var filteredCh2 = channel2Samples
+            if !notchFiltersCh1.isEmpty {
+                filteredCh1 = applyNotchFilters(samples: channel1Samples, filters: &notchFiltersCh1)
+            }
+            if !notchFiltersCh2.isEmpty {
+                filteredCh2 = applyNotchFilters(samples: channel2Samples, filters: &notchFiltersCh2)
+            }
             DispatchQueue.main.async {
                 // Add the new samples to each channel
-                self.eegChannel1.append(contentsOf: channel1Samples)
-                self.eegChannel2.append(contentsOf: channel2Samples)
+                self.eegChannel1.append(contentsOf: filteredCh1)
+                self.eegChannel2.append(contentsOf: filteredCh2)
                 
 
                 // Previously we limited stored samples to the last 2000 points
@@ -465,6 +485,19 @@ class BluetoothService: NSObject, ObservableObject {
         let byte3 = UInt32(data[startIndex + 3]) << 24
         
         return Int32(bitPattern: byte0 | byte1 | byte2 | byte3)
+    }
+
+    private func applyNotchFilters(samples: [Int32], filters: inout [NotchFilter]) -> [Int32] {
+        var result: [Int32] = []
+        result.reserveCapacity(samples.count)
+        for sample in samples {
+            var value = Double(sample)
+            for i in 0..<filters.count {
+                value = filters[i].process(sample: value)
+            }
+            result.append(Int32(clamping: Int(value.rounded())))
+        }
+        return result
     }
     
     private func enableDataStreaming(_ enable: Bool) {
