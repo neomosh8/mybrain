@@ -180,7 +180,7 @@ extension AnimatedParagraphView {
         withAnimation {
             shownWordsCount = 1
         }
-        sendFeedbackForWord(at: 0)
+//        sendFeedbackForWord(at: 0)
         scheduleNextWord()
     }
 
@@ -195,7 +195,7 @@ extension AnimatedParagraphView {
                 withAnimation {
                     shownWordsCount += 1
                 }
-                self.sendFeedbackForWord(at: shownWordsCount - 1)
+//                self.sendFeedbackForWord(at: shownWordsCount - 1)
 
                 let halfwayPoint = (wordInfo.count + 1) / 2
                 if shownWordsCount == halfwayPoint {
