@@ -391,4 +391,24 @@ extension SignalProcessing {
         let betaPower = power(in: 13.0...30.0)
         return betaPower != 0 ? thetaPower / betaPower : 0.0
     }
+
+    /// Compute a simple moving average with the provided window size.
+    /// - Parameters:
+    ///   - values: Array of values to smooth.
+    ///   - windowSize: Number of points to average over.
+    /// - Returns: The smoothed array.
+    static func movingAverage(values: [Double], windowSize: Int) -> [Double] {
+        guard windowSize > 1, !values.isEmpty else { return values }
+        var result: [Double] = []
+        var sum: Double = 0
+        for (index, value) in values.enumerated() {
+            sum += value
+            if index >= windowSize {
+                sum -= values[index - windowSize]
+            }
+            let count = min(windowSize, index + 1)
+            result.append(sum / Double(count))
+        }
+        return result
+    }
 }

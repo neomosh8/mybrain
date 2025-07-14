@@ -4,20 +4,23 @@ struct TBRPlotView: View {
     let values: [Double]
     let color: Color
 
+    private let smoothWindow = 5
+
     var body: some View {
         GeometryReader { geo in
             Canvas { context, size in
-                guard values.count > 1 else { return }
+                let smoothed = SignalProcessing.movingAverage(values: values, windowSize: smoothWindow)
+                guard smoothed.count > 1 else { return }
 
-                let minVal = values.min() ?? 0
-                let maxVal = values.max() ?? 1
+                let minVal = smoothed.min() ?? 0
+                let maxVal = smoothed.max() ?? 1
                 let range = max(maxVal - minVal, 0.0001)
-                let stepX = size.width / CGFloat(values.count - 1)
+                let stepX = size.width / CGFloat(smoothed.count - 1)
 
                 var path = Path()
-                for i in 0..<values.count {
+                for i in 0..<smoothed.count {
                     let x = CGFloat(i) * stepX
-                    let normalized = (values[i] - minVal) / range
+                    let normalized = (smoothed[i] - minVal) / range
                     let y = size.height - CGFloat(normalized) * size.height
                     if i == 0 {
                         path.move(to: CGPoint(x: x, y: y))
