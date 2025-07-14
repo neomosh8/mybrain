@@ -140,7 +140,7 @@ struct ProfileView: View {
                 icon: "rectangle.portrait.and.arrow.right",
                 title: "Logout",
                 subtitle: "Sign out of your account",
-                iconColor: .red,
+                iconColor: .red
             ) {
                 showingLogoutAlert = true
             }
