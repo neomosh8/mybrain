@@ -70,34 +70,6 @@ class AudioSessionManager: ObservableObject {
             return .success
         }
         
-        // Skip forward command
-        commandCenter.skipForwardCommand.addTarget { [weak self] event in
-            self?.handleSkipForwardCommand()
-            return .success
-        }
-        
-        // Skip backward command
-        commandCenter.skipBackwardCommand.addTarget { [weak self] event in
-            self?.handleSkipBackwardCommand()
-            return .success
-        }
-        
-        // Seek forward command
-        commandCenter.seekForwardCommand.addTarget { [weak self] event in
-            if let seekEvent = event as? MPSeekCommandEvent {
-                self?.handleSeekForwardCommand(seconds: seekEvent.type == .beginSeeking ? 30 : 0)
-            }
-            return .success
-        }
-        
-        // Seek backward command
-        commandCenter.seekBackwardCommand.addTarget { [weak self] event in
-            if let seekEvent = event as? MPSeekCommandEvent {
-                self?.handleSeekBackwardCommand(seconds: seekEvent.type == .beginSeeking ? 15 : 0)
-            }
-            return .success
-        }
-        
         // Change playback position command
         commandCenter.changePlaybackPositionCommand.addTarget { [weak self] event in
             if let positionEvent = event as? MPChangePlaybackPositionCommandEvent {
@@ -106,17 +78,9 @@ class AudioSessionManager: ObservableObject {
             return .success
         }
         
-        // Configure skip intervals
-        commandCenter.skipForwardCommand.preferredIntervals = [30]
-        commandCenter.skipBackwardCommand.preferredIntervals = [15]
-        
         // Enable commands
         commandCenter.playCommand.isEnabled = true
         commandCenter.pauseCommand.isEnabled = true
-        commandCenter.skipForwardCommand.isEnabled = true
-        commandCenter.skipBackwardCommand.isEnabled = true
-        commandCenter.seekForwardCommand.isEnabled = true
-        commandCenter.seekBackwardCommand.isEnabled = true
         commandCenter.changePlaybackPositionCommand.isEnabled = true
     }
     
@@ -133,34 +97,6 @@ class AudioSessionManager: ObservableObject {
         NotificationCenter.default.post(
             name: Notification.Name("RemotePauseCommand"),
             object: nil
-        )
-    }
-    
-    private func handleSkipForwardCommand() {
-        NotificationCenter.default.post(
-            name: Notification.Name("RemoteSkipForwardCommand"),
-            object: 30
-        )
-    }
-    
-    private func handleSkipBackwardCommand() {
-        NotificationCenter.default.post(
-            name: Notification.Name("RemoteSkipBackwardCommand"),
-            object: 15
-        )
-    }
-    
-    private func handleSeekForwardCommand(seconds: TimeInterval) {
-        NotificationCenter.default.post(
-            name: Notification.Name("RemoteSeekForwardCommand"),
-            object: seconds
-        )
-    }
-    
-    private func handleSeekBackwardCommand(seconds: TimeInterval) {
-        NotificationCenter.default.post(
-            name: Notification.Name("RemoteSeekBackwardCommand"),
-            object: seconds
         )
     }
     
