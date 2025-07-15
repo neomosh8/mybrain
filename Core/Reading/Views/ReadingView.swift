@@ -5,6 +5,7 @@ import Combine
 struct ReadingView: View {
     let thought: Thought
     
+    @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel = ReadingViewModel()
     @StateObject private var statusPickerController = BottomSheetPickerController()
     
@@ -29,8 +30,13 @@ struct ReadingView: View {
                 statusPickerOverlay
             }
         }
-        .navigationTitle("Reading")
-        .navigationBarTitleDisplayMode(.inline)
+        .appNavigationBar(
+            title: "Reading",
+            subtitle: thought.name,
+            onBackTap: {
+                dismiss()
+            }
+        )
         .alert("Success", isPresented: $showResetSuccess) {
             Button("OK") { }
         } message: {
