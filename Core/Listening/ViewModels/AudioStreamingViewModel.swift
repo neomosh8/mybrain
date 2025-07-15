@@ -46,12 +46,6 @@ class AudioStreamingViewModel: ObservableObject {
         setupRemoteControlHandlers()
     }
     
-    deinit {
-        Task { @MainActor in
-            cleanupPlayer()
-        }
-    }
-    
     // MARK: - Public Methods
     
     func startListening(for thought: Thought) {
@@ -246,7 +240,9 @@ class AudioStreamingViewModel: ObservableObject {
             forInterval: CMTime(seconds: 1.0, preferredTimescale: 1),
             queue: .main
         ) { [weak self] currentTime in
-            self?.monitorPlaybackProgress(currentTime: currentTime)
+            Task { @MainActor in
+                self?.monitorPlaybackProgress(currentTime: currentTime)
+            }
         }
         playbackProgressObserver = timeObserver
         
@@ -256,7 +252,9 @@ class AudioStreamingViewModel: ObservableObject {
             object: player.currentItem,
             queue: .main
         ) { [weak self] _ in
-            self?.handlePlaybackCompletion()
+            Task { @MainActor in
+                self?.handlePlaybackCompletion()
+            }
         }
     }
     
@@ -351,7 +349,9 @@ class AudioStreamingViewModel: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.resumePlayback()
+            Task { @MainActor in
+                self?.resumePlayback()
+            }
         }
         
         NotificationCenter.default.addObserver(
@@ -359,7 +359,9 @@ class AudioStreamingViewModel: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.pausePlayback()
+            Task { @MainActor in
+                self?.pausePlayback()
+            }
         }
         
         // Handle audio interruptions
@@ -368,7 +370,9 @@ class AudioStreamingViewModel: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.pausePlayback()
+            Task { @MainActor in
+                self?.pausePlayback()
+            }
         }
         
         NotificationCenter.default.addObserver(
@@ -377,7 +381,9 @@ class AudioStreamingViewModel: ObservableObject {
             queue: .main
         ) { [weak self] notification in
             if let shouldResume = notification.object as? Bool, shouldResume {
-                self?.resumePlayback()
+                Task { @MainActor in
+                    self?.resumePlayback()
+                }
             }
         }
         
@@ -387,7 +393,9 @@ class AudioStreamingViewModel: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.pausePlayback()
+            Task { @MainActor in
+                self?.pausePlayback()
+            }
         }
     }
     
