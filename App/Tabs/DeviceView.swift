@@ -14,7 +14,7 @@ struct DeviceView: View {
                 .padding()
             }
         }
-        .customNavigationBar(
+        .appNavigationBar(
             title: "Device",
             onBackTap: {
                 dismiss()

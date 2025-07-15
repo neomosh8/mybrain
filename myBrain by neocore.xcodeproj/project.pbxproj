@@ -93,7 +93,7 @@
 		74C286122DB4D0E900CF836B /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 74C286112DB4D0E900CF836B /* GoogleSignInSwift */; };
 		74C286142DB4D5EB00CF836B /* client_312380135422-bko7g13qv6ggt7e5cc7dlt6lsquq7qi4.apps.googleusercontent.com.plist in Resources */ = {isa = PBXBuildFile; fileRef = 74C286132DB4D5EB00CF836B /* client_312380135422-bko7g13qv6ggt7e5cc7dlt6lsquq7qi4.apps.googleusercontent.com.plist */; };
 		74D58B352E151AB7008B62DC /* AppStateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74D58B342E151AB3008B62DC /* AppStateManager.swift */; };
-		74D58B382E152780008B62DC /* CustomNavigationBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74D58B372E152776008B62DC /* CustomNavigationBar.swift */; };
+		74D58B382E152780008B62DC /* AppNavigationBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74D58B372E152776008B62DC /* AppNavigationBar.swift */; };
 		74EC8AA52DCE6590008DE8A9 /* BackgroundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74EC8AA42DCE6588008DE8A9 /* BackgroundManager.swift */; };
 /* End PBXBuildFile section */
 
@@ -210,7 +210,7 @@
 		74C2860C2DB4C32100CF836B /* GoogleAuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleAuthManager.swift; sourceTree = "<group>"; };
 		74C286132DB4D5EB00CF836B /* client_312380135422-bko7g13qv6ggt7e5cc7dlt6lsquq7qi4.apps.googleusercontent.com.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "client_312380135422-bko7g13qv6ggt7e5cc7dlt6lsquq7qi4.apps.googleusercontent.com.plist"; sourceTree = "<group>"; };
 		74D58B342E151AB3008B62DC /* AppStateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStateManager.swift; sourceTree = "<group>"; };
-		74D58B372E152776008B62DC /* CustomNavigationBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomNavigationBar.swift; sourceTree = "<group>"; };
+		74D58B372E152776008B62DC /* AppNavigationBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppNavigationBar.swift; sourceTree = "<group>"; };
 		74EC8AA42DCE6588008DE8A9 /* BackgroundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -726,7 +726,7 @@
 				748E387E2E1E822D004FADCA /* PopupMenu.swift */,
 				74B3FDAC2E1CD6AC00173269 /* BottomSheetPicker.swift */,
 				748DF72B2E1BA17400FD4080 /* CachedAvatarView.swift */,
-				74D58B372E152776008B62DC /* CustomNavigationBar.swift */,
+				74D58B372E152776008B62DC /* AppNavigationBar.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -896,7 +896,7 @@
 				74263C402DDADAE800953598 /* ChapterCompletionView.swift in Sources */,
 				747377F72E26CC2100C50D04 /* ReadingView.swift in Sources */,
 				74BC7E782E0013D500A9C2F4 /* ThoughtsAPI+Implementation.swift in Sources */,
-				74D58B382E152780008B62DC /* CustomNavigationBar.swift in Sources */,
+				74D58B382E152780008B62DC /* AppNavigationBar.swift in Sources */,
 				74263C422DDADAE800953598 /* StreamThoughtView.swift in Sources */,
 				74B3FDAD2E1CD6AF00173269 /* BottomSheetPicker.swift in Sources */,
 				74BC7E622E000DEF00A9C2F4 /* WebSocketProtocols.swift in Sources */,

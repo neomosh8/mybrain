@@ -1,16 +1,19 @@
 import SwiftUI
 
-struct CustomNavigationBar<TrailingContent: View>: View {
+struct AppNavigationBar<TrailingContent: View>: View {
     let title: String
+    let subtitle: String?
     let onBackTap: () -> Void
     let trailingContent: () -> TrailingContent
     
     init(
         title: String,
+        subtitle: String? = nil,
         onBackTap: @escaping () -> Void,
         @ViewBuilder trailingContent: @escaping () -> TrailingContent = { EmptyView() }
     ) {
         self.title = title
+        self.subtitle = subtitle
         self.onBackTap = onBackTap
         self.trailingContent = trailingContent
     }
@@ -28,10 +31,23 @@ struct CustomNavigationBar<TrailingContent: View>: View {
                     )
             }
             
-            Text(title)
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundColor(.primary)
+            if let subtitle = subtitle {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                    
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            } else {
+                Text(title)
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+            }
             
             Spacer()
             
@@ -49,14 +65,16 @@ struct CustomNavigationBar<TrailingContent: View>: View {
 // MARK: - View Extension for Easy Integration
 
 extension View {
-    func customNavigationBar<TrailingContent: View>(
+    func appNavigationBar<TrailingContent: View>(
         title: String,
+        subtitle: String? = nil,
         onBackTap: @escaping () -> Void,
         @ViewBuilder trailingContent: @escaping () -> TrailingContent = { EmptyView() }
     ) -> some View {
         VStack(spacing: 0) {
-            CustomNavigationBar(
+            AppNavigationBar(
                 title: title,
+                subtitle: subtitle,
                 onBackTap: onBackTap,
                 trailingContent: trailingContent
             )
@@ -66,13 +84,17 @@ extension View {
         .navigationBarHidden(true)
     }
     
-    func customNavigationBar(
+    func appNavigationBar(
         title: String,
+        subtitle: String? = nil,
         onBackTap: @escaping () -> Void
     ) -> some View {
-        customNavigationBar(title: title, onBackTap: onBackTap) {
+        appNavigationBar(
+            title: title,
+            subtitle: subtitle,
+            onBackTap: onBackTap
+        ) {
             EmptyView()
         }
     }
 }
-

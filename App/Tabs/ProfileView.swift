@@ -80,7 +80,7 @@ struct ProfileView: View {
             }
             .padding(.horizontal, 16)
         }
-        .customNavigationBar(
+        .appNavigationBar(
             title: "Profile",
             onBackTap: {
                 onNavigateToHome?()

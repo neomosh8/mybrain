@@ -17,7 +17,7 @@ struct SettingsView: View {
                 .padding()
             }
         }
-        .customNavigationBar(
+        .appNavigationBar(
             title: "Settings",
             onBackTap: {
                 dismiss()  // This will navigate back to the previous view
