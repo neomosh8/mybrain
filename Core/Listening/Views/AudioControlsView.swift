@@ -29,17 +29,10 @@ struct AudioControlsView: View {
 struct TimeLabelsView: View {
     let player: AVPlayer
     @State private var currentTime: Double = 0
-    @State private var duration: Double = 0
     
     var body: some View {
         HStack {
             Text(formatTime(currentTime))
-                .font(.caption)
-                .foregroundColor(.secondary)
-            
-            Spacer()
-            
-            Text(formatTime(duration))
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
@@ -53,14 +46,9 @@ struct TimeLabelsView: View {
     
     private func updateTimes() {
         let current = player.currentTime().seconds
-        let total = player.currentItem?.duration.seconds ?? 0
         
         if current.isFinite {
             currentTime = current
-        }
-        
-        if total.isFinite {
-            duration = total
         }
     }
     
