@@ -180,16 +180,12 @@ enum AudioStreamingError: LocalizedError {
 struct AudioPlaybackConfig {
     let bufferDuration: TimeInterval
     let chapterRequestBuffer: TimeInterval
-    let skipForwardInterval: TimeInterval
-    let skipBackwardInterval: TimeInterval
     let enableBackgroundPlayback: Bool
     let enableLockScreenControls: Bool
     
     static let `default` = AudioPlaybackConfig(
         bufferDuration: 30.0,
         chapterRequestBuffer: 60.0,
-        skipForwardInterval: 30.0,
-        skipBackwardInterval: 15.0,
         enableBackgroundPlayback: true,
         enableLockScreenControls: true
     )
