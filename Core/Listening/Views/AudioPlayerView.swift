@@ -32,6 +32,14 @@ struct AudioPlayerView: View {
         }
         .onAppear {
             viewModel.startListening(for: thought)
+            
+            // Pre-load first segment if we get subtitles URL quickly
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                if let subtitlesURL = viewModel.subtitlesURL {
+                    print("Pre-loading subtitles on appear")
+                    fetchSubtitlePlaylist(playlistURL: subtitlesURL)
+                }
+            }
         }
         .onDisappear {
             viewModel.cleanup()
@@ -65,9 +73,29 @@ struct AudioPlayerView: View {
                 thoughtId: thought.id,
                 chapterNumber: $viewModel.currentChapterNumber
             )
-            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("RefreshSubtitles"))) { notification in
-                if let subtitlesURL = notification.object as? String {
+            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("InitialSubtitleLoad"))) { notification in
+                if let data = notification.object as? [String: Any],
+                   let subtitlesURL = data["url"] as? String {
+                    print("Initial subtitle load triggered")
                     fetchSubtitlePlaylist(playlistURL: subtitlesURL)
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("RefreshSubtitles"))) { notification in
+                if let data = notification.object as? [String: Any],
+                   let subtitlesURL = data["url"] as? String {
+                    print("Subtitle refresh triggered for new chapter")
+                    fetchSubtitlePlaylist(playlistURL: subtitlesURL)
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("UpdateSubtitleTime"))) { notification in
+                if let currentTime = notification.object as? Double {
+                    subtitleViewModel.updateCurrentTime(currentTime)
+                    
+                    // Check if we need to switch to a different subtitle segment
+                    subtitleViewModel.checkSegmentBoundary { newIndex in
+                        print("Switching to subtitle segment \(newIndex) at time \(currentTime)")
+                        subtitleViewModel.loadSegment(at: newIndex)
+                    }
                 }
             }
             
@@ -133,7 +161,13 @@ struct AudioPlayerView: View {
     // MARK: - Subtitle Management
     
     private func fetchSubtitlePlaylist(playlistURL: String) {
-        guard let url = URL(string: playlistURL) else { return }
+        print("Fetching subtitle playlist: \(playlistURL)")
+        
+        guard let url = URL(string: playlistURL) else {
+            print("Invalid subtitle playlist URL: \(playlistURL)")
+            return
+        }
+        
         URLSession.shared.dataTask(with: url) { data, response, error in
             if let error = error {
                 print("fetchSubtitlePlaylist => error: \(error.localizedDescription)")
@@ -146,65 +180,89 @@ struct AudioPlayerView: View {
                 return
             }
             
-            var vttFiles: [String] = []
-            let lines = text.components(separatedBy: .newlines)
-            var i = 0
-            while i < lines.count {
-                let line = lines[i]
-                if line.hasPrefix("#EXTINF:") {
-                    let nextLineIndex = i + 1
-                    if nextLineIndex < lines.count {
-                        let vttFile = lines[nextLineIndex].trimmingCharacters(in: .whitespaces)
-                        if !vttFile.isEmpty {
-                            let base = playlistURL.replacingOccurrences(
-                                of: "/subtitles.m3u8",
-                                with: "/"
-                            )
-                            let vttURL = base + vttFile
-                            vttFiles.append(vttURL)
-                        }
-                        i += 1
-                    }
-                }
-                i += 1
-            }
+            print("Received subtitle playlist with \(text.components(separatedBy: .newlines).count) lines")
+            
+            // Parse M3U8 playlist more efficiently
+            let vttFiles = parseM3U8Playlist(text, baseURL: playlistURL)
             
             DispatchQueue.main.async {
+                print("Processing \(vttFiles.count) VTT files")
                 self.processVTTFiles(vttFiles)
             }
         }.resume()
     }
     
+    private func parseM3U8Playlist(_ content: String, baseURL: String) -> [String] {
+        var vttFiles: [String] = []
+        let lines = content.components(separatedBy: .newlines)
+        
+        let base = baseURL.replacingOccurrences(of: "/subtitles.m3u8", with: "/")
+        
+        for i in 0..<lines.count {
+            let line = lines[i].trimmingCharacters(in: .whitespaces)
+            
+            // Look for .vtt files directly
+            if line.hasSuffix(".vtt") && !line.hasPrefix("#") {
+                let vttURL = base + line
+                vttFiles.append(vttURL)
+                print("Found VTT file: \(vttURL)")
+            }
+        }
+        
+        return vttFiles
+    }
+    
     private func processVTTFiles(_ vttFiles: [String]) {
-        guard !vttFiles.isEmpty else { return }
+        guard !vttFiles.isEmpty else {
+            print("No VTT files to process")
+            return
+        }
         
-        var pendingCount = vttFiles.count
-        var newSegments: [SubtitleSegmentLink] = []
+        // Process files sequentially to avoid overwhelming the system
+        processVTTFile(at: 0, from: vttFiles, accumulated: [])
+    }
+    
+    private func processVTTFile(at index: Int, from vttFiles: [String], accumulated: [SubtitleSegmentLink]) {
+        guard index < vttFiles.count else {
+            // All files processed, update segments
+            self.appendSegments(accumulated)
+            return
+        }
         
-        for vttURL in vttFiles {
-            determineSegmentTimes(vttURL: vttURL) { maybeLink in
-                DispatchQueue.main.async {
-                    pendingCount -= 1
-                    if let link = maybeLink {
-                        newSegments.append(link)
-                    }
-                    if pendingCount == 0 {
-                        self.appendSegments(newSegments)
-                    }
+        let vttURL = vttFiles[index]
+        print("Processing VTT file \(index + 1)/\(vttFiles.count): \(vttURL)")
+        
+        determineSegmentTimes(vttURL: vttURL) { maybeLink in
+            DispatchQueue.main.async {
+                var newAccumulated = accumulated
+                if let link = maybeLink {
+                    newAccumulated.append(link)
                 }
+                
+                // Process next file
+                self.processVTTFile(at: index + 1, from: vttFiles, accumulated: newAccumulated)
             }
         }
     }
     
     private func appendSegments(_ newSegments: [SubtitleSegmentLink]) {
+        print("Appending \(newSegments.count) subtitle segments")
+        
         let existingURLs = Set(subtitleViewModel.segments.map { $0.urlString })
         let trulyNew = newSegments.filter { !existingURLs.contains($0.urlString) }
         let sortedNew = trulyNew.sorted { $0.minStart < $1.minStart }
+        
+        print("Adding \(sortedNew.count) new segments (filtered \(newSegments.count - sortedNew.count) duplicates)")
+        
         subtitleViewModel.segments.append(contentsOf: sortedNew)
         
+        // Load the first segment immediately if no current segment
         if subtitleViewModel.currentSegment == nil, !subtitleViewModel.segments.isEmpty {
+            print("Loading first subtitle segment")
             subtitleViewModel.loadSegment(at: 0)
         }
+        
+        print("Total subtitle segments: \(subtitleViewModel.segments.count)")
     }
     
     private func determineSegmentTimes(vttURL: String, completion: @escaping (SubtitleSegmentLink?) -> Void) {
