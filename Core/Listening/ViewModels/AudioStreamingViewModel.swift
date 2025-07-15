@@ -349,36 +349,6 @@ class AudioStreamingViewModel: ObservableObject {
             self?.pausePlayback()
         }
         
-        NotificationCenter.default.addObserver(
-            forName: Notification.Name("RemoteSkipForwardCommand"),
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            if let seconds = notification.object as? TimeInterval {
-                self?.skipForward(seconds: seconds)
-            }
-        }
-        
-        NotificationCenter.default.addObserver(
-            forName: Notification.Name("RemoteSkipBackwardCommand"),
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            if let seconds = notification.object as? TimeInterval {
-                self?.skipBackward(seconds: seconds)
-            }
-        }
-        
-        NotificationCenter.default.addObserver(
-            forName: Notification.Name("RemoteChangePlaybackPositionCommand"),
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            if let time = notification.object as? TimeInterval {
-                self?.seekTo(time: time)
-            }
-        }
-        
         // Handle audio interruptions
         NotificationCenter.default.addObserver(
             forName: Notification.Name("AudioInterruptionBegan"),
@@ -406,34 +376,6 @@ class AudioStreamingViewModel: ObservableObject {
         ) { [weak self] _ in
             self?.pausePlayback()
         }
-    }
-    
-    private func skipForward(seconds: TimeInterval) {
-        guard let player = player else { return }
-        let currentTime = player.currentTime()
-        let newTime = CMTimeAdd(currentTime, CMTime(seconds: seconds, preferredTimescale: 1))
-        
-        if let duration = player.currentItem?.duration,
-           duration.isValid && !duration.isIndefinite {
-            let boundedTime = CMTimeMinimum(newTime, duration)
-            player.seek(to: boundedTime)
-        } else {
-            player.seek(to: newTime)
-        }
-    }
-    
-    private func skipBackward(seconds: TimeInterval) {
-        guard let player = player else { return }
-        let currentTime = player.currentTime()
-        let newTime = CMTimeSubtract(currentTime, CMTime(seconds: seconds, preferredTimescale: 1))
-        let boundedTime = CMTimeMaximum(newTime, CMTime.zero)
-        player.seek(to: boundedTime)
-    }
-    
-    private func seekTo(time: TimeInterval) {
-        guard let player = player else { return }
-        let targetTime = CMTime(seconds: time, preferredTimescale: 1)
-        player.seek(to: targetTime)
     }
     
     private func cleanupPlayer() {
