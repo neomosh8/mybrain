@@ -1,0 +1,308 @@
+import SwiftUI
+import Combine
+
+/// Unified reading view that combines all reading functionality
+struct ReadingView: View {
+    let thought: Thought
+    
+    @StateObject private var viewModel = ReadingViewModel()
+    @StateObject private var statusPickerController = BottomSheetPickerController()
+    
+    private let networkService = NetworkServiceManager.shared
+    
+    @State private var thoughtStatus: ThoughtStatus?
+    @State private var isCheckingStatus = true
+    @State private var showResetSuccess = false
+    @State private var cancellables = Set<AnyCancellable>()
+    
+    var body: some View {
+        ZStack {
+            if isCheckingStatus {
+                loadingStatusView
+            } else {
+                mainReadingInterface
+                
+                // Fixed reading speed slider at bottom
+                readingSpeedControl
+                
+                // Status picker overlay
+                statusPickerOverlay
+            }
+        }
+        .navigationTitle("Reading")
+        .navigationBarTitleDisplayMode(.inline)
+        .alert("Success", isPresented: $showResetSuccess) {
+            Button("OK") { }
+        } message: {
+            Text("Reading progress reset successfully")
+        }
+        .onAppear {
+            checkThoughtStatus()
+        }
+        .onDisappear {
+            viewModel.cleanup()
+        }
+    }
+    
+    // MARK: - Status Loading View
+    private var loadingStatusView: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+                .tint(.gray)
+            Text("Checking reading status...")
+                .foregroundColor(.black)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color("EInkBackground"))
+    }
+    
+    // MARK: - Main Reading Interface
+    private var mainReadingInterface: some View {
+        ZStack {
+            Color("EInkBackground").ignoresSafeArea()
+            
+            if viewModel.hasCompletedAllChapters {
+                ChapterCompletionView(thoughtId: thought.id)
+            } else if viewModel.chapters.isEmpty {
+                loadingContentView
+            } else {
+                readingContent
+            }
+        }
+        .blur(radius: statusPickerController.isPresented ? 3 : 0)
+    }
+    
+    private var loadingContentView: some View {
+        VStack(spacing: 16) {
+            if viewModel.isLoadingChapter {
+                ProgressView("Loading Chapter...")
+                    .tint(.gray)
+                    .foregroundColor(.black)
+            } else {
+                Button("Load Content") {
+                    viewModel.requestNextChapter()
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(.ultraThinMaterial)
+        )
+    }
+    
+    private var readingContent: some View {
+        ScrollView {
+            LazyVStack(spacing: 1) {
+                ForEach(0..<viewModel.displayedChapterCount, id: \.self) { index in
+                    AnimatedParagraphView(
+                        paragraph: viewModel.chapters[index].content,
+                        backgroundColor: Color("ParagraphBackground"),
+                        wordInterval: viewModel.readingSpeed,
+                        chapterIndex: index,
+                        thoughtId: thought.id,
+                        chapterNumber: viewModel.chapters[index].number,
+                        onHalfway: {
+                            viewModel.onChapterHalfway()
+                        },
+                        onFinished: {
+                            viewModel.onChapterFinished(index)
+                        },
+                        currentChapterIndex: $viewModel.currentChapterIndex
+                    )
+                }
+            }
+        }
+        .padding(.bottom, 80) // Space for speed control
+    }
+    
+    // MARK: - Reading Speed Control
+    private var readingSpeedControl: some View {
+        VStack {
+            Spacer()
+            
+            HStack {
+                Image(systemName: "tortoise")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                Slider(value: $viewModel.readingSpeed, in: 0.01...0.25)
+                    .accentColor(.primary)
+                
+                Image(systemName: "hare")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(.ultraThinMaterial)
+                    .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+            )
+            .padding(.horizontal, 16)
+            .padding(.bottom, 34)
+        }
+    }
+    
+    // MARK: - Status Picker Overlay
+    private var statusPickerOverlay: some View {
+        BottomSheetPicker(
+            title: "Reading Options",
+            controller: statusPickerController,
+            onDismiss: nil
+        ) {
+            VStack(spacing: 0) {
+                statusMessage
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
+                
+                Divider()
+                    .background(Color.secondary.opacity(0.2))
+                
+                actionButtons
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
+            }
+        }
+    }
+    
+    private var statusMessage: some View {
+        Text(overlayMessage)
+            .font(.body)
+            .multilineTextAlignment(.leading)
+            .foregroundColor(.primary)
+    }
+    
+    private var actionButtons: some View {
+        VStack(spacing: 12) {
+            if thoughtStatus?.status == "in_progress" {
+                Button("Resume Reading") {
+                    statusPickerController.close()
+                    setupReading()
+                }
+                .buttonStyle(PrimaryActionButtonStyle())
+                
+                Button("Restart from Beginning") {
+                    resetReadingProgress()
+                }
+                .buttonStyle(SecondaryActionButtonStyle())
+            } else {
+                Button("Start Reading") {
+                    statusPickerController.close()
+                    setupReading()
+                }
+                .buttonStyle(PrimaryActionButtonStyle())
+            }
+        }
+    }
+    
+    // MARK: - Helper Properties
+    private var overlayMessage: String {
+        guard let status = thoughtStatus?.status else {
+            return "Ready to start reading \"\(thought.name)\""
+        }
+        
+        switch status {
+        case "in_progress":
+            return "You're in the middle of reading \"\(thought.name)\". Would you like to continue where you left off?"
+        case "finished":
+            return "You've completed reading \"\(thought.name)\". Would you like to read it again?"
+        default:
+            return "Ready to start reading \"\(thought.name)\""
+        }
+    }
+    
+    // MARK: - Action Methods
+    private func checkThoughtStatus() {
+        print("🔍 Starting status check for thought: \(thought.id)")
+        isCheckingStatus = true
+        
+        networkService.thoughts.getThoughtStatus(thoughtId: thought.id)
+            .receive(on: DispatchQueue.main)
+            .sink { result in
+                print("🔍 Status check completed with result: \(result)")
+                
+                self.isCheckingStatus = false
+                
+                switch result {
+                case .success(let status):
+                    self.thoughtStatus = status
+                    // Show status overlay if there's existing progress or completion
+                    if status.status == "in_progress" || status.status == "finished" {
+                        self.statusPickerController.open()
+                    } else {
+                        // Start reading immediately for new content
+                        self.setupReading()
+                    }
+                case .failure(let error):
+                    print("❌ Failed to get thought status: \(error)")
+                    // Continue with reading setup on error
+                    self.setupReading()
+                }
+            }
+            .store(in: &cancellables)
+    }
+    
+    private func setupReading() {
+        print("📖 Setting up reading for thought: \(thought.id)")
+        viewModel.setup(for: thought)
+    }
+    
+    private func resetReadingProgress() {
+        statusPickerController.close()
+        
+        networkService.thoughts.resetThoughtProgress(thoughtId: thought.id)
+            .receive(on: DispatchQueue.main)
+            .sink { result in
+                switch result {
+                case .success:
+                    self.showResetSuccess = true
+                    self.setupReading()
+                case .failure(let error):
+                    print("❌ Failed to reset progress: \(error)")
+                }
+            }
+            .store(in: &cancellables)
+    }
+}
+
+// MARK: - Custom Button Styles
+struct PrimaryActionButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 16, weight: .semibold))
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.accentColor)
+                    .opacity(configuration.isPressed ? 0.8 : 1.0)
+            )
+            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+    }
+}
+
+struct SecondaryActionButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 16, weight: .medium))
+            .foregroundColor(.primary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.primary.opacity(0.3), lineWidth: 1)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.clear)
+                    )
+            )
+            .opacity(configuration.isPressed ? 0.7 : 1.0)
+            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+    }
+}

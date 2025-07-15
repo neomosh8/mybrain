@@ -19,12 +19,6 @@ struct ChapterData {
     let content: String
 }
 
-struct ReadingThoughtStatus {
-    var thoughtId: String
-    var status: String
-    var progress: ThoughtProgress
-}
-
 struct ChapterProgressState {
     var totalChapters: Int
     var completedChapters: Int
