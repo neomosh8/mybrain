@@ -151,7 +151,6 @@ class AudioStreamingViewModel: ObservableObject {
         DispatchQueue.main.async {
             self.isFetchingLinks = false
             
-
             guard let masterPlaylistPath = data["master_playlist"] as? String else {
                 let errorMessage = "master_playlist not found in response"
                 self.playerError = NSError(
@@ -177,12 +176,19 @@ class AudioStreamingViewModel: ObservableObject {
             
             self.masterPlaylistURL = url
             
-            // Setup subtitles if available
+            print("Successfully parsed streaming links - Master: \(url)")
+            
+            // Setup subtitles immediately if available
             if let subsPath = data["subtitles_playlist"] as? String, !subsPath.isEmpty {
                 self.subtitlesURL = baseURL + subsPath
+                print("Subtitles URL available: \(self.subtitlesURL!)")
+                // Start loading subtitles immediately
+                NotificationCenter.default.post(
+                    name: Notification.Name("InitialSubtitleLoad"),
+                    object: ["url": self.subtitlesURL!, "chapter": 1]
+                )
             }
             
-            print("Successfully parsed streaming links - Master: \(url)")
             self.setupPlayer(with: url)
         }
     }
@@ -260,6 +266,12 @@ class AudioStreamingViewModel: ObservableObject {
         // Update now playing info
         updateNowPlayingInfo()
         
+        // Update subtitle timing - send current time to subtitle view
+        NotificationCenter.default.post(
+            name: Notification.Name("UpdateSubtitleTime"),
+            object: currentSeconds
+        )
+        
         // Check if we need to request next chapter
         guard let nextChapterTime = nextChapterTime,
               currentSeconds >= (nextChapterTime - chapterBuffer),
@@ -283,6 +295,7 @@ class AudioStreamingViewModel: ObservableObject {
             
             print("Chapter response - Number: \(chapterNumber), Duration: \(audioDuration), Complete: \(isComplete)")
             
+            let previousChapter = self.currentChapterNumber
             self.currentChapterNumber = chapterNumber
             
             if audioDuration > 0 {
@@ -294,12 +307,12 @@ class AudioStreamingViewModel: ObservableObject {
             self.nextChapterRequested = false
             self.lastChapterComplete = isComplete
             
-            // Refresh subtitles if available
-            if let subtitlesURL = self.subtitlesURL {
-                // Notify subtitle view model to refresh
+            // Refresh subtitles if available and chapter changed
+            if let subtitlesURL = self.subtitlesURL, previousChapter != chapterNumber {
+                print("Chapter changed from \(previousChapter) to \(chapterNumber), refreshing subtitles")
                 NotificationCenter.default.post(
                     name: Notification.Name("RefreshSubtitles"),
-                    object: subtitlesURL
+                    object: ["url": subtitlesURL, "chapter": chapterNumber]
                 )
             }
         }
