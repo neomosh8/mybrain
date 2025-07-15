@@ -123,7 +123,9 @@ struct HomeView: View {
         .navigationDestination(item: $selectedThought) { thought in
             switch selectedMode {
             case .reading:
-                ReadingView(thought: thought)
+                NavigationStack {
+                    ReadingView(thought: thought)
+                }
             case .listening:
                 ListeningContainerView(thought: thought)
             }
