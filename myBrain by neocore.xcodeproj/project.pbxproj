@@ -299,7 +299,6 @@
 				74263C5A2DDADDAE00953598 /* Authentication */,
 				74263C5E2DDADDD900953598 /* Bluetooth */,
 				74263C5C2DDADDC800953598 /* Streaming */,
-				74263C5B2DDADDBA00953598 /* Thoughts */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -359,13 +358,6 @@
 				74263C742DDADEC900953598 /* ViewModels */,
 			);
 			path = Authentication;
-			sourceTree = "<group>";
-		};
-		74263C5B2DDADDBA00953598 /* Thoughts */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Thoughts;
 			sourceTree = "<group>";
 		};
 		74263C5C2DDADDC800953598 /* Streaming */ = {
