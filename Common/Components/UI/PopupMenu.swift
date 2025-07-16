@@ -46,6 +46,14 @@ struct PopupMenu: View {
                                     .foregroundColor(item.isDestructive ? .red : .primary)
                                 
                                 Spacer()
+                                
+                                if case .toggle(let isOn) = item.type {
+                                    Image(systemName: "checkmark")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundColor(.blue)
+                                        .opacity(isOn ? 1 : 0)
+                                        .animation(.easeInOut(duration: 0.15), value: isOn)
+                                }
                             }
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
@@ -79,8 +87,10 @@ struct PopupMenuItem {
     let icon: String
     let title: String
     let isDestructive: Bool
+    let type: PopupMenuItemType
     let action: () -> Void
     
+    // Convenience initializer for regular button
     init(
         icon: String,
         title: String,
@@ -90,8 +100,30 @@ struct PopupMenuItem {
         self.icon = icon
         self.title = title
         self.isDestructive = isDestructive
+        self.type = .button
         self.action = action
     }
+    
+    // Convenience initializer for toggle button
+    init(
+        icon: String,
+        title: String,
+        isOn: Bool,
+        isDestructive: Bool = false,
+        action: @escaping () -> Void
+    ) {
+        self.icon = icon
+        self.title = title
+        self.isDestructive = isDestructive
+        self.type = .toggle(isOn)
+        self.action = action
+    }
+}
+
+// MARK: - PopupMenuItemType
+enum PopupMenuItemType {
+    case button
+    case toggle(Bool)
 }
 
 // MARK: - PopupMenuButton
@@ -189,14 +221,39 @@ struct PopupMenuContainer<Content: View>: View {
 // MARK: - Usage Example
 struct PopupMenuExample: View {
     @State private var showMenu = false
+    @State private var showProgress = true
+    @State private var showFocusChart = true
+    @State private var showSpeedSlider = true
     @State private var showingEditSheet = false
     @State private var showingLogoutAlert = false
-    @State private var showingDeleteAlert = false
     
     var body: some View {
         PopupMenuContainer(
             isPresented: $showMenu,
             menuItems: [
+                // Toggle items
+                PopupMenuItem(
+                    icon: "chart.line.uptrend.xyaxis",
+                    title: "Progress",
+                    isOn: showProgress
+                ) {
+                    showProgress.toggle()
+                },
+                PopupMenuItem(
+                    icon: "brain.head.profile",
+                    title: "Focus Chart",
+                    isOn: showFocusChart
+                ) {
+                    showFocusChart.toggle()
+                },
+                PopupMenuItem(
+                    icon: "speedometer",
+                    title: "Speed Slider",
+                    isOn: showSpeedSlider
+                ) {
+                    showSpeedSlider.toggle()
+                },
+                // Regular button items
                 PopupMenuItem(
                     icon: "pencil",
                     title: "Edit Profile"
@@ -209,13 +266,6 @@ struct PopupMenuExample: View {
                     isDestructive: true
                 ) {
                     showingLogoutAlert = true
-                },
-                PopupMenuItem(
-                    icon: "trash",
-                    title: "Delete Account",
-                    isDestructive: true
-                ) {
-                    showingDeleteAlert = true
                 }
             ]
         ) {
@@ -229,8 +279,21 @@ struct PopupMenuExample: View {
                 
                 Spacer()
                 
-                Text("Your content here")
-                    .font(.title)
+                VStack(spacing: 20) {
+                    Text("Your content here")
+                        .font(.title)
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Toggle States:")
+                            .font(.headline)
+                        Text("Progress: \(showProgress ? "On" : "Off")")
+                        Text("Focus Chart: \(showFocusChart ? "On" : "Off")")
+                        Text("Speed Slider: \(showSpeedSlider ? "On" : "Off")")
+                    }
+                    .padding()
+                    .background(Color.gray.opacity(0.1))
+                    .cornerRadius(8)
+                }
                 
                 Spacer()
             }
@@ -242,12 +305,6 @@ struct PopupMenuExample: View {
             Button("Cancel", role: .cancel) { }
             Button("Logout", role: .destructive) {
                 // Handle logout
-            }
-        }
-        .alert("Delete Account", isPresented: $showingDeleteAlert) {
-            Button("Cancel", role: .cancel) { }
-            Button("Delete", role: .destructive) {
-                // Handle delete
             }
         }
     }
