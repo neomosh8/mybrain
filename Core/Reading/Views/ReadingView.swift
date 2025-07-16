@@ -70,6 +70,11 @@ struct ReadingView: View {
     
     // MARK: - Computed Properties
     
+    private var floatingFocusChart: some View {
+        FloatingFocusChart()
+            .zIndex(1000)
+    }
+    
     private var chapterSubtitle: String {
         guard let status = thoughtStatus,
               let currentChapter = viewModel.currentChapterIndex else {
@@ -106,6 +111,10 @@ struct ReadingView: View {
                 
                 if showSpeedSlider {
                     readingSpeedControl
+                }
+                
+                if showFocusChart {
+                    floatingFocusChart
                 }
             }
             .frame(maxHeight: .infinity)
