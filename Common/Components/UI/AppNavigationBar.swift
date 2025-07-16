@@ -33,9 +33,10 @@ struct AppNavigationBar<TrailingContent: View>: View {
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.title2)
+                    .font(.title3)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
+                    .lineLimit(1)
                     .truncationMode(.tail)
                 
                 if let subtitle = subtitle {
