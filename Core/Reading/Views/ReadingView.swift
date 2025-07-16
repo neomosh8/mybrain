@@ -193,71 +193,77 @@ struct ReadingView: View {
         VStack {
             Spacer()
             
-            HStack {
+            HStack(spacing: 16) {
                 Button(action: {
                     // TODO: Add bookmark functionality
                 }) {
-                    HStack(spacing: 4) {
+                    HStack(spacing: 6) {
                         Image(systemName: "bookmark")
-                            .font(.system(size: 20))
+                            .font(.system(size: 16, weight: .medium))
                         Text("Bookmark")
-                            .font(.footnote)
+                            .font(.system(size: 15, weight: .medium))
                     }
-                    .foregroundColor(.primary)
+                    .foregroundColor(Color(.black).opacity(0.9))
+                    .frame(width: 120, height: 40)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color(.systemGray6))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color(.systemGray4), lineWidth: 0.5)
+                            )
+                    )
                 }
-                .padding(.vertical, 8)
-                .padding(.horizontal, 12)
-                .background(
-                  RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.blue)
-                )
-                .foregroundColor(.white)
-                .opacity(1)
-                                
-                Spacer()
+                .opacity(0)
                 
                 Button(action: {
                     viewModel.togglePlayback()
                 }) {
-                    Image(systemName: viewModel.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                        .font(.system(size: 50))
-                        .foregroundColor(.blue)
+                    HStack(spacing: 6) {
+                        Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
+                            .font(.system(size: 16, weight: .medium))
+                        Text(viewModel.isPlaying ? "Pause" : "Play")
+                            .font(.system(size: 15, weight: .medium))
+                    }
+                    .foregroundColor(.white)
+                    .frame(width: 90, height: 40)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.blue)
+                    )
                 }
-                .padding(.vertical, 8)
-                .padding(.horizontal, 12)
-                .background(
-                  RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.blue)
-                )
-                .foregroundColor(.white)
-                
-                Spacer()
                 
                 Button(action: {
                     // TODO: Add chapters functionality
                 }) {
-                    HStack(spacing: 4) {
+                    HStack(spacing: 6) {
                         Image(systemName: "list.bullet")
-                            .font(.system(size: 20))
+                            .font(.system(size: 16, weight: .medium))
                         Text("Chapters")
-                            .font(.footnote)
+                            .font(.system(size: 15, weight: .medium))
                     }
-                    .foregroundColor(.primary)
+                    .foregroundColor(Color(.black).opacity(0.9))
+                    .frame(width: 120, height: 40)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color(.systemGray6))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color(.systemGray4), lineWidth: 0.5)
+                            )
+                    )
                 }
-                .padding(.vertical, 8)
-                .padding(.horizontal, 12)
-                .background(
-                  RoundedRectangle(cornerRadius: 10)
-                    .fill(.gray)
-                )
-                .foregroundColor(.white)
-                .opacity(1)
+                .opacity(0)
             }
-            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 20)
+            .padding(.top, 18)
+            .padding(.bottom, 34)
             .background(
-                RoundedRectangle(cornerRadius: 0)
+                Rectangle()
                     .fill(Color(.systemBackground))
                     .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: -2)
+                    .ignoresSafeArea(edges: .bottom)
             )
         }
     }
