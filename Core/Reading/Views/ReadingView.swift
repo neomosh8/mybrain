@@ -12,7 +12,6 @@ struct ReadingView: View {
     
     @State private var thoughtStatus: ThoughtStatus?
     @State private var isCheckingStatus = true
-    @State private var showResetSuccess = false
     @State private var cancellables = Set<AnyCancellable>()
     
     @State private var showProgress = true
@@ -72,11 +71,6 @@ struct ReadingView: View {
                     ]
                 )
             }
-        }
-        .alert("Success", isPresented: $showResetSuccess) {
-            Button("OK") { }
-        } message: {
-            Text("Reading progress reset successfully")
         }
         .onAppear {
             checkThoughtStatus()
@@ -315,7 +309,6 @@ struct ReadingView: View {
             .sink { result in
                 switch result {
                 case .success:
-                    self.showResetSuccess = true
                     self.setupReading()
                 case .failure(let error):
                     print("❌ Failed to reset progress: \(error)")
