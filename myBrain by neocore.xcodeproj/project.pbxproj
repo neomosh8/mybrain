@@ -64,6 +64,7 @@
 		7489330C2E2389BE007A5340 /* ReadingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7489330B2E2389BB007A5340 /* ReadingViewModel.swift */; };
 		7489330E2E2389C2007A5340 /* ReadingModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7489330D2E2389C1007A5340 /* ReadingModels.swift */; };
 		748C65842E27684800C912FB /* ActionButtons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748C65832E27684700C912FB /* ActionButtons.swift */; };
+		748C65882E27A80D00C912FB /* FloatingFocusChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748C65872E27A80900C912FB /* FloatingFocusChart.swift */; };
 		748DF72A2E1BA15400FD4080 /* AvatarImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748DF7292E1BA15100FD4080 /* AvatarImageCache.swift */; };
 		748DF72C2E1BA17600FD4080 /* CachedAvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748DF72B2E1BA17400FD4080 /* CachedAvatarView.swift */; };
 		748E387F2E1E822E004FADCA /* PopupMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748E387E2E1E822D004FADCA /* PopupMenu.swift */; };
@@ -183,6 +184,7 @@
 		7489330B2E2389BB007A5340 /* ReadingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingViewModel.swift; sourceTree = "<group>"; };
 		7489330D2E2389C1007A5340 /* ReadingModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingModels.swift; sourceTree = "<group>"; };
 		748C65832E27684700C912FB /* ActionButtons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionButtons.swift; sourceTree = "<group>"; };
+		748C65872E27A80900C912FB /* FloatingFocusChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingFocusChart.swift; sourceTree = "<group>"; };
 		748DF7292E1BA15100FD4080 /* AvatarImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarImageCache.swift; sourceTree = "<group>"; };
 		748DF72B2E1BA17400FD4080 /* CachedAvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CachedAvatarView.swift; sourceTree = "<group>"; };
 		748E387E2E1E822D004FADCA /* PopupMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopupMenu.swift; sourceTree = "<group>"; };
@@ -424,6 +426,7 @@
 		74263C642DDADE1D00953598 /* Charts */ = {
 			isa = PBXGroup;
 			children = (
+				748C65872E27A80900C912FB /* FloatingFocusChart.swift */,
 				74263C0F2DDADAE800953598 /* FeedbackPlotView.swift */,
 				74263C862DDAF63500953598 /* AnimatedLineChartView.swift */,
 			);
@@ -856,6 +859,7 @@
 				74AA48072E221C3700B6D017 /* ActionRow.swift in Sources */,
 				748E387F2E1E822E004FADCA /* PopupMenu.swift in Sources */,
 				74BC7E6E2E000E1F00A9C2F4 /* NetworkConstants.swift in Sources */,
+				748C65882E27A80D00C912FB /* FloatingFocusChart.swift in Sources */,
 				74BC7E602E000DE700A9C2F4 /* NetworkProtocols.swift in Sources */,
 				74BC7E7A2E0027DB00A9C2F4 /* GlobalServices.swift in Sources */,
 				68DF43FD2D20CE5F00A6E46C /* SubtitleViewModel.swift in Sources */,
