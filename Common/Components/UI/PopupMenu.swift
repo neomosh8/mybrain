@@ -4,14 +4,14 @@ import SwiftUI
 struct PopupMenu: View {
     @Binding var isPresented: Bool
     let menuItems: [PopupMenuItem]
-    let menuWidth: CGFloat
+    let menuWidth: CGFloat?
     let topOffset: CGFloat
     let trailingOffset: CGFloat
     
     init(
         isPresented: Binding<Bool>,
         menuItems: [PopupMenuItem],
-        menuWidth: CGFloat = 180,
+        menuWidth: CGFloat? = nil,
         topOffset: CGFloat = 60,
         trailingOffset: CGFloat = 16
     ) {
@@ -65,6 +65,7 @@ struct PopupMenu: View {
                         }
                     }
                 }
+                .fixedSize(horizontal: menuWidth == nil, vertical: false)
                 .frame(width: menuWidth)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .background(
@@ -173,7 +174,7 @@ struct PopupMenuButton: View {
 struct PopupMenuContainer<Content: View>: View {
     @Binding var isPresented: Bool
     let menuItems: [PopupMenuItem]
-    let menuWidth: CGFloat
+    let menuWidth: CGFloat?
     let topOffset: CGFloat
     let trailingOffset: CGFloat
     let content: Content
@@ -181,7 +182,7 @@ struct PopupMenuContainer<Content: View>: View {
     init(
         isPresented: Binding<Bool>,
         menuItems: [PopupMenuItem],
-        menuWidth: CGFloat = 180,
+        menuWidth: CGFloat? = nil,
         topOffset: CGFloat = 60,
         trailingOffset: CGFloat = 16,
         @ViewBuilder content: () -> Content
