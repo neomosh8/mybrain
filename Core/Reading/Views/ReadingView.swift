@@ -207,7 +207,9 @@ struct ReadingView: View {
         BottomSheetPicker(
             title: "Reading Options",
             controller: statusPickerController,
-            onDismiss: nil
+            onDismiss: {
+                setupReading()
+            }
         ) {
             VStack(spacing: 0) {
                 statusMessage
@@ -246,8 +248,7 @@ struct ReadingView: View {
                 .buttonStyle(SecondaryActionButtonStyle())
             } else {
                 Button("Start Reading") {
-                    statusPickerController.close()
-                    setupReading()
+                    resetReadingProgress()
                 }
                 .buttonStyle(PrimaryActionButtonStyle())
             }
