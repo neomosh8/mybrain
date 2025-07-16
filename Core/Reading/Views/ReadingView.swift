@@ -1,7 +1,6 @@
 import SwiftUI
 import Combine
 
-/// Unified reading view that combines all reading functionality
 struct ReadingView: View {
     let thought: Thought
     
@@ -16,6 +15,11 @@ struct ReadingView: View {
     @State private var showResetSuccess = false
     @State private var cancellables = Set<AnyCancellable>()
     
+    @State private var showProgress = true
+    @State private var showFocusChart = true
+    @State private var showSpeedSlider = true
+    @State private var showMenuPopup = false
+    
     var body: some View {
         ZStack {
             if isCheckingStatus {
@@ -23,20 +27,40 @@ struct ReadingView: View {
             } else {
                 mainReadingInterface
                 
-                // Fixed reading speed slider at bottom
-                readingSpeedControl
+                if showSpeedSlider {
+                    readingSpeedControl
+                }
                 
-                // Status picker overlay
                 statusPickerOverlay
             }
         }
         .appNavigationBar(
-            title: "Reading",
-            subtitle: thought.name,
+            title: thought.name,
+            subtitle: chapterSubtitle,
             onBackTap: {
                 dismiss()
             }
-        )
+        ) {
+            PopupMenuButton(isPresented: $showMenuPopup)
+        }
+        .overlay{
+            if showMenuPopup {
+                PopupMenu(
+                    isPresented: $showMenuPopup,
+                    menuItems: [
+                        PopupMenuItem(icon: "chart.line.uptrend.xyaxis", title: "Progress") {
+                            showProgress.toggle()
+                        },
+                        PopupMenuItem(icon: "brain.head.profile", title: "Focus Chart") {
+                            showFocusChart.toggle()
+                        },
+                        PopupMenuItem(icon: "speedometer", title: "Speed Slider") {
+                            showSpeedSlider.toggle()
+                        }
+                    ]
+                )
+            }
+        }
         .alert("Success", isPresented: $showResetSuccess) {
             Button("OK") { }
         } message: {
@@ -50,7 +74,21 @@ struct ReadingView: View {
         }
     }
     
-    // MARK: - Status Loading View
+    // MARK: - Computed Properties
+    
+    private var chapterSubtitle: String {
+        guard let status = thoughtStatus,
+              let currentChapter = viewModel.currentChapterIndex else {
+            return "Loading..."
+        }
+        
+        let currentChapterNumber = currentChapter + 1
+        let totalChapters = status.progress.total
+        
+        return "Chapter \(currentChapterNumber) of \(totalChapters)"
+    }
+    
+    
     private var loadingStatusView: some View {
         VStack(spacing: 16) {
             ProgressView()
@@ -274,41 +312,40 @@ struct ReadingView: View {
     }
 }
 
-// MARK: - Custom Button Styles
-struct PrimaryActionButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 16, weight: .semibold))
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.accentColor)
-                    .opacity(configuration.isPressed ? 0.8 : 1.0)
-            )
-            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
-            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
-    }
-}
+// MARK: - Reading Menu Popover
 
-struct SecondaryActionButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 16, weight: .medium))
-            .foregroundColor(.primary)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.primary.opacity(0.3), lineWidth: 1)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.clear)
-                    )
-            )
-            .opacity(configuration.isPressed ? 0.7 : 1.0)
-            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
-            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+struct ReadingMenuPopover: View {
+    @Binding var showProgress: Bool
+    @Binding var showFocusChart: Bool
+    @Binding var showSpeedSlider: Bool
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Reading Options")
+                .font(.headline)
+                .padding(.bottom, 8)
+            
+            VStack(alignment: .leading, spacing: 12) {
+                ToggleRow(
+                    title: "Progress",
+                    icon: "chart.line.uptrend.xyaxis",
+                    isOn: $showProgress
+                )
+                
+                ToggleRow(
+                    title: "Focus Chart",
+                    icon: "brain.head.profile",
+                    isOn: $showFocusChart
+                )
+                
+                ToggleRow(
+                    title: "Speed Slider",
+                    icon: "speedometer",
+                    isOn: $showSpeedSlider
+                )
+            }
+        }
+        .padding()
+        .frame(minWidth: 200)
     }
 }
