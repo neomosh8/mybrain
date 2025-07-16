@@ -25,10 +25,6 @@ struct ReadingView: View {
             } else {
                 mainReadingInterface
                 
-                if showSpeedSlider {
-                    readingSpeedControl
-                }
-                
                 statusPickerOverlay
             }
         }
@@ -107,8 +103,11 @@ struct ReadingView: View {
                 readingContent
             }
             
+            if showSpeedSlider {
+                readingSpeedControl
+            }
+            
             bottomControlBar
-                .ignoresSafeArea(edges: .bottom)
         }
         .blur(radius: statusPickerController.isPresented ? 3 : 0)
     }
@@ -256,9 +255,7 @@ struct ReadingView: View {
                 .opacity(0)
             }
             .frame(maxWidth: .infinity)
-            .padding(.horizontal, 20)
             .padding(.top, 18)
-            .padding(.bottom, 34)
             .background(
                 Rectangle()
                     .fill(Color(.systemBackground))
