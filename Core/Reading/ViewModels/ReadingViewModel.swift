@@ -10,6 +10,7 @@ class ReadingViewModel: ObservableObject {
     @Published var chapters: [ChapterData] = []
     @Published var displayedChapterCount = 0
     @Published var currentChapterIndex: Int?
+    @Published var isPlaying = false
     @Published var hasCompletedAllChapters = false
     @Published var isLastChapter = false
     
@@ -126,6 +127,10 @@ class ReadingViewModel: ObservableObject {
         }
     }
 
+    func togglePlayback() {
+        isPlaying.toggle()
+        // Add your pause/resume logic here
+    }
     
     deinit {
         cancellables.removeAll()

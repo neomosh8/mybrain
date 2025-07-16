@@ -14,7 +14,6 @@ struct ReadingView: View {
     @State private var isCheckingStatus = true
     @State private var cancellables = Set<AnyCancellable>()
     
-    @State private var showProgress = true
     @State private var showFocusChart = true
     @State private var showSpeedSlider = true
     @State private var showMenuPopup = false
@@ -48,13 +47,6 @@ struct ReadingView: View {
                     isPresented: $showMenuPopup,
                     menuItems: [
                         PopupMenuItem(
-                            icon: "chart.line.flattrend.xyaxis",
-                            title: "Progress",
-                            isOn: showProgress
-                        ) {
-                            showProgress.toggle()
-                        },
-                        PopupMenuItem(
                             icon: "chart.bar.xaxis",
                             title: "Focus Chart",
                             isOn: showFocusChart
@@ -67,7 +59,7 @@ struct ReadingView: View {
                             isOn: showSpeedSlider
                         ) {
                             showSpeedSlider.toggle()
-                        },
+                        }
                     ]
                 )
             }
@@ -94,7 +86,6 @@ struct ReadingView: View {
         return "Chapter \(currentChapterNumber) of \(totalChapters)"
     }
     
-    
     private var loadingStatusView: some View {
         VStack(spacing: 16) {
             ProgressView()
@@ -106,7 +97,6 @@ struct ReadingView: View {
         .background(Color("EInkBackground"))
     }
     
-    // MARK: - Main Reading Interface
     private var mainReadingInterface: some View {
         ZStack {            
             if viewModel.hasCompletedAllChapters {
@@ -116,6 +106,9 @@ struct ReadingView: View {
             } else {
                 readingContent
             }
+            
+            bottomControlBar
+                .ignoresSafeArea(edges: .bottom)
         }
         .blur(radius: statusPickerController.isPresented ? 3 : 0)
     }
@@ -165,7 +158,6 @@ struct ReadingView: View {
         .padding(.bottom, 80) // Space for speed control
     }
     
-    // MARK: - Reading Speed Control
     private var readingSpeedControl: some View {
         VStack {
             Spacer()
@@ -193,11 +185,83 @@ struct ReadingView: View {
                .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 2)
             )
             .padding(.horizontal, 72)
-            .padding(.bottom, 24)
+            .padding(.bottom, 48)
         }
     }
     
-    // MARK: - Status Picker Overlay
+    private var bottomControlBar: some View {
+        VStack {
+            Spacer()
+            
+            HStack {
+                Button(action: {
+                    // TODO: Add bookmark functionality
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "bookmark")
+                            .font(.system(size: 20))
+                        Text("Bookmark")
+                            .font(.footnote)
+                    }
+                    .foregroundColor(.primary)
+                }
+                .padding(.vertical, 8)
+                .padding(.horizontal, 12)
+                .background(
+                  RoundedRectangle(cornerRadius: 10)
+                    .fill(Color.blue)
+                )
+                .foregroundColor(.white)
+                .opacity(1)
+                                
+                Spacer()
+                
+                Button(action: {
+                    viewModel.togglePlayback()
+                }) {
+                    Image(systemName: viewModel.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                        .font(.system(size: 50))
+                        .foregroundColor(.blue)
+                }
+                .padding(.vertical, 8)
+                .padding(.horizontal, 12)
+                .background(
+                  RoundedRectangle(cornerRadius: 10)
+                    .fill(Color.blue)
+                )
+                .foregroundColor(.white)
+                
+                Spacer()
+                
+                Button(action: {
+                    // TODO: Add chapters functionality
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "list.bullet")
+                            .font(.system(size: 20))
+                        Text("Chapters")
+                            .font(.footnote)
+                    }
+                    .foregroundColor(.primary)
+                }
+                .padding(.vertical, 8)
+                .padding(.horizontal, 12)
+                .background(
+                  RoundedRectangle(cornerRadius: 10)
+                    .fill(.gray)
+                )
+                .foregroundColor(.white)
+                .opacity(1)
+            }
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 0)
+                    .fill(Color(.systemBackground))
+                    .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: -2)
+            )
+        }
+    }
+    
     private var statusPickerOverlay: some View {
         BottomSheetPicker(
             title: "Reading Options",
