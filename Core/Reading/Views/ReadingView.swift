@@ -94,18 +94,21 @@ struct ReadingView: View {
     }
     
     private var mainReadingInterface: some View {
-        ZStack {            
-            if viewModel.hasCompletedAllChapters {
-                ChapterCompletionView(thoughtId: thought.id)
-            } else if viewModel.chapters.isEmpty {
-                loadingContentView
-            } else {
-                readingContent
+        VStack(spacing: 0)  {
+            ZStack {
+                if viewModel.hasCompletedAllChapters {
+                    ChapterCompletionView(thoughtId: thought.id)
+                } else if viewModel.chapters.isEmpty {
+                    loadingContentView
+                } else {
+                    readingContent
+                }
+                
+                if showSpeedSlider {
+                    readingSpeedControl
+                }
             }
-            
-            if showSpeedSlider {
-                readingSpeedControl
-            }
+            .frame(maxHeight: .infinity)
             
             bottomControlBar
         }
@@ -154,7 +157,6 @@ struct ReadingView: View {
                 }
             }
         }
-        .padding(.bottom, 80) // Space for speed control
     }
     
     private var readingSpeedControl: some View {
@@ -176,93 +178,89 @@ struct ReadingView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
-       .padding(.horizontal, 24)
-       .padding(.vertical, 12)
-       .background(
-           RoundedRectangle(cornerRadius: 36)
-               .fill(Color(.systemBackground))
-               .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 2)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 12)
+            .frame(width: 280)
+            .background(
+                RoundedRectangle(cornerRadius: 36)
+                    .fill(Color(.systemBackground))
+                    .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 2)
             )
-            .padding(.horizontal, 72)
-            .padding(.bottom, 48)
+            .padding(.bottom, 24)
         }
     }
     
     private var bottomControlBar: some View {
-        VStack {
-            Spacer()
-            
-            HStack(spacing: 16) {
-                Button(action: {
-                    // TODO: Add bookmark functionality
-                }) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "bookmark")
-                            .font(.system(size: 16, weight: .medium))
-                        Text("Bookmark")
-                            .font(.system(size: 15, weight: .medium))
-                    }
-                    .foregroundColor(Color(.black).opacity(0.9))
-                    .frame(width: 120, height: 40)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color(.systemGray6))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color(.systemGray4), lineWidth: 0.5)
-                            )
-                    )
+        HStack(spacing: 16) {
+            Button(action: {
+                // TODO: Add bookmark functionality
+            }) {
+                HStack(spacing: 6) {
+                    Image(systemName: "bookmark")
+                        .font(.system(size: 16, weight: .medium))
+                    Text("Bookmark")
+                        .font(.system(size: 15, weight: .medium))
                 }
-                .opacity(0)
-                
-                Button(action: {
-                    viewModel.togglePlayback()
-                }) {
-                    HStack(spacing: 6) {
-                        Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
-                            .font(.system(size: 16, weight: .medium))
-                        Text(viewModel.isPlaying ? "Pause" : "Play")
-                            .font(.system(size: 15, weight: .medium))
-                    }
-                    .foregroundColor(.white)
-                    .frame(width: 90, height: 40)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.blue)
-                    )
-                }
-                
-                Button(action: {
-                    // TODO: Add chapters functionality
-                }) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "list.bullet")
-                            .font(.system(size: 16, weight: .medium))
-                        Text("Chapters")
-                            .font(.system(size: 15, weight: .medium))
-                    }
-                    .foregroundColor(Color(.black).opacity(0.9))
-                    .frame(width: 120, height: 40)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color(.systemGray6))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color(.systemGray4), lineWidth: 0.5)
-                            )
-                    )
-                }
-                .opacity(0)
+                .foregroundColor(Color(.black).opacity(0.9))
+                .frame(width: 120, height: 40)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color(.systemGray6))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color(.systemGray4), lineWidth: 0.5)
+                        )
+                )
             }
-            .frame(maxWidth: .infinity)
-            .padding(.top, 18)
-            .background(
-                Rectangle()
-                    .fill(Color(.systemBackground))
-                    .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: -2)
-                    .ignoresSafeArea(edges: .bottom)
-            )
+            .opacity(0)
+            
+            Button(action: {
+                viewModel.togglePlayback()
+            }) {
+                HStack(spacing: 6) {
+                    Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
+                        .font(.system(size: 16, weight: .medium))
+                    Text(viewModel.isPlaying ? "Pause" : "Play")
+                        .font(.system(size: 15, weight: .medium))
+                }
+                .foregroundColor(.white)
+                .frame(width: 90, height: 40)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.blue)
+                )
+            }
+            
+            Button(action: {
+                // TODO: Add chapters functionality
+            }) {
+                HStack(spacing: 6) {
+                    Image(systemName: "list.bullet")
+                        .font(.system(size: 16, weight: .medium))
+                    Text("Chapters")
+                        .font(.system(size: 15, weight: .medium))
+                }
+                .foregroundColor(Color(.black).opacity(0.9))
+                .frame(width: 120, height: 40)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color(.systemGray6))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color(.systemGray4), lineWidth: 0.5)
+                        )
+                )
+            }
+            .opacity(0)
         }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 18)
+        .background(
+            Rectangle()
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: -2)
+                .ignoresSafeArea(edges: .bottom)
+        )
     }
     
     private var statusPickerOverlay: some View {
