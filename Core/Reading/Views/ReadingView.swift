@@ -48,15 +48,27 @@ struct ReadingView: View {
                 PopupMenu(
                     isPresented: $showMenuPopup,
                     menuItems: [
-                        PopupMenuItem(icon: "chart.line.uptrend.xyaxis", title: "Progress") {
+                        PopupMenuItem(
+                            icon: "chart.line.uptrend.xyaxis",
+                            title: "Progress",
+                            isOn: showProgress
+                        ) {
                             showProgress.toggle()
                         },
-                        PopupMenuItem(icon: "brain.head.profile", title: "Focus Chart") {
+                        PopupMenuItem(
+                            icon: "brain.head.profile",
+                            title: "Focus Chart",
+                            isOn: showFocusChart
+                        ) {
                             showFocusChart.toggle()
                         },
-                        PopupMenuItem(icon: "speedometer", title: "Speed Slider") {
+                        PopupMenuItem(
+                            icon: "speedometer",
+                            title: "Speed Slider",
+                            isOn: showSpeedSlider
+                        ) {
                             showSpeedSlider.toggle()
-                        }
+                        },
                     ]
                 )
             }
