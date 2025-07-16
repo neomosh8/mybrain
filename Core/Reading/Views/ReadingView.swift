@@ -185,15 +185,15 @@ struct ReadingView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(.ultraThinMaterial)
-                    .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+       .padding(.horizontal, 24)
+       .padding(.vertical, 12)
+       .background(
+           RoundedRectangle(cornerRadius: 36)
+               .fill(Color(.systemBackground))
+               .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 2)
             )
-            .padding(.horizontal, 16)
-            .padding(.bottom, 34)
+            .padding(.horizontal, 72)
+            .padding(.bottom, 24)
         }
     }
     
