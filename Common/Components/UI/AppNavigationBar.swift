@@ -31,24 +31,21 @@ struct AppNavigationBar<TrailingContent: View>: View {
                     )
             }
             
-            if let subtitle = subtitle {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.primary)
-                    
-                    Text(subtitle)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            } else {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.title2)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
+                    .truncationMode(.tail)
+                
+                if let subtitle = subtitle {
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .truncationMode(.tail)
+                }
             }
-            
+                        
             Spacer()
             
             trailingContent()
