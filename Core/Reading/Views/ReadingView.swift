@@ -48,14 +48,14 @@ struct ReadingView: View {
                     isPresented: $showMenuPopup,
                     menuItems: [
                         PopupMenuItem(
-                            icon: "chart.line.uptrend.xyaxis",
+                            icon: "chart.line.flattrend.xyaxis",
                             title: "Progress",
                             isOn: showProgress
                         ) {
                             showProgress.toggle()
                         },
                         PopupMenuItem(
-                            icon: "brain.head.profile",
+                            icon: "chart.bar.xaxis",
                             title: "Focus Chart",
                             isOn: showFocusChart
                         ) {
@@ -108,9 +108,7 @@ struct ReadingView: View {
     
     // MARK: - Main Reading Interface
     private var mainReadingInterface: some View {
-        ZStack {
-            Color("EInkBackground").ignoresSafeArea()
-            
+        ZStack {            
             if viewModel.hasCompletedAllChapters {
                 ChapterCompletionView(thoughtId: thought.id)
             } else if viewModel.chapters.isEmpty {
@@ -177,8 +175,11 @@ struct ReadingView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                Slider(value: $viewModel.readingSpeed, in: 0.01...0.25)
-                    .accentColor(.primary)
+                Slider(value: Binding(
+                    get: { 0.26 - viewModel.readingSpeed },
+                    set: { viewModel.readingSpeed = 0.26 - $0 }
+                ), in: 0.01...0.25)
+                .accentColor(.primary)
                 
                 Image(systemName: "hare")
                     .font(.caption)
