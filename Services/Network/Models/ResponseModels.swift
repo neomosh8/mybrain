@@ -158,10 +158,9 @@ struct ThoughtStatus: Codable {
     let thoughtName: String
     let status: String
     let progress: ThoughtProgress
-    let chapters: [Chapter]?
 
     enum CodingKeys: String, CodingKey {
-        case status, progress, chapters
+        case status, progress
         case thoughtId = "thought_id"
         case thoughtName = "thought_name"
     }
@@ -180,7 +179,6 @@ struct ThoughtStatus: Codable {
         thoughtName = try container.decode(String.self, forKey: .thoughtName)
         status = try container.decode(String.self, forKey: .status)
         progress = try container.decode(ThoughtProgress.self, forKey: .progress)
-        chapters = try container.decodeIfPresent([Chapter].self, forKey: .chapters)
     }
 }
 
