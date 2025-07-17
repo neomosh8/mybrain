@@ -2,7 +2,7 @@
 
 ## Overview
 
-This documentation covers the complete API and WebSocket interface for the MyBrain application, including the new HashID implementation for secure ID obfuscation.
+This documentation covers the complete API and WebSocket interface for the MyBrain application, including the HashID implementation for secure ID obfuscation.
 
 **Base URL**: `{{baseUrl}}/api/v1`
 
@@ -191,7 +191,7 @@ GET /profiles/profile/
   "birthdate": "1990-01-01",
   "gender": "M",
   "gender_display": "Male",
-  "avatar_url": "https://api.example.com/profiles/avatar/hashed_token/",
+  "avatar_url": "https://api.example.com/api/v1/profiles/avatar/hashed_token/",
   "onboarded": true,
   "is_active": true,
   "is_staff": false,
@@ -225,6 +225,13 @@ Content-Type: multipart/form-data
 first_name: John
 last_name: Doe
 avatar: [image file]
+```
+
+**To Remove Avatar:**
+```json
+{
+  "remove_avatar": "true"
+}
 ```
 
 **Response:** Updated profile object (same format as GET profile).
@@ -364,7 +371,7 @@ GET /profiles/entertainment/options/
 {
   "entertainment_types": [
     {
-      "id": "Bp8Qr5Nt",
+      "id": 1,
       "name": "Podcasts",
       "description": "Audio content and interviews",
       "image": "/media/types/podcast.jpg"
@@ -372,7 +379,7 @@ GET /profiles/entertainment/options/
   ],
   "entertainment_genres": [
     {
-      "id": "Lm3Vx9Wz",
+      "id": 1,
       "name": "Technology",
       "description": "Tech news and innovation",
       "image": "/media/genres/tech.jpg"
@@ -380,7 +387,7 @@ GET /profiles/entertainment/options/
   ],
   "entertainment_contexts": [
     {
-      "id": "Qr7Yt2Kp",
+      "id": 1,
       "name": "Commuting",
       "description": "Content for travel time",
       "image": "/media/contexts/commute.jpg"
@@ -401,16 +408,16 @@ PUT /profiles/profile/update/
 ```json
 {
   "types": [
-    {"type": "Bp8Qr5Nt", "liked": true},
-    {"type": "Cx4Wv8Yz", "liked": false}
+    {"type": 1, "liked": true},
+    {"type": 2, "liked": false}
   ],
   "genres": [
-    {"genre": "Lm3Vx9Wz", "liked": true},
-    {"genre": "Nt5Bq1Rx", "liked": false}
+    {"genre": 1, "liked": true},
+    {"genre": 2, "liked": false}
   ],
   "contexts": [
-    {"context": "Qr7Yt2Kp", "liked": true},
-    {"context": "Yz9Mp6Sv", "liked": false}
+    {"context": 1, "liked": true},
+    {"context": 2, "liked": false}
   ]
 }
 ```
@@ -453,16 +460,38 @@ file: [uploaded file]
 }
 ```
 
+**From Podcast URL:**
+```json
+{
+  "content_type": "podcast",
+  "source": "https://podcasts.apple.com/episode/123"
+}
+```
+
+**From Podcast File (Form Data):**
+```
+Content-Type: multipart/form-data
+
+content_type: podcast
+file: [audio file - mp3, m4a, wav, etc.]
+```
+
 **Response:**
 ```json
 {
   "id": "Rp9Wq3Kv",
   "name": "Article Title",
-  "cover": "/media/thoughts/Xbr3k2mN/url_Rp9Wq3Kv/cover.png",
-  "model_3d": null,
+  "description": "An interesting article about technology",
+  "content_type": "url",
+  "cover": "/media/thoughts/[user_id]/url_Rp9Wq3Kv/cover.png",
+  "status": "processed",
+  "progress": {
+    "total": 5,
+    "completed": 2,
+    "remaining": 3
+  },
   "created_at": "2025-01-01T10:00:00Z",
-  "updated_at": "2025-01-01T10:00:00Z",
-  "status": "pending"
+  "updated_at": "2025-01-01T10:00:00Z"
 }
 ```
 
@@ -482,8 +511,8 @@ GET /thoughts/
     "name": "My Article",
     "description": "An interesting article about technology",
     "content_type": "url",
-    "cover": "/media/thoughts/Xbr3k2mN/url_Rp9Wq3Kv/cover.png",
-    "model_3d": "/media/thoughts/Xbr3k2mN/url_Rp9Wq3Kv/model.usdz",
+    "cover": "/media/thoughts/[user_id]/url_Rp9Wq3Kv/cover.png",
+    "model_3d": "/media/thoughts/puser_id]/url_Rp9Wq3Kv/model.usdz",
     "status": "processed",
     "progress": {
       "total": 5,
@@ -698,7 +727,7 @@ DELETE /thoughts/{{hashed_thought_id}}/delete/
 Get HLS playlist for thought audio streaming.
 
 ```http
-GET /thoughts/{{hashed_thought_id}}/stream/playlist.m3u8
+GET /thoughts/{{hashed_thought_id}}/stream/master.m3u8
 ```
 
 **Response:** HLS Master Playlist (M3U8 format)
