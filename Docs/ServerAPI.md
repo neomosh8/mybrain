@@ -846,12 +846,15 @@ All WebSocket messages use this JSON structure:
 
 ### 3. Chapter Processing Messages
 
-#### Chapter Completion (Audio Mode)
+#### Audio Chapter Response (`chapter_audio`)
+For chapters with audio generation (`generate_audio: true`).
+
+**Success:**
 ```json
 {
-  "type": "chapter_response",
+  "type": "chapter_audio",
   "status": "success",
-  "message": "Chapter processing completed",
+  "message": "Audio chapter processing completed",
   "data": {
     "chapter_number": 1,
     "title": "Chapter Title",
@@ -861,12 +864,25 @@ All WebSocket messages use this JSON structure:
 }
 ```
 
-#### Chapter Completion (Text Mode)
+**Error:**
 ```json
 {
-  "type": "chapter_response",
+  "type": "chapter_audio",
+  "status": "error",
+  "message": "Failed to retrieve next chapter: {error_details}",
+  "data": null
+}
+```
+
+#### Text Chapter Response (`chapter_text`)
+For chapters with text content (`generate_audio: false` or not specified).
+
+**Success:**
+```json
+{
+  "type": "chapter_text",
   "status": "success",
-  "message": "Chapter processing completed",
+  "message": "Text chapter processing completed",
   "data": {
     "chapter_number": 1,
     "title": "Chapter Title",
@@ -877,10 +893,22 @@ All WebSocket messages use this JSON structure:
 }
 ```
 
-#### No More Chapters
+**Error:**
 ```json
 {
-  "type": "chapter_response",
+  "type": "chapter_text",
+  "status": "error",
+  "message": "Failed to retrieve next chapter: {error_details}",
+  "data": null
+}
+```
+
+#### Chapter Complete (`chapter_complete`)
+When no more chapters are available.
+
+```json
+{
+  "type": "chapter_complete",
   "status": "info",
   "message": "No more chapters available",
   "data": {
@@ -890,10 +918,12 @@ All WebSocket messages use this JSON structure:
 }
 ```
 
-#### Chapter Processing Errors
+#### Common Chapter Processing Errors
+Both `chapter_audio` and `chapter_text` can return these error types:
+
 ```json
 {
-  "type": "chapter_response",
+  "type": "chapter_audio|chapter_text",
   "status": "error",
   "message": "Thought ID is required",
   "data": null
@@ -902,18 +932,9 @@ All WebSocket messages use this JSON structure:
 
 ```json
 {
-  "type": "chapter_response",
+  "type": "chapter_audio|chapter_text",
   "status": "error",
   "message": "Invalid thought ID",
-  "data": null
-}
-```
-
-```json
-{
-  "type": "chapter_response",
-  "status": "error",
-  "message": "Failed to retrieve next chapter: {error_details}",
   "data": null
 }
 ```
@@ -981,7 +1002,7 @@ All WebSocket messages use this JSON structure:
 #### No More Chapters (Streaming)
 ```json
 {
-  "type": "streaming_links",
+  "type": "chapter_complete",
   "status": "info",
   "message": "No more chapters available",
   "data": {
@@ -1080,7 +1101,10 @@ Process and retrieve the next chapter of a thought.
 }
 ```
 
-**Response:** See Chapter Processing Messages above.
+**Response:** 
+- If `generate_audio: true` → `chapter_audio` message type
+- If `generate_audio: false` → `chapter_text` message type  
+- If no more chapters → `chapter_complete` message type
 
 #### 2. Submit Feedback
 
@@ -1103,7 +1127,7 @@ Submit user engagement feedback for content.
 
 #### 3. Get Streaming Links
 
-Get HLS streaming URLs for audio playback.
+Get HLS streaming URLs for audio playback. This action will first generate an audio chapter, then return streaming links.
 
 **Send:**
 ```json
@@ -1115,7 +1139,59 @@ Get HLS streaming URLs for audio playback.
 }
 ```
 
-**Response:** See Streaming Links Messages above.
+**Response:** 
+1. First sends a `chapter_audio` message with the generated chapter
+2. Then sends a `streaming_links` message with the URLs
+3. If no more chapters, sends `chapter_complete` message
+
+### Client-Side Handling Example
+
+```javascript
+websocket.onmessage = (event) => {
+  const message = JSON.parse(event.data);
+  
+  switch(message.type) {
+    case 'chapter_audio':
+      if (message.status === 'success') {
+        handleAudioChapter(message.data);
+      } else {
+        handleChapterError(message.message);
+      }
+      break;
+      
+    case 'chapter_text':
+      if (message.status === 'success') {
+        handleTextChapter(message.data);
+      } else {
+        handleChapterError(message.message);
+      }
+      break;
+      
+    case 'chapter_complete':
+      handleThoughtComplete(message.data);
+      break;
+      
+    case 'streaming_links':
+      if (message.status === 'success') {
+        handleStreamingLinks(message.data);
+      } else {
+        handleStreamingError(message.message);
+      }
+      break;
+      
+    case 'feedback_response':
+      handleFeedbackResponse(message);
+      break;
+      
+    case 'thought_update':
+      handleThoughtStatusUpdate(message.data);
+      break;
+      
+    default:
+      console.warn('Unknown message type:', message.type);
+  }
+};
+```
 
 ### Status Values
 
