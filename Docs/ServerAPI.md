@@ -778,41 +778,7 @@ All WebSocket messages use this JSON structure:
 
 ### Available Actions
 
-#### 1. List Thoughts
-
-Get all thoughts for the user.
-
-**Send:**
-```json
-{
-  "action": "list_thoughts"
-}
-```
-
-**Response:**
-```json
-{
-  "type": "thoughts_list",
-  "status": "success",
-  "message": "Thoughts retrieved successfully",
-  "data": {
-    "thoughts": [
-      {
-        "id": "Rp9Wq3Kv",
-        "name": "My Article",
-        "description": "Article description",
-        "content_type": "url",
-        "cover": "/media/cover.png",
-        "status": "processed",
-        "created_at": "2025-01-01T10:00:00Z",
-        "updated_at": "2025-01-01T10:00:00Z"
-      }
-    ]
-  }
-}
-```
-
-#### 2. Get Next Chapter
+#### 1. Get Next Chapter
 
 Process and retrieve the next chapter of a thought.
 
@@ -871,7 +837,7 @@ Process and retrieve the next chapter of a thought.
 }
 ```
 
-#### 3. Submit Feedback
+#### 2. Submit Feedback
 
 Submit user engagement feedback for content.
 
@@ -902,43 +868,7 @@ Submit user engagement feedback for content.
 }
 ```
 
-#### 4. Get Thought Chapters
-
-Retrieve all chapters for a specific thought.
-
-**Send:**
-```json
-{
-  "action": "thought_chapters",
-  "data": {
-    "thought_id": "Rp9Wq3Kv"
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "type": "thought_chapters",
-  "status": "success",
-  "message": "Chapters retrieved successfully",
-  "data": {
-    "thought_id": "Rp9Wq3Kv",
-    "thought_name": "My Article",
-    "thought_status": "processed",
-    "chapters": [
-      {
-        "chapter_number": 1,
-        "title": "Introduction",
-        "content": "<p>Chapter content...</p>",
-        "status": "completed"
-      }
-    ]
-  }
-}
-```
-
-#### 5. Get Streaming Links
+#### 3. Get Streaming Links
 
 Get HLS streaming URLs for audio playback.
 
@@ -966,32 +896,6 @@ Get HLS streaming URLs for audio playback.
 }
 ```
 
-#### 6. Retry Thought Processing
-
-Retry a failed thought.
-
-**Send:**
-```json
-{
-  "action": "retry_thought",
-  "data": {
-    "thought_id": "Rp9Wq3Kv"
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "type": "retry_response",
-  "status": "success",
-  "message": "Retry process started",
-  "data": {
-    "thought_id": "Rp9Wq3Kv",
-    "original_status": "processing_failed"
-  }
-}
-```
 
 ### Real-time Status Updates
 
