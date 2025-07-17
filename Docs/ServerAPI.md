@@ -753,26 +753,284 @@ All WebSocket messages use this JSON structure:
 }
 ```
 
-### Connection Events
+## WebSocket Messages Reference
 
-**Connection Success:**
+### 1. Connection Messages
+
+#### Connection Success
 ```json
 {
   "type": "connection_response",
   "status": "success",
   "message": "Welcome to My Brain!",
   "data": {
-    "user": "John"
+    "user": "user_first_name"
   }
 }
 ```
 
-**Connection Error:**
+#### Connection Failure
 ```json
 {
   "type": "connection_response",
   "status": "error",
-  "message": "Authentication failed"
+  "message": "Authentication failed",
+  "data": {}
+}
+```
+
+### 2. Action Response Messages
+
+#### Unknown Action
+```json
+{
+  "type": "action_response",
+  "status": "error",
+  "message": "Unknown action",
+  "data": {
+    "action": "invalid_action_name"
+  }
+}
+```
+
+#### Invalid JSON
+```json
+{
+  "type": "action_response",
+  "status": "error",
+  "message": "Invalid JSON",
+  "data": {}
+}
+```
+
+#### General Exception
+```json
+{
+  "type": "action_response",
+  "status": "error",
+  "message": "An error occurred",
+  "data": {
+    "exception": "error_details"
+  }
+}
+```
+
+### 3. Chapter Processing Messages
+
+#### Chapter Completion (Audio Mode)
+```json
+{
+  "type": "chapter_response",
+  "status": "success",
+  "message": "Chapter processing completed",
+  "data": {
+    "chapter_number": 1,
+    "title": "Chapter Title",
+    "audio_duration": 86.7,
+    "generation_time": 12.5
+  }
+}
+```
+
+#### Chapter Completion (Text Mode)
+```json
+{
+  "type": "chapter_response",
+  "status": "success",
+  "message": "Chapter processing completed",
+  "data": {
+    "chapter_number": 1,
+    "title": "Chapter Title",
+    "content": "HTML formatted content",
+    "content_with_image": "HTML content with images",
+    "generation_time": 8.3
+  }
+}
+```
+
+#### No More Chapters
+```json
+{
+  "type": "chapter_response",
+  "status": "info",
+  "message": "No more chapters available",
+  "data": {
+    "thought_id": "hashed_thought_id",
+    "complete": true
+  }
+}
+```
+
+#### Chapter Processing Errors
+```json
+{
+  "type": "chapter_response",
+  "status": "error",
+  "message": "Thought ID is required",
+  "data": null
+}
+```
+
+```json
+{
+  "type": "chapter_response",
+  "status": "error",
+  "message": "Invalid thought ID",
+  "data": null
+}
+```
+
+```json
+{
+  "type": "chapter_response",
+  "status": "error",
+  "message": "Failed to retrieve next chapter: {error_details}",
+  "data": null
+}
+```
+
+### 4. Feedback Messages
+
+#### Feedback Success
+```json
+{
+  "type": "feedback_response",
+  "status": "success",
+  "message": "Feedback received",
+  "data": {
+    "thought_id": "hashed_thought_id",
+    "chapter_number": 1,
+    "word": "example_word"
+  }
+}
+```
+
+#### Feedback Errors
+```json
+{
+  "type": "feedback_response",
+  "status": "error",
+  "message": "Missing required feedback fields",
+  "data": null
+}
+```
+
+```json
+{
+  "type": "feedback_response",
+  "status": "error",
+  "message": "Invalid thought ID",
+  "data": null
+}
+```
+
+```json
+{
+  "type": "feedback_response",
+  "status": "error",
+  "message": "Failed to process feedback: {error_details}",
+  "data": null
+}
+```
+
+### 5. Streaming Links Messages
+
+#### Streaming Links Success
+```json
+{
+  "type": "streaming_links",
+  "status": "success",
+  "message": "Streaming links retrieved successfully",
+  "data": {
+    "master_playlist": "/api/v1/thoughts/31/stream/master.m3u8",
+    "audio_playlist": "/api/v1/thoughts/31/stream/audio.m3u8",
+    "subtitles_playlist": "/api/v1/thoughts/31/stream/subtitles.m3u8"
+  }
+}
+```
+
+#### No More Chapters (Streaming)
+```json
+{
+  "type": "streaming_links",
+  "status": "info",
+  "message": "No more chapters available",
+  "data": {
+    "thought_id": "hashed_thought_id",
+    "complete": true
+  }
+}
+```
+
+#### Streaming Links Errors
+```json
+{
+  "type": "streaming_links",
+  "status": "error",
+  "message": "Thought ID is required",
+  "data": null
+}
+```
+
+```json
+{
+  "type": "streaming_links",
+  "status": "error",
+  "message": "Invalid thought ID", 
+  "data": null
+}
+```
+
+```json
+{
+  "type": "streaming_links",
+  "status": "error",
+  "message": "Failed to retrieve streaming links: {error_details}",
+  "data": null
+}
+```
+
+### 6. Thought Status Updates
+
+These messages are sent asynchronously from background Celery tasks to notify clients of thought processing progress.
+
+#### Processing Status Update
+```json
+{
+  "type": "thought_update",
+  "status": "success",
+  "message": "Thought status: {current_status}",
+  "data": {
+    "thought": {
+      "id": "hashed_thought_id",
+      "name": "Thought Name",
+      "cover": "cover_url",
+      "model_3d": "model_url",
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z",
+      "status": "extracted|enriched|processed"
+    }
+  }
+}
+```
+
+#### Processing Error Update
+```json
+{
+  "type": "thought_update",
+  "status": "success",
+  "message": "Content extraction failed: {error_details}",
+  "data": {
+    "thought": {
+      "id": "hashed_thought_id",
+      "name": "Thought Name", 
+      "cover": "cover_url",
+      "model_3d": "model_url",
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z",
+      "status": "extraction_failed|enrichment_failed|processing_failed"
+    }
+  }
 }
 ```
 
@@ -793,49 +1051,7 @@ Process and retrieve the next chapter of a thought.
 }
 ```
 
-**Response (Text Content):**
-```json
-{
-  "type": "chapter_response",
-  "status": "success",
-  "message": "Chapter processing completed",
-  "data": {
-    "chapter_number": 1,
-    "title": "Introduction",
-    "content": "<p>Chapter content with <strong>formatting</strong>...</p>",
-    "content_with_image": "<p>Content with images included...</p>",
-    "generation_time": 2.5
-  }
-}
-```
-
-**Response (Audio Content):**
-```json
-{
-  "type": "chapter_response",
-  "status": "success",
-  "message": "Chapter processing completed",
-  "data": {
-    "chapter_number": 1,
-    "title": "Introduction",
-    "audio_duration": 86.7,
-    "generation_time": 4.2
-  }
-}
-```
-
-**No More Chapters:**
-```json
-{
-  "type": "chapter_response",
-  "status": "info",
-  "message": "No more chapters available",
-  "data": {
-    "thought_id": "Rp9Wq3Kv",
-    "complete": true
-  }
-}
-```
+**Response:** See Chapter Processing Messages above.
 
 #### 2. Submit Feedback
 
@@ -854,19 +1070,7 @@ Submit user engagement feedback for content.
 }
 ```
 
-**Response:**
-```json
-{
-  "type": "feedback_response",
-  "status": "success",
-  "message": "Feedback received",
-  "data": {
-    "thought_id": "Rp9Wq3Kv",
-    "chapter_number": 1,
-    "word": "interesting_concept"
-  }
-}
-```
+**Response:** See Feedback Messages above.
 
 #### 3. Get Streaming Links
 
@@ -882,98 +1086,23 @@ Get HLS streaming URLs for audio playback.
 }
 ```
 
-**Response:**
-```json
-{
-  "type": "streaming_links",
-  "status": "success",
-  "message": "Streaming links retrieved successfully",
-  "data": {
-    "master_playlist": "/api/v1/thoughts/Rp9Wq3Kv/stream/playlist.m3u8",
-    "audio_playlist": "/api/v1/thoughts/Rp9Wq3Kv/stream/audio.m3u8",
-    "subtitles_playlist": "/api/v1/thoughts/Rp9Wq3Kv/stream/subtitles.m3u8"
-  }
-}
-```
+**Response:** See Streaming Links Messages above.
 
+### Status Values
 
-### Real-time Status Updates
+- **success**: Operation completed successfully
+- **error**: Operation failed due to an error
+- **info**: Informational message (e.g., no more content available)
 
-The server automatically sends status updates during thought processing:
+### Common Status Messages
 
-**Processing Status Updates:**
-```json
-{
-  "type": "thought_update",
-  "status": "success",
-  "message": "Thought status: extracted",
-  "data": {
-    "thought": {
-      "id": "Rp9Wq3Kv",
-      "status": "extracted",
-      "name": "My Article",
-      "cover": "/media/cover.png",
-      "created_at": "2025-01-01T10:00:00Z",
-      "updated_at": "2025-01-01T10:00:00Z"
-    }
-  }
-}
-```
-
-**Status Values:**
-- `pending` - Initial state when created
-- `extracted` - Raw content extracted from source
-- `enriched` - AI-generated metadata added
-- `processed` - Content processed into chapters
-- `extraction_failed` - Failed during content extraction
-- `enrichment_failed` - Failed during metadata enrichment
-- `processing_failed` - Failed during chapter processing
-
-### Error Handling
-
-**Invalid Action:**
-```json
-{
-  "type": "action_response",
-  "status": "error",
-  "message": "Unknown action",
-  "data": {
-    "action": "invalid_action_name"
-  }
-}
-```
-
-**Invalid JSON:**
-```json
-{
-  "type": "action_response",
-  "status": "error",
-  "message": "Invalid JSON",
-  "data": {}
-}
-```
-
-**Server Error:**
-```json
-{
-  "type": "action_response",
-  "status": "error",
-  "message": "An error occurred",
-  "data": {
-    "exception": "Detailed error message"
-  }
-}
-```
-
-**Invalid HashID:**
-```json
-{
-  "type": "chapter_response",
-  "status": "error",
-  "message": "Invalid thought ID",
-  "data": null
-}
-```
+- `pending`: Initial state when created
+- `extracted`: Raw content has been extracted from source  
+- `enriched`: AI-generated metadata has been added
+- `processed`: Content has been fully processed into chapters
+- `extraction_failed`: Failed during content extraction
+- `enrichment_failed`: Failed during metadata enrichment  
+- `processing_failed`: Failed during chapter processing
 
 ---
 
