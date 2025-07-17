@@ -47,7 +47,6 @@ final class WebSocketNetworkService: WebSocketAPI {
         
         var request = URLRequest(url: url)
         
-        // Add required headers
         if let token = tokenStorage.getAccessToken() {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
@@ -70,17 +69,17 @@ final class WebSocketNetworkService: WebSocketAPI {
         connectionStateSubject.send(.disconnected)
     }
     
-    func sendStreamingLinks(thoughtId: String) {
+    func requestStreamingLinks(thoughtId: String) {
         let message = WebSocketMessage.streamingLinks(thoughtId: thoughtId)
         sendMessage(message)
     }
     
-    func sendListThoughts() {
+    func requestListThoughts() {
         let message = WebSocketMessage.listThoughts
         sendMessage(message)
     }
     
-    func sendNextChapter(thoughtId: String, generateAudio: Bool) {
+    func requestNextChapter(thoughtId: String, generateAudio: Bool) {
         let message = WebSocketMessage.nextChapter(thoughtId: thoughtId, generateAudio: generateAudio)
         sendMessage(message)
     }
@@ -95,7 +94,7 @@ final class WebSocketNetworkService: WebSocketAPI {
         sendMessage(message)
     }
     
-    func sendThoughtChapters(thoughtId: String) {
+    func requestThoughtChapters(thoughtId: String) {
         let message = WebSocketMessage.thoughtChapters(thoughtId: thoughtId)
         sendMessage(message)
     }

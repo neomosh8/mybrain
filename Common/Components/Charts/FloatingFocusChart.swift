@@ -53,8 +53,7 @@ class FocusChartViewModel: ObservableObject {
 
     var averageFocus: Double {
         guard !focusHistory.isEmpty else { return 0.0 }
-        return focusHistory.map { $0.value }.reduce(0, +)
-            / Double(focusHistory.count)
+        return focusHistory.map { $0.value }.reduce(0, +) / Double(focusHistory.count)
     }
 }
 

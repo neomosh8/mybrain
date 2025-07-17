@@ -40,7 +40,7 @@ class ReadingViewModel: ObservableObject {
         isLoadingChapter = true
         hasRequestedNextChapter = false
         
-        networkService.webSocket.sendNextChapter(
+        networkService.webSocket.requestNextChapter(
             thoughtId: thoughtId,
             generateAudio: false
         )

@@ -96,7 +96,7 @@ class AudioStreamingViewModel: ObservableObject {
     private func fetchStreamingLinks(for thought: Thought) {
         isFetchingLinks = true
         streamingState = .fetchingLinks
-        networkService.webSocket.sendStreamingLinks(thoughtId: thought.id)
+        networkService.webSocket.requestStreamingLinks(thoughtId: thought.id)
     }
     
     private func setupWebSocketSubscriptions() {
@@ -281,7 +281,7 @@ class AudioStreamingViewModel: ObservableObject {
     
     private func requestNextChapter() {
         guard let thoughtId = currentThought?.id else { return }
-        networkService.webSocket.sendNextChapter(thoughtId: thoughtId, generateAudio: true)
+        networkService.webSocket.requestNextChapter(thoughtId: thoughtId, generateAudio: true)
     }
     
     private func handleChapterResponse(_ data: [String: Any]) {

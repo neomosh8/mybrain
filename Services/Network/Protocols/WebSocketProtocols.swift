@@ -8,10 +8,10 @@ protocol WebSocketAPI {
     
     func openSocket()
     func closeSocket()
-    func sendStreamingLinks(thoughtId: String)
-    func sendNextChapter(thoughtId: String, generateAudio: Bool)
+    func requestStreamingLinks(thoughtId: String)
+    func requestNextChapter(thoughtId: String, generateAudio: Bool)
     func sendFeedback(thoughtId: String, chapterNumber: Int, word: String, value: Double)
     func activateReceiveMessage(callback: @escaping (WebSocketMessage) -> Void)
-    func sendListThoughts()
-    func sendThoughtChapters(thoughtId: String)
+    func requestListThoughts()
+    func requestThoughtChapters(thoughtId: String)
 }
