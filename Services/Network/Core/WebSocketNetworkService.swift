@@ -74,11 +74,6 @@ final class WebSocketNetworkService: WebSocketAPI {
         sendMessage(message)
     }
     
-    func requestListThoughts() {
-        let message = WebSocketMessage.listThoughts
-        sendMessage(message)
-    }
-    
     func requestNextChapter(thoughtId: String, generateAudio: Bool) {
         let message = WebSocketMessage.nextChapter(thoughtId: thoughtId, generateAudio: generateAudio)
         sendMessage(message)
@@ -91,11 +86,6 @@ final class WebSocketNetworkService: WebSocketAPI {
             word: word,
             value: value
         )
-        sendMessage(message)
-    }
-    
-    func requestThoughtChapters(thoughtId: String) {
-        let message = WebSocketMessage.thoughtChapters(thoughtId: thoughtId)
         sendMessage(message)
     }
     
@@ -166,11 +156,12 @@ final class WebSocketNetworkService: WebSocketAPI {
         
         guard let messageType = json["type"] as? String,
               let status = json["status"] as? String,
-              let message = json["message"] as? String,
-              let messageData = json["data"] as? [String: Any] else {
+              let message = json["message"] as? String else {
             print("Invalid WebSocket message format: \(json)")
             return
         }
+        
+        let messageData = json["data"] as? [String: Any] ?? [:]
         
         print("Received WebSocket message - Type: \(messageType), Status: \(status), Message: \(message)")
         
@@ -179,14 +170,14 @@ final class WebSocketNetworkService: WebSocketAPI {
         switch messageType {
         case "connection_response":
             webSocketMessage = .response(action: "connection", data: messageData)
-        case "thoughts_list":
-            webSocketMessage = .response(action: "list_thoughts", data: messageData)
-        case "next_chapter_response":
-            webSocketMessage = .response(action: "next_chapter", data: messageData)
-        case "streaming_links_response":
+        case "chapter_response":
+            webSocketMessage = .response(action: "chapter_response", data: messageData)
+        case "streaming_links":
             webSocketMessage = .response(action: "streaming_links", data: messageData)
-        case "thought_chapters_response":
-            webSocketMessage = .response(action: "thought_chapters", data: messageData)
+        case "feedback_response":
+            webSocketMessage = .response(action: "feedback_response", data: messageData)
+        case "action_response":
+            webSocketMessage = .response(action: "action_response", data: messageData)
         case "thought_update":
             webSocketMessage = .response(action: "thought_update", data: messageData)
         case "error":
@@ -201,7 +192,7 @@ final class WebSocketNetworkService: WebSocketAPI {
         
         messageSubject.send(webSocketMessage)
     }
-
+    
     
     private func setupPingTimer() {
         pingTimer = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: true) { [weak self] _ in
