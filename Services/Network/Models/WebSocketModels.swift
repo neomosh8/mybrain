@@ -5,17 +5,10 @@ enum WebSocketMessage {
     case nextChapter(thoughtId: String, generateAudio: Bool)
     case feedback(thoughtId: String, chapterNumber: Int, word: String, value: Double)
     case response(action: String, data: [String: Any])
-    case listThoughts
-    case thoughtChapters(thoughtId: String)
     case error(message: String)
     
     func toDictionary() -> [String: Any] {
         switch self {
-        case .listThoughts:
-            return [
-                "action": "list_thoughts"
-            ]
-            
         case .streamingLinks(let thoughtId):
             return [
                 "action": "streaming_links",
@@ -40,12 +33,6 @@ enum WebSocketMessage {
                     "word": word,
                     "value": value
                 ]
-            ]
-            
-        case .thoughtChapters(let thoughtId):
-            return [
-                "action": "thought_chapters",
-                "data": ["thought_id": thoughtId]
             ]
             
         case .response(let action, let data):
