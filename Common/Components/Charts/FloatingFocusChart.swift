@@ -62,6 +62,7 @@ struct FloatingFocusChart: View {
     @StateObject private var viewModel = FocusChartViewModel()
     @State private var position = CGPoint(x: 100, y: 100)
     @State private var isDragging = false
+    @State private var dragScale: CGFloat = 1.0
 
     var body: some View {
         VStack(spacing: 4) {
@@ -83,17 +84,32 @@ struct FloatingFocusChart: View {
                 .fill(Color(.white))
                 .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 2)
         )
-        .scaleEffect(isDragging ? 1.05 : 1.0)
+        .scaleEffect(dragScale)
         .position(position)
         .gesture(
             DragGesture()
                 .onChanged { value in
-                    isDragging = true
+                    if !isDragging {
+                        DispatchQueue.main.async {
+                            withAnimation(.linear(duration: 0.1)) {
+                                dragScale = 1.05
+                                isDragging = true
+                            }
+                        }
+                    }
                     position = value.location
                 }
                 .onEnded { _ in
-                    isDragging = false
-                    snapToEdge()
+                    DispatchQueue.main.async {
+                        withAnimation(.linear(duration: 0.1)) {
+                            dragScale = 1.0
+                            isDragging = false
+                        }
+                    }
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                        snapToEdge()
+                    }
                 }
         )
     }
@@ -112,7 +128,9 @@ struct FloatingFocusChart: View {
         let newX: CGFloat = position.x < screenWidth / 2 ? minX : maxX
         let newY = min(max(position.y, minY), maxY)
 
-        position = CGPoint(x: newX, y: newY)
+        withAnimation(.interpolatingSpring(stiffness: 300, damping: 25)) {
+            position = CGPoint(x: newX, y: newY)
+        }
     }
 }
 
