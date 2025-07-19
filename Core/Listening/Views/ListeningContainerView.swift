@@ -6,7 +6,6 @@ struct ListeningContainerView: View {
     
     @StateObject private var statusViewModel = ListeningStatusViewModel()
     @State private var showStatusOverlay = false
-    @State private var showResetSuccess = false
     
     var body: some View {
         ZStack {
@@ -26,11 +25,6 @@ struct ListeningContainerView: View {
                     }
                 )
             }
-        }
-        .alert("Reset Successful", isPresented: $showResetSuccess) {
-            Button("OK") { }
-        } message: {
-            Text("Listening progress has been reset successfully")
         }
         .onAppear {
             checkThoughtStatus()
@@ -65,9 +59,7 @@ struct ListeningContainerView: View {
             DispatchQueue.main.async {
                 if success {
                     showStatusOverlay = false
-                    showResetSuccess = true
                 } else {
-                    // Could show error alert here
                     print("Failed to reset progress")
                 }
             }
