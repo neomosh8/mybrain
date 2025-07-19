@@ -125,13 +125,11 @@ struct ChapterCompletionView: View {
                 }
             }
         }
-
         .onReceive(networkService.webSocket.messages) { message in
-            // Handle the new WebSocketMessage enum
             switch message {
-            case .response(let action, let data):
-                if action == "feedbacks_response" {
-                    parseFeedbackResponse(data)
+            case .feedbackResponse(let status, _, let data):
+                if status.isSuccess {
+                    parseFeedbackResponse(data ?? [:])
                 }
             default:
                 break
