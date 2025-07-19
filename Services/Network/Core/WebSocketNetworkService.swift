@@ -100,10 +100,7 @@ final class WebSocketNetworkService: WebSocketAPI {
     
     private func sendAction(_ action: WebSocketAction) {
         guard let webSocketTask = webSocketTask, webSocketTask.state == .running else {
-            openSocket()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-                self?.sendAction(action)
-            }
+            print("WebSocket not connected. Action dropped: \(action)")
             return
         }
         
@@ -142,6 +139,7 @@ final class WebSocketNetworkService: WebSocketAPI {
                 self.receiveMessage() // Continue receiving
                 
             case .failure(let error):
+                print("WebSocket receive error: \(error)")
                 self.connectionStateSubject.send(.failed(error))
             }
         }
