@@ -2,25 +2,6 @@ import Foundation
 import Swift
 import SwiftUI
 
-// MARK: - Models
-
-struct ProgressData {
-    let total: Int
-    let completed: Int
-    let remaining: Int
-}
-
-struct ChapterDataModel {
-    let chapter_number: Int
-    let title: String
-    let content: String
-    let status: String
-}
-
-
-// MARK: - NEW CODE
-
-
 /// Each word in a single .vtt file.
 struct WordTimestamp: Identifiable {
     let id = UUID()
