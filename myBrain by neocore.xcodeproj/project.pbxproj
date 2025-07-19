@@ -62,7 +62,6 @@
 		747377F72E26CC2100C50D04 /* ReadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747377F62E26CC1F00C50D04 /* ReadingView.swift */; };
 		747A54B32DFDC0B400BD9541 /* ThoughtCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747A54B22DFDC0A900BD9541 /* ThoughtCard.swift */; };
 		7489330C2E2389BE007A5340 /* ReadingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7489330B2E2389BB007A5340 /* ReadingViewModel.swift */; };
-		7489330E2E2389C2007A5340 /* ReadingModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7489330D2E2389C1007A5340 /* ReadingModels.swift */; };
 		748C65842E27684800C912FB /* ActionButtons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748C65832E27684700C912FB /* ActionButtons.swift */; };
 		748C65882E27A80D00C912FB /* FloatingFocusChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748C65872E27A80900C912FB /* FloatingFocusChart.swift */; };
 		748DF72A2E1BA15400FD4080 /* AvatarImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748DF7292E1BA15100FD4080 /* AvatarImageCache.swift */; };
@@ -182,7 +181,6 @@
 		7479BFD92E1263F100F18A48 /* ServerAPI.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ServerAPI.md; sourceTree = "<group>"; };
 		747A54B22DFDC0A900BD9541 /* ThoughtCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtCard.swift; sourceTree = "<group>"; };
 		7489330B2E2389BB007A5340 /* ReadingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingViewModel.swift; sourceTree = "<group>"; };
-		7489330D2E2389C1007A5340 /* ReadingModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingModels.swift; sourceTree = "<group>"; };
 		748C65832E27684700C912FB /* ActionButtons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionButtons.swift; sourceTree = "<group>"; };
 		748C65872E27A80900C912FB /* FloatingFocusChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingFocusChart.swift; sourceTree = "<group>"; };
 		748DF7292E1BA15100FD4080 /* AvatarImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarImageCache.swift; sourceTree = "<group>"; };
@@ -632,7 +630,6 @@
 		748932FF2E238960007A5340 /* Reading */ = {
 			isa = PBXGroup;
 			children = (
-				748933022E23897A007A5340 /* Models */,
 				748933012E238972007A5340 /* ViewModels */,
 				748933002E23896B007A5340 /* Views */,
 			);
@@ -653,14 +650,6 @@
 				7489330B2E2389BB007A5340 /* ReadingViewModel.swift */,
 			);
 			path = ViewModels;
-			sourceTree = "<group>";
-		};
-		748933022E23897A007A5340 /* Models */ = {
-			isa = PBXGroup;
-			children = (
-				7489330D2E2389C1007A5340 /* ReadingModels.swift */,
-			);
-			path = Models;
 			sourceTree = "<group>";
 		};
 		74929B2B2E0BD175008DA6A6 /* Data */ = {
@@ -917,7 +906,6 @@
 				74BC7E6C2E000E1B00A9C2F4 /* KeychainHelper.swift in Sources */,
 				745BE7A42E23D03500FA1CC1 /* ListeningStatusOverlay.swift in Sources */,
 				745BE7A22E23D02D00FA1CC1 /* AudioControlsView.swift in Sources */,
-				7489330E2E2389C2007A5340 /* ReadingModels.swift in Sources */,
 				74BC7E582E000DB400A9C2F4 /* NetworkServiceManager.swift in Sources */,
 				74263C872DDAF63500953598 /* AnimatedLineChartView.swift in Sources */,
 				745BE79E2E23D02300FA1CC1 /* ListeningContainerView.swift in Sources */,
