@@ -83,6 +83,7 @@ struct FloatingFocusChart: View {
                 .fill(Color(.white))
                 .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 2)
         )
+        .scaleEffect(isDragging ? 1.05 : 1.0)
         .position(position)
         .gesture(
             DragGesture()
@@ -95,41 +96,23 @@ struct FloatingFocusChart: View {
                     snapToEdge()
                 }
         )
-        .scaleEffect(isDragging ? 1.05 : 1.0)
-        .animation(
-            .spring(response: 0.3, dampingFraction: 0.6),
-            value: isDragging
-        )
     }
 
     private func snapToEdge() {
-        // Get screen bounds
         let screenWidth = UIScreen.main.bounds.width
         let screenHeight = UIScreen.main.bounds.height
-
-        // Chart dimensions
         let chartWidth: CGFloat = 84
         let chartHeight: CGFloat = 60
 
-        // Calculate safe boundaries
         let minX = chartWidth / 2 + 20
         let maxX = screenWidth - chartWidth / 2 - 20
-        let minY = chartHeight / 2 + 100  // Account for navigation bar
-        let maxY = screenHeight - chartHeight / 2 - 150  // Account for bottom bar
+        let minY = chartHeight / 2 + 100
+        let maxY = screenHeight - chartHeight / 2 - 150
 
-        // Snap to nearest edge
-        let newX: CGFloat
-        if position.x < screenWidth / 2 {
-            newX = minX
-        } else {
-            newX = maxX
-        }
-
+        let newX: CGFloat = position.x < screenWidth / 2 ? minX : maxX
         let newY = min(max(position.y, minY), maxY)
 
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-            position = CGPoint(x: newX, y: newY)
-        }
+        position = CGPoint(x: newX, y: newY)
     }
 }
 
