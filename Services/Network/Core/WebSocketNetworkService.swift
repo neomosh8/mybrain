@@ -70,23 +70,23 @@ final class WebSocketNetworkService: WebSocketAPI {
     }
     
     func requestStreamingLinks(thoughtId: String) {
-        let message = WebSocketMessage.streamingLinks(thoughtId: thoughtId)
-        sendMessage(message)
+        let action = WebSocketAction.streamingLinks(thoughtId: thoughtId)
+        sendAction(action)
     }
-    
+
     func requestNextChapter(thoughtId: String, generateAudio: Bool) {
-        let message = WebSocketMessage.nextChapter(thoughtId: thoughtId, generateAudio: generateAudio)
-        sendMessage(message)
+        let action = WebSocketAction.nextChapter(thoughtId: thoughtId, generateAudio: generateAudio)
+        sendAction(action)
     }
-    
+
     func sendFeedback(thoughtId: String, chapterNumber: Int, word: String, value: Double) {
-        let message = WebSocketMessage.feedback(
+        let action = WebSocketAction.feedback(
             thoughtId: thoughtId,
             chapterNumber: chapterNumber,
             word: word,
             value: value
         )
-        sendMessage(message)
+        sendAction(action)
     }
     
     func activateReceiveMessage(callback: @escaping (WebSocketMessage) -> Void) {
@@ -98,20 +98,20 @@ final class WebSocketNetworkService: WebSocketAPI {
     
     // MARK: - Private Methods
     
-    private func sendMessage(_ message: WebSocketMessage) {
+    private func sendAction(_ action: WebSocketAction) {
         guard let webSocketTask = webSocketTask, webSocketTask.state == .running else {
             openSocket()
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-                self?.sendMessage(message)
+                self?.sendAction(action)
             }
             return
         }
         
         do {
-            let messageDict = message.toDictionary()
-            let jsonData = try JSONSerialization.data(withJSONObject: messageDict)
+            let actionDict = action.toDictionary()
+            let jsonData = try JSONSerialization.data(withJSONObject: actionDict)
             let jsonString = String(data: jsonData, encoding: .utf8) ?? "{}"
-            
+                    
             let task = URLSessionWebSocketTask.Message.string(jsonString)
             webSocketTask.send(task) { error in
                 if let error = error {
@@ -119,7 +119,7 @@ final class WebSocketNetworkService: WebSocketAPI {
                 }
             }
         } catch {
-            print("Failed to serialize WebSocket message: \(error)")
+            print("Failed to serialize WebSocket action: \(error)")
         }
     }
     
@@ -148,6 +148,8 @@ final class WebSocketNetworkService: WebSocketAPI {
     }
     
     private func handleIncomingMessage(_ text: String) {
+        print("Received WebSocket message: \(text)")
+        
         guard let data = text.data(using: .utf8),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             print("Failed to parse WebSocket message JSON")
@@ -161,38 +163,19 @@ final class WebSocketNetworkService: WebSocketAPI {
             return
         }
         
-        let messageData = json["data"] as? [String: Any] ?? [:]
+        let messageData = json["data"] as? [String: Any]
         
-        print("Received WebSocket message - Type: \(messageType), Status: \(status), Message: \(message)")
+        print("Parsed WebSocket message - Type: \(messageType), Status: \(status), Message: \(message)")
         
-        let webSocketMessage: WebSocketMessage
-        
-        switch messageType {
-        case "connection_response":
-            webSocketMessage = .response(action: "connection", data: messageData)
-        case "chapter_response":
-            webSocketMessage = .response(action: "chapter_response", data: messageData)
-        case "streaming_links":
-            webSocketMessage = .response(action: "streaming_links", data: messageData)
-        case "feedback_response":
-            webSocketMessage = .response(action: "feedback_response", data: messageData)
-        case "action_response":
-            webSocketMessage = .response(action: "action_response", data: messageData)
-        case "thought_update":
-            webSocketMessage = .response(action: "thought_update", data: messageData)
-        case "error":
-            webSocketMessage = .response(action: "error", data: [
-                "status": status,
-                "message": message,
-                "details": messageData
-            ])
-        default:
-            webSocketMessage = .response(action: messageType, data: messageData)
-        }
+        let webSocketMessage = WebSocketMessage(
+            type: messageType,
+            status: status,
+            message: message,
+            data: messageData
+        )
         
         messageSubject.send(webSocketMessage)
     }
-    
     
     private func setupPingTimer() {
         pingTimer = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: true) { [weak self] _ in
