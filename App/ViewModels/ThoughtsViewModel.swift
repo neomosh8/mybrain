@@ -31,7 +31,6 @@ class ThoughtsViewModel: ObservableObject {
                 case .success(let thoughts):
                     self?.thoughts = thoughts
                     self?.errorMessage = nil
-                    self?.connectWebSocket()
                 case .failure(let error):
                     self?.errorMessage = error.localizedDescription
                 }
@@ -60,35 +59,6 @@ class ThoughtsViewModel: ObservableObject {
                     self.fetchThoughts()
                 case .failure(let error):
                     self.errorMessage = "Failed to retry thought: \(error.localizedDescription)"
-                }
-            }
-            .store(in: &cancellables)
-    }
-    
-    // MARK: - Private Methods
-    private func connectWebSocket() {
-        guard !isWebSocketConnected else { return }
-        
-        networkService.webSocket.openSocket()
-        
-        networkService.webSocket.messages
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] message in
-                self?.handleWebSocketMessage(message)
-            }
-            .store(in: &cancellables)
-        
-        networkService.webSocket.connectionState
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] state in
-                switch state {
-                case .connected:
-                    self?.isWebSocketConnected = true
-                    print("WebSocket connected successfully")
-                case .disconnected, .failed(_):
-                    self?.isWebSocketConnected = false
-                default:
-                    break
                 }
             }
             .store(in: &cancellables)
