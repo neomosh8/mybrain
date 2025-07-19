@@ -40,5 +40,25 @@ final class NetworkServiceManager {
     
     func clearAllTokens() {
         tokenStorage.clearTokens()
+        disconnectWebSocket()
+    }
+    
+    // MARK: - WebSocket Lifecycle Management
+    
+    func connectWebSocketIfAuthenticated() {
+        guard hasValidToken && !webSocket.isConnected else { return }
+        webSocket.openSocket()
+    }
+    
+    func disconnectWebSocket() {
+        webSocket.closeSocket()
+    }
+    
+    func reconnectWebSocket() {
+        guard hasValidToken else { return }
+        webSocket.closeSocket()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            self.webSocket.openSocket()
+        }
     }
 }
