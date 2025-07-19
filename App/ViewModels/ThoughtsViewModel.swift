@@ -96,47 +96,55 @@ class ThoughtsViewModel: ObservableObject {
     
     private func handleWebSocketMessage(_ message: WebSocketMessage) {
         switch message {
-        case .response(let action, let data):
-            switch action {
-            case "thought_update":
-                handleThoughtUpdate(data: data)
-            case "connection":
-                print("WebSocket connection confirmed")
-            default:
-                break
+        case .connectionResponse(let status, let message, let data):
+            if status.isSuccess {
+                print("WebSocket connection confirmed: \(message)")
+                if let responseData = ConnectionResponseData(from: data) {
+                    print("Welcome user: \(responseData.user ?? "Unknown")")
+                }
+            } else {
+                print("WebSocket connection failed: \(message)")
             }
+            
+        case .thoughtUpdate(let status, let message, let data):
+            if status.isSuccess {
+                print("Thought update received: \(message)")
+                handleThoughtUpdate(data: data)
+            } else {
+                print("Thought update error: \(message)")
+            }
+            
         default:
             break
         }
     }
     
-    
     private func handleThoughtUpdate(data: [String: Any]) {
-        guard let thoughtData = data["thought"] as? [String: Any],
-              let thoughtId = thoughtData["id"] as? String else {
+        guard let thoughtUpdateData = ThoughtUpdateData(from: data),
+              let thoughtData = thoughtUpdateData.thought else {
             print("Invalid thought update data")
             return
         }
         
-        if let index = thoughts.firstIndex(where: { $0.id == thoughtId }) {
+        if let index = thoughts.firstIndex(where: { $0.id == thoughtData.id }) {
             updateThought(at: index, with: thoughtData)
         }
     }
     
-    private func updateThought(at index: Int, with data: [String: Any]) {
+    private func updateThought(at index: Int, with thoughtData: ThoughtData) {
         let currentThought = thoughts[index]
         
         let updatedThought = Thought(
-            id: currentThought.id,
-            name: data["name"] as? String ?? currentThought.name,
-            description: data["description"] as? String ?? currentThought.description,
-            contentType: data["content_type"] as? String ?? currentThought.contentType,
-            cover: data["cover"] as? String ?? currentThought.cover,
-            model3d: data["model_3d"] as? String ?? currentThought.model3d,
-            status: data["status"] as? String ?? currentThought.status,
-            progress: parseProgress(from: data) ?? currentThought.progress,
-            createdAt: data["created_at"] as? String ?? currentThought.createdAt,
-            updatedAt: data["updated_at"] as? String ?? currentThought.updatedAt
+            id: thoughtData.id,
+            name: thoughtData.name,
+            description: currentThought.description,
+            contentType: currentThought.contentType,
+            cover: thoughtData.cover,
+            model3d: thoughtData.model3d,
+            status: thoughtData.status,
+            progress: thoughtData.progress ?? currentThought.progress,
+            createdAt: thoughtData.createdAt,
+            updatedAt: thoughtData.updatedAt
         ).withProcessedURLs()
         
         thoughts[index] = updatedThought
