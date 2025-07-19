@@ -11,7 +11,7 @@ class AuthViewModel: ObservableObject {
     @Published var isAuthenticated = false
     @Published var isProfileComplete: Bool = false
     @Published var profileManager = ProfileManager.shared
-
+    
     @Published var appleAuthManager = AppleAuthManager()
     @Published var googleAuthManager = GoogleAuthManager()
     
@@ -34,12 +34,12 @@ class AuthViewModel: ObservableObject {
     private func setupAppleAuthNotifications() {
         NotificationCenter.default.publisher(for: .appleAuthSuccess)
             .sink { notification in
-                      if let firstName = notification.userInfo?["firstName"] as? String,
-                         let lastName = notification.userInfo?["lastName"] as? String {
-                          print("Apple auth successful for \(firstName) \(lastName)")
-                      }
-                  }
-                  .store(in: &cancellables)
+                if let firstName = notification.userInfo?["firstName"] as? String,
+                   let lastName = notification.userInfo?["lastName"] as? String {
+                    print("Apple auth successful for \(firstName) \(lastName)")
+                }
+            }
+            .store(in: &cancellables)
         
         NotificationCenter.default.publisher(for: .appleAuthFailure)
             .sink { notification in
@@ -102,12 +102,12 @@ class AuthViewModel: ObservableObject {
         // Validate authentication state
         validateAuthenticationState(context: context)
     }
-
+    
     private func validateAuthenticationState(context: ModelContext) {
         // If we have tokens but no profile data, check if we need to complete profile
         if isAuthenticated, let profile = profileManager.currentProfile {
             let hasRequiredFields = !(profile.firstName?.isEmpty ?? true) &&
-                                  !(profile.lastName?.isEmpty ?? true)
+            !(profile.lastName?.isEmpty ?? true)
             
             if !hasRequiredFields {
                 print("Profile incomplete - missing required fields")
@@ -119,7 +119,7 @@ class AuthViewModel: ObservableObject {
             // Don't change isProfileComplete here - rely on server response
         }
     }
-
+    
     func requestAuthCode(
         email: String,
         completion: @escaping (Result<String, Error>) -> Void
@@ -281,7 +281,7 @@ class AuthViewModel: ObservableObject {
             }
             .store(in: &cancellables)
     }
-
+    
     
     // MARK: - Helper Methods
     private func handleSuccessfulAuth(tokenResponse: TokenResponse, context: ModelContext) {
@@ -307,6 +307,8 @@ class AuthViewModel: ObservableObject {
         if tokenResponse.profileComplete {
             profileManager.fetchProfileFromServer(context: context)
         }
+        
+        NetworkServiceManager.shared.connectWebSocketIfAuthenticated()
         
         print("Auth completed - isProfileComplete: \(tokenResponse.profileComplete)")
     }
@@ -335,7 +337,7 @@ class AuthViewModel: ObservableObject {
             authData.isLoggedIn = self.isAuthenticated
             authData.profileComplete = self.isProfileComplete
             
-
+            
             try context.save()
             print("Auth data saved successfully - isAuthenticated: \(self.isAuthenticated), isProfileComplete: \(self.isProfileComplete)")
             
