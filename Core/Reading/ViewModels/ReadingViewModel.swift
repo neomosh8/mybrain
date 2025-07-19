@@ -7,7 +7,7 @@ class ReadingViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     
     // Chapter state
-    @Published var chapters: [ChapterData] = []
+    @Published var chapters: [ChapterTextResponseData] = []
     @Published var displayedChapterCount = 0
     @Published var currentChapterIndex: Int?
     @Published var isPlaying = false
@@ -66,59 +66,67 @@ class ReadingViewModel: ObservableObject {
         // If not last chapter and no next chapter loaded, wait for server response
     }
     
+    // MARK: - Updated WebSocket handling in ReadingViewModel
+
     private func setupWebSocketSubscriptions() {
         networkService.webSocket.messages
-            .compactMap { message -> (String, [String: Any])? in
-                switch message {
-                case .response(let action, let data):
-                    return action == "chapter_response" ? (action, data) : nil
-                default:
-                    return nil
-                }
-            }
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] (action, data) in
-                print("📖 Processing chapter response")
-                self?.handleChapterResponse(data)
+            .sink { [weak self] message in
+                self?.handleWebSocketMessage(message)
             }
             .store(in: &cancellables)
     }
-    
-    private func handleChapterResponse(_ data: [String: Any]) {
-        print("📖 handleChapterResponse called with data: \(data)")
+
+    private func handleWebSocketMessage(_ message: WebSocketMessage) {
+        switch message {
+        case .chapterText(let status, let message, let data):
+            print("📖 Chapter text response: \(status.rawValue) - \(message)")
+            
+            if status.isSuccess {
+                handleTextChapterResponse(data: data)
+            } else {
+                print("📖 Chapter text response error: \(message)")
+                isLoadingChapter = false
+            }
+            
+        case .chapterComplete(_, let message, let data):
+            print("📖 Chapter complete: \(message)")
+            
+            if let completeData = ChapterCompleteResponseData(from: data),
+               let complete = completeData.complete,
+               complete {
+                print("📖 All chapters completed")
+                isLastChapter = true
+                hasCompletedAllChapters = true
+            }
+            isLoadingChapter = false
+
+        default:
+            break
+        }
+    }
+
+    private func handleTextChapterResponse(data: [String: Any]?) {
+        print("📖 handleTextChapterResponse called")
         
         isLoadingChapter = false
         
-        guard let chapterNumber = data["chapter_number"] as? Int,
-              let content = data["content"] as? String else {
-            print("❌ Invalid chapter response data")
+        guard let chapterData = ChapterTextResponseData(from: data) else {
+            print("📖 Invalid chapter text response data")
             return
         }
         
-        print("📖 Chapter \(chapterNumber) received, content length: \(content.count)")
+        print("📖 Processing chapter \(chapterData.chapterNumber ?? 0): \(chapterData.title ?? "Untitled")")
         
-        let isComplete = data["complete"] as? Bool ?? false
-        print("📖 Is complete: \(isComplete)")
+        addChapter(chapterData: chapterData)
         
-        if isComplete {
-            isLastChapter = true
-            
-            // Add final content if meaningful
-            if !content.isEmpty && content != "No content" {
-                addChapter(number: chapterNumber, content: content)
-            }
-        } else {
-            addChapter(number: chapterNumber, content: content)
-        }
+        print("📖 Chapter \(chapterData.chapterNumber ?? 0) added. Total chapters: \(displayedChapterCount)")
     }
     
-    private func addChapter(number: Int, content: String) {
-        let newChapter = ChapterData(number: number, content: content)
+    private func addChapter(chapterData: ChapterTextResponseData) {
+        guard !chapters.contains(where: { $0.chapterNumber == chapterData.chapterNumber }) else { return }
         
-        // Avoid duplicates
-        guard !chapters.contains(where: { $0.number == number }) else { return }
-        
-        chapters.append(newChapter)
+        chapters.append(chapterData)
         displayedChapterCount = chapters.count
         
         // Start animation on first chapter
@@ -126,7 +134,7 @@ class ReadingViewModel: ObservableObject {
             currentChapterIndex = 0
         }
     }
-
+    
     func togglePlayback() {
         isPlaying.toggle()
         // Add your pause/resume logic here
