@@ -31,7 +31,6 @@ class ReadingViewModel: ObservableObject {
     
     func cleanup() {
         cancellables.removeAll()
-        networkService.webSocket.closeSocket()
     }
     
     func requestNextChapter() {
