@@ -12,7 +12,8 @@ class AudioStreamingViewModel: ObservableObject {
     @Published var isFetchingLinks = false
     @Published var playerError: Error?
     @Published var streamingState: AudioStreamingState = .idle
-    
+    @Published var chapterManager = ChapterManager()
+
     // MARK: - Chapter Progress State
     @Published var currentChapterNumber: Int = 1
     @Published var nextChapterRequested = false
@@ -100,97 +101,87 @@ class AudioStreamingViewModel: ObservableObject {
     }
     
     private func setupWebSocketSubscriptions() {
-        // Listen for streaming links response
         networkService.webSocket.messages
-            .filter { message in
-                switch message {
-                case .response(let action, _):
-                    return action == "streaming_links"
-                default:
-                    return false
-                }
-            }
+            .receive(on: DispatchQueue.main)
             .sink { [weak self] message in
-                switch message {
-                case .response(_, let data):
-                    self?.handleStreamingLinksResponse(data)
-                default:
-                    break
-                }
-            }
-            .store(in: &cancellables)
-        
-        // Listen for chapter response
-        networkService.webSocket.messages
-            .filter { message in
-                switch message {
-                case .response(let action, _):
-                    return action == "chapter_response"
-                default:
-                    return false
-                }
-            }
-            .sink { [weak self] message in
-                switch message {
-                case .response(_, let data):
-                    self?.handleChapterResponse(data)
-                default:
-                    break
-                }
+                self?.handleWebSocketMessage(message)
             }
             .store(in: &cancellables)
     }
-    
-    private func handleStreamingLinksResponse(_ data: [String: Any]) {
-        DispatchQueue.main.async {
-            self.isFetchingLinks = false
+
+    private func handleWebSocketMessage(_ message: WebSocketMessage) {
+        switch message {
+        case .streamingLinksResponse(let status, let message, let data):
+            print("🎵 Streaming links response: \(status.rawValue) - \(message)")
             
-            guard let masterPlaylistPath = data["master_playlist"] as? String else {
-                let errorMessage = "master_playlist not found in response"
-                self.playerError = NSError(
-                    domain: "StreamingError",
-                    code: -1,
-                    userInfo: [NSLocalizedDescriptionKey: errorMessage]
-                )
-                print("Streaming links parsing error: \(errorMessage)")
-                print("Received data: \(data)")
-                return
+            if status.isSuccess {
+                handleStreamingLinksResponse(data: data)
+            } else {
+                print("🎵 Streaming links error: \(message)")
+                isFetchingLinks = false
+                streamingState = .error(playerError ?? NSError(domain: "StreamingError", code: -1))
+                playerError = NSError(domain: "StreamingError", code: -1, userInfo: [NSLocalizedDescriptionKey: message])
             }
             
-            let baseURL = "https://\(self.getBaseURL())"
-            guard let url = URL(string: baseURL + masterPlaylistPath) else {
-                let errorMessage = "Invalid URL: \(baseURL + masterPlaylistPath)"
-                self.playerError = NSError(
-                    domain: "StreamingError",
-                    code: -3,
-                    userInfo: [NSLocalizedDescriptionKey: errorMessage]
-                )
-                return
+        case .chapterAudio(let status, let message, let data):
+            print("🎵 Chapter audio response: \(status.rawValue) - \(message)")
+            
+            if status.isSuccess {
+                handleChapterAudioResponse(data: data)
+            } else {
+                print("🎵 Chapter audio error: \(message)")
             }
             
-            self.masterPlaylistURL = url
+        case .chapterComplete(_, let message, let data):
+            print("🎵 Chapter complete: \(message)")
             
-            print("Successfully parsed streaming links - Master: \(url)")
-            
-            // Setup subtitles immediately if available
-            if let subsPath = data["subtitles_playlist"] as? String, !subsPath.isEmpty {
-                self.subtitlesURL = baseURL + subsPath
-                print("Subtitles URL available: \(self.subtitlesURL!)")
-                // Start loading subtitles immediately
-                NotificationCenter.default.post(
-                    name: Notification.Name("InitialSubtitleLoad"),
-                    object: ["url": self.subtitlesURL!, "chapter": 1]
-                )
+            if let completeData = ChapterCompleteResponseData(from: data),
+               let complete = completeData.complete,
+               complete {
+                print("🎵 All chapters completed")
+                lastChapterComplete = true
+                hasCompletedPlayback = true
             }
             
-            self.setupPlayer(with: url)
+        default:
+            break
         }
     }
     
-    private func setupPlayer(with url: URL) {
+    private func handleStreamingLinksResponse(data: [String: Any]?) {
+        isFetchingLinks = false
+        
+        guard let streamingData = StreamingLinksResponseData(from: data),
+              let masterPlaylist = streamingData.masterPlaylist else {
+            print("🎵 Invalid streaming links response data")
+            streamingState = .error(playerError ?? NSError(domain: "StreamingError", code: -1))
+            playerError = NSError(domain: "StreamingError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid streaming links data"])
+            return
+        }
+        
+        let fullURL = "\(NetworkConstants.baseURL)\(masterPlaylist)"
+        
+        print("🎵 Received streaming links:")
+        print("🎵 Master playlist: \(fullURL)")
+        
+        if let audioPlaylist = streamingData.audioPlaylist {
+            print("🎵 Audio playlist: \(NetworkConstants.baseURL)\(audioPlaylist)")
+        }
+        
+        if let subtitlesPlaylist = streamingData.subtitlesPlaylist {
+            let subtitlesURL = "\(NetworkConstants.baseURL)\(subtitlesPlaylist)"
+            print("🎵 Subtitles playlist: \(subtitlesURL)")
+            self.subtitlesURL = subtitlesURL
+        }
+        
+        setupAudioPlayer(with: fullURL)
+    }
+    
+    private func setupAudioPlayer(with url: String) {
         cleanupPlayer()
         
-        let playerItem = AVPlayerItem(url: url)
+        guard let playerURL = URL(string: url) else { return }
+        let playerItem = AVPlayerItem(url: playerURL)
         player = AVPlayer(playerItem: playerItem)
         
         configurePlayerForBackground()
@@ -284,36 +275,39 @@ class AudioStreamingViewModel: ObservableObject {
         networkService.webSocket.requestNextChapter(thoughtId: thoughtId, generateAudio: true)
     }
     
-    private func handleChapterResponse(_ data: [String: Any]) {
-        DispatchQueue.main.async {
-            let chapterNumber = data["chapter_number"] as? Int ?? 0
-            let audioDuration = data["audio_duration"] as? Double ?? 0.0
-            let generationTime = data["generation_time"] as? Double ?? 0.0
-            let isComplete = data["complete"] as? Bool ?? false
-            
-            print("Chapter response - Number: \(chapterNumber), Duration: \(audioDuration), Complete: \(isComplete)")
-            
-            let previousChapter = self.currentChapterNumber
-            self.currentChapterNumber = chapterNumber
-            
-            if audioDuration > 0 {
-                let playableDuration = audioDuration - generationTime
-                self.nextChapterTime = self.durationsSoFar + (playableDuration * (1 - self.chapterBuffer))
-                self.durationsSoFar += audioDuration
-            }
-            
-            self.nextChapterRequested = false
-            self.lastChapterComplete = isComplete
-            
-            // Refresh subtitles if available and chapter changed
-            if let subtitlesURL = self.subtitlesURL, previousChapter != chapterNumber {
-                print("Chapter changed from \(previousChapter) to \(chapterNumber), refreshing subtitles")
-                NotificationCenter.default.post(
-                    name: Notification.Name("RefreshSubtitles"),
-                    object: ["url": subtitlesURL, "chapter": chapterNumber]
-                )
-            }
+    private func handleChapterAudioResponse(data: [String: Any]?) {
+        guard let chapterData = ChapterAudioResponseData(from: data),
+              let chapterNumber = chapterData.chapterNumber,
+              let audioDuration = chapterData.audioDuration else {
+            print("🎵 Invalid chapter audio response data")
+            return
         }
+        
+        let title = chapterData.title
+        let generationTime = chapterData.generationTime
+        
+        print("🎵 Processing chapter \(chapterNumber): \(title ?? "Untitled")")
+        print("🎵 Chapter duration: \(audioDuration)s, Generation time: \(generationTime ?? 0)s")
+        
+        let chapter = ChapterInfo(
+            number: chapterNumber,
+            title: title,
+            duration: audioDuration,
+            startTime: durationsSoFar,
+            isComplete: false
+        )
+        
+        chapterManager.addChapter(chapter)
+        durationsSoFar += audioDuration
+        
+        // Calculate when to request next chapter (60s before this chapter ends)
+        let chapterEndTime = chapter.startTime + audioDuration
+        nextChapterTime = max(0, chapterEndTime - chapterBuffer)
+        
+        print("🎵 Chapter \(chapterNumber) added. Next chapter request at: \(nextChapterTime ?? 0)s")
+        
+        // Reset the flag so we can request the next chapter when needed
+        nextChapterRequested = false
     }
     
     private func handlePlaybackCompletion() {
@@ -415,13 +409,6 @@ class AudioStreamingViewModel: ObservableObject {
         player = nil
         masterPlaylistURL = nil
         streamingState = .idle
-    }
-    
-    // MARK: - Helper Methods
-    
-    private func getBaseURL() -> String {
-        // Extract base URL from network service
-        return "brain.sorenapp.ir"
     }
 }
 
