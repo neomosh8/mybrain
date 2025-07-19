@@ -149,12 +149,12 @@ struct ReadingView: View {
             LazyVStack(spacing: 1) {
                 ForEach(0..<viewModel.displayedChapterCount, id: \.self) { index in
                     AnimatedParagraphView(
-                        paragraph: viewModel.chapters[index].content,
+                        paragraph: viewModel.chapters[index].content ?? "",
                         backgroundColor: Color("ParagraphBackground"),
                         wordInterval: viewModel.readingSpeed,
                         chapterIndex: index,
                         thoughtId: thought.id,
-                        chapterNumber: viewModel.chapters[index].number,
+                        chapterNumber: viewModel.chapters[index].chapterNumber ?? 0,
                         onHalfway: {
                             viewModel.onChapterHalfway()
                         },
