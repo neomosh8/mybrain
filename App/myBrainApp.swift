@@ -34,7 +34,31 @@ struct myBrainApp: App {
 }
 
 class AppDelegate: NSObject, UIApplicationDelegate {
+    private let networkService = NetworkServiceManager.shared
+    
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+        if networkService.hasValidToken {
+            networkService.connectWebSocketIfAuthenticated()
+        }
+        return true
+    }
+    
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
         return GIDSignIn.sharedInstance.handle(url)
+    }
+    
+    func applicationWillTerminate(_ application: UIApplication) {
+        networkService.disconnectWebSocket()
+    }
+    
+    func applicationDidEnterBackground(_ application: UIApplication) {
+        // Keep WebSocket connected in background for real-time updates
+        // WebSocket will be maintained by background modes
+    }
+    
+    func applicationWillEnterForeground(_ application: UIApplication) {
+        if networkService.hasValidToken && !networkService.webSocket.isConnected {
+            networkService.connectWebSocketIfAuthenticated()
+        }
     }
 }
