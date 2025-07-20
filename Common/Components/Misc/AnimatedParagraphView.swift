@@ -137,7 +137,7 @@ class AnimatedTextView: UITextView {
             
             // Apply consistent styling
             let fullRange = NSRange(location: 0, length: attributedString.length)
-            attributedString.addAttribute(.foregroundColor, value: UIColor.white, range: fullRange)
+            attributedString.addAttribute(.foregroundColor, value: UIColor.white.withAlphaComponent(0.6), range: fullRange)
             attributedString.addAttribute(.font, value: UIFont.systemFont(ofSize: 18, weight: .medium), range: fullRange)
             
             let paragraphStyle = NSMutableParagraphStyle()
@@ -146,6 +146,7 @@ class AnimatedTextView: UITextView {
             attributedString.addAttribute(.paragraphStyle, value: paragraphStyle, range: fullRange)
             
             self.fullAttributedString = attributedString
+            self.attributedText = attributedString
             
         } catch {
             print("Error creating attributed string from HTML: \(error)")
@@ -163,19 +164,36 @@ class AnimatedTextView: UITextView {
         }
         
         // Start with all text hidden
-        updateVisibleText()
+        updateHighlightedText()
     }
     
-    private func updateVisibleText() {
+    private func updateHighlightedText() {
         guard let mutableAttrString = fullAttributedString?.mutableCopy() as? NSMutableAttributedString else { return }
         
         let fullRange = NSRange(location: 0, length: mutableAttrString.length)
-        mutableAttrString.addAttribute(.foregroundColor, value: UIColor.clear, range: fullRange)
         
-        // Make visible words white
-        for i in 0..<min(shownWordsCount, wordInfo.count) {
-            let range = wordInfo[i].range
+        // Set all text to dimmed white (visible but not highlighted)
+        mutableAttrString.addAttribute(.foregroundColor, value: UIColor.white.withAlphaComponent(0.6), range: fullRange)
+        mutableAttrString.removeAttribute(.backgroundColor, range: fullRange)
+        
+        // Highlight current word with blue background and white text
+        if shownWordsCount > 0 && shownWordsCount <= wordInfo.count {
+            let currentIndex = shownWordsCount - 1
+            let range = wordInfo[currentIndex].range
+            
+            // Add blue background highlight and full white text
+            mutableAttrString.addAttribute(.backgroundColor, value: UIColor.systemBlue, range: range)
             mutableAttrString.addAttribute(.foregroundColor, value: UIColor.white, range: range)
+        }
+        
+        // Make all previously highlighted words fully white (no background)
+        if shownWordsCount > 1 {
+            let previousWordsCount = min(shownWordsCount - 1, wordInfo.count)
+            for i in 0..<previousWordsCount {
+                let range = wordInfo[i].range
+                mutableAttrString.addAttribute(.foregroundColor, value: UIColor.white, range: range)
+                mutableAttrString.removeAttribute(.backgroundColor, range: range)
+            }
         }
         
         self.attributedText = mutableAttrString
@@ -198,13 +216,24 @@ class AnimatedTextView: UITextView {
         
         isAnimating = true
         shownWordsCount = 1
-        updateVisibleText()
+        updateHighlightedText()
         sendFeedbackForWord(at: 0)
         scheduleNextWord()
     }
 
     private func scheduleNextWord() {
         guard isAnimating, shownWordsCount < wordInfo.count else {
+            // Animation complete - remove highlight from last word
+            if shownWordsCount > 0 && shownWordsCount <= wordInfo.count {
+                let finalIndex = shownWordsCount - 1
+                if let mutableAttrString = fullAttributedString?.mutableCopy() as? NSMutableAttributedString {
+                    let range = wordInfo[finalIndex].range
+                    mutableAttrString.addAttribute(.foregroundColor, value: UIColor.white, range: range)
+                    mutableAttrString.removeAttribute(.backgroundColor, range: range)
+                    self.attributedText = mutableAttrString
+                }
+            }
+            
             animationFinished = true
             isAnimating = false
             onFinished?()
@@ -215,7 +244,7 @@ class AnimatedTextView: UITextView {
             guard let self = self, self.isAnimating else { return }
             
             self.shownWordsCount += 1
-            self.updateVisibleText()
+            self.updateHighlightedText()
             self.sendFeedbackForWord(at: self.shownWordsCount - 1)
 
             let halfwayPoint = (self.wordInfo.count + 1) / 2
