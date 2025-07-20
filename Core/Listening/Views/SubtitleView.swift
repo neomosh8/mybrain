@@ -168,14 +168,22 @@ struct SubtitleView: View {
               plainWord.count > 1,
               containsAlphanumeric(plainWord) else { return }
         
-        // Submit feedback using the service
-        feedbackService.submitFeedbackSync(
-            thoughtId: thoughtId,
-            chapterNumber: chapterNumber,
-            word: plainWord
-        )
+        Task.detached(priority: .background) {
+            let result = await feedbackService.submitFeedback(
+                thoughtId: thoughtId,
+                chapterNumber: chapterNumber,
+                word: plainWord
+            )
+            
+            switch result {
+            case .success(_):
+                print("Feedback submitted for word: \(plainWord)")
+                break
+            case .failure(let error):
+                print("Feedback submission failed: \(error.localizedDescription)")
+            }
+        }
         
-        print("Feedback submitted for word: \(plainWord)")
     }
     
     // Helper function to check if string contains alphanumeric characters
