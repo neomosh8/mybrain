@@ -545,29 +545,19 @@ class BluetoothService: NSObject, ObservableObject {
         isReceivingTestData = enable
     }
     
-    
     func processFeedback(word: String) -> Double {
         if isConnected && !isDevelopmentMode {
-            // Use real Bluetooth data
-            let avgValue = calculateSignalValue()
-
-            DispatchQueue.main.async { [weak self] in
-                self?.feedbackValue = avgValue
-            }
-
-            return avgValue
+            return calculateSignalValue()
         } else {
-            // Development mode - generate simulated data
-            let simulatedValue = generateSimulatedValue(for: word)
-
-            DispatchQueue.main.async { [weak self] in
-                self?.feedbackValue = simulatedValue
-            }
-
-            return simulatedValue
+            return generateSimulatedValue(for: word)
         }
     }
     
+    func updateFeedbackValueForUI(_ value: Double) {
+        DispatchQueue.main.async { [weak self] in
+            self?.feedbackValue = value
+        }
+    }
     
     private func calculateSignalValue() -> Double {
         // Take last few samples from each channel and average them
