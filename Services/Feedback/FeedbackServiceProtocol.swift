@@ -55,8 +55,6 @@ protocol FeedbackServiceProtocol: ObservableObject {
         chapterNumber: Int,
         word: String
     ) async -> Result<FeedbackResponse, FeedbackError>
-    
-    var pendingFeedbackCount: Int { get }
-            
+                
     var feedbackResponses: AnyPublisher<FeedbackResponse, Never> { get }
 }
