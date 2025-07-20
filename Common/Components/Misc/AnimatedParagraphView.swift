@@ -228,10 +228,12 @@ struct AnimatedParagraphView: View {
     }
     
     private func sendFeedback(for word: String) {
-        feedbackService.submitFeedbackSync(
-            thoughtId: thoughtId,
-            chapterNumber: chapterNumber,
-            word: word
-        )
+        DispatchQueue.global(qos: .utility).async {
+            feedbackService.submitFeedbackSync(
+                thoughtId: thoughtId,
+                chapterNumber: chapterNumber,
+                word: word
+            )
+        }
     }
 }
