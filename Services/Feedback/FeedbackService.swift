@@ -10,15 +10,8 @@ class FeedbackService: FeedbackServiceProtocol {
     private let webSocketService: WebSocketAPI
     private let bluetoothService: BluetoothService
     
-    private let feedbackResponsesSubject = PassthroughSubject<FeedbackResponse, Never>()
-    
     private var lastUIUpdate = Date()
     private let uiUpdateInterval: TimeInterval = 2.0
-
-    // MARK: - Public Properties
-    var feedbackResponses: AnyPublisher<FeedbackResponse, Never> {
-        feedbackResponsesSubject.eraseToAnyPublisher()
-    }
     
     // MARK: - Initialization
     private init(
