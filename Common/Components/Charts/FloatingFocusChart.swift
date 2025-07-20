@@ -1,136 +1,76 @@
-import Combine
 import SwiftUI
+import Combine
 
-// MARK: - Focus Data Model
+// MARK: - Data Model
 struct FocusData {
     let value: Double
     let timestamp: Date
 }
 
-// MARK: - Focus Chart View Model
+// MARK: - ViewModel
 class FocusChartViewModel: ObservableObject {
-    @Published var focusHistory: [FocusData] = []
-    @Published var currentFocus: Double = 0.0
-
+    @Published var history: [FocusData] = []
+    @Published var current: Double = 0
     private var cancellables = Set<AnyCancellable>()
-
+    
     init() {
-        BluetoothService.shared
-            .feedbackPublisher
+        BluetoothService.shared.feedbackPublisher
             .receive(on: RunLoop.main)
             .throttle(for: .milliseconds(200), scheduler: RunLoop.main, latest: true)
             .sink { [weak self] raw in
                 guard let self = self else { return }
-                let pct = self.convertToFocusPercentage(raw)
-                self.focusHistory.append(FocusData(value: pct, timestamp: .now))
-                if self.focusHistory.count > 5 {
-                    self.focusHistory.removeFirst(self.focusHistory.count - 5)
+                // Normalize and clamp to 0–100%
+                let pct = min(max(abs(raw) / 10, 0), 100)
+                self.current = pct
+                self.history.append(.init(value: pct, timestamp: .now))
+                if self.history.count > 5 {
+                    self.history.removeFirst()
                 }
             }
             .store(in: &cancellables)
     }
-
-    private func updateFocusData(_ value: Double) {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            
-            let focusPercentage = self.convertToFocusPercentage(value)
-            self.currentFocus = focusPercentage
-
-            let focusData = FocusData(value: focusPercentage, timestamp: Date())
-            self.focusHistory.append(focusData)
-
-            if self.focusHistory.count > 5 {
-                self.focusHistory.removeFirst()
-            }
-        }
-    }
-
-    private func convertToFocusPercentage(_ rawValue: Double) -> Double {
-        // This is a simplified conversion
-        let normalized = abs(rawValue) / 1000.0
-        return min(max(normalized * 100, 0), 100)
-    }
-
-    var averageFocus: Double {
-        guard !focusHistory.isEmpty else { return 0.0 }
-        return focusHistory.map { $0.value }.reduce(0, +) / Double(focusHistory.count)
-    }
 }
 
-// MARK: - Floating Focus Chart
+// MARK: - Floating Chart View
 struct FloatingFocusChart: View {
-    @StateObject private var viewModel = FocusChartViewModel()
+    @StateObject private var vm = FocusChartViewModel()
     @State private var position = CGPoint(x: 100, y: 100)
     @State private var isDragging = false
-    @State private var dragScale: CGFloat = 1.0
-
+    
     var body: some View {
         VStack(spacing: 4) {
-            MiniLineChart(data: viewModel.focusHistory)
+            MiniLineChart(data: vm.history)
                 .frame(width: 40, height: 20)
-            
-            Text("\(Int(viewModel.currentFocus))%")
-                .font(.system(size: 14, weight: .bold))
-                .foregroundColor(Color(.black))
-            
-            Text("Focus")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(Color(.black).opacity(0.7))
+            Text("\(Int(vm.current))%")
+                .font(.caption).bold()
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.white))
-                .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 2)
-        )
-        .scaleEffect(dragScale)
+        .padding(8)
+        .background(RoundedRectangle(cornerRadius: 12)
+            .fill(Color.white)
+            .shadow(radius: 4))
         .position(position)
         .gesture(
             DragGesture()
-                .onChanged { value in
+                .onChanged { v in
                     if !isDragging {
-                        DispatchQueue.main.async {
-                            withAnimation(.linear(duration: 0.1)) {
-                                dragScale = 1.05
-                                isDragging = true
-                            }
-                        }
+                        withAnimation(.easeIn) { isDragging = true }
                     }
-                    position = value.location
+                    position = v.location
                 }
                 .onEnded { _ in
-                    DispatchQueue.main.async {
-                        withAnimation(.linear(duration: 0.1)) {
-                            dragScale = 1.0
-                            isDragging = false
-                        }
-                    }
-                    
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                        snapToEdge()
-                    }
+                    withAnimation(.easeOut) { isDragging = false }
+                    snapToEdge()
                 }
         )
     }
-
+    
     private func snapToEdge() {
-        let screenWidth = UIScreen.main.bounds.width
-        let screenHeight = UIScreen.main.bounds.height
-        let chartWidth: CGFloat = 84
-        let chartHeight: CGFloat = 60
-
-        let minX = chartWidth / 2 + 20
-        let maxX = screenWidth - chartWidth / 2 - 20
-        let minY = chartHeight / 2 + 100
-        let maxY = screenHeight - chartHeight / 2 - 150
-
-        let newX: CGFloat = position.x < screenWidth / 2 ? minX : maxX
-        let newY = min(max(position.y, minY), maxY)
-
-        withAnimation(.interpolatingSpring(stiffness: 300, damping: 25)) {
-            position = CGPoint(x: newX, y: newY)
+        let w = UIScreen.main.bounds.width
+        let h = UIScreen.main.bounds.height
+        let x = position.x < w/2 ? 50 : w - 50
+        let y = min(max(position.y, 80), h - 80)
+        withAnimation(.spring()) {
+            position = CGPoint(x: x, y: y)
         }
     }
 }
@@ -138,66 +78,27 @@ struct FloatingFocusChart: View {
 // MARK: - Mini Line Chart
 struct MiniLineChart: View {
     let data: [FocusData]
-
+    
     var body: some View {
-        GeometryReader { geometry in
-            if data.count >= 2 {
-                Path { path in
-                    let points = calculatePoints(in: geometry.size)
-
-                    guard let firstPoint = points.first else { return }
-                    path.move(to: firstPoint)
-
-                    for point in points.dropFirst() {
-                        path.addLine(to: point)
-                    }
-                }
-                .stroke(
-                    LinearGradient(
-                        colors: [.blue.opacity(0.8), .blue],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    ),
-                    style: StrokeStyle(
-                        lineWidth: 2,
-                        lineCap: .round,
-                        lineJoin: .round
-                    )
-                )
-
-                ForEach(
-                    Array(calculatePoints(in: geometry.size).enumerated()),
-                    id: \.offset
-                ) { index, point in
-                    Circle()
-                        .fill(Color.blue)
-                        .frame(width: 3, height: 3)
-                        .position(point)
-                }
-            } else {
-                Rectangle()
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(height: 1)
-                    .position(
-                        x: geometry.size.width / 2,
-                        y: geometry.size.height / 2
-                    )
+        GeometryReader { geo in
+            Path { path in
+                let pts = points(in: geo.size)
+                guard let first = pts.first else { return }
+                path.move(to: first)
+                pts.dropFirst().forEach { path.addLine(to: $0) }
             }
+            .stroke(Color.blue, lineWidth: 2)
         }
     }
-
-    private func calculatePoints(in size: CGSize) -> [CGPoint] {
-        guard data.count >= 2 else { return [] }
-
-        let maxValue = data.map { $0.value }.max() ?? 100
-        let minValue = data.map { $0.value }.min() ?? 0
-        let range = maxValue - minValue
-
-        return data.enumerated().map { index, focusData in
-            let x = CGFloat(index) / CGFloat(data.count - 1) * size.width
-            let normalizedValue =
-                range > 0 ? (focusData.value - minValue) / range : 0.5
-            let y = size.height - (CGFloat(normalizedValue) * size.height)
+    
+    private func points(in size: CGSize) -> [CGPoint] {
+        guard data.count > 1 else { return [] }
+        let vals = data.map { $0.value }
+        let minV = vals.min() ?? 0, maxV = vals.max() ?? 100
+        let range = maxV - minV == 0 ? 1 : maxV - minV
+        return data.enumerated().map { i, d in
+            let x = CGFloat(i) / CGFloat(data.count - 1) * size.width
+            let y = size.height * (1 - (CGFloat(d.value - minV) / CGFloat(range)))
             return CGPoint(x: x, y: y)
         }
     }
