@@ -5,18 +5,12 @@ class FeedbackService: FeedbackServiceProtocol {
     
     // MARK: - Singleton
     static let shared = FeedbackService()
-    
-    // MARK: - Published Properties
-    @Published private(set) var pendingFeedbackCount: Int = 0
-    
+        
     // MARK: - Private Properties
     private let webSocketService: WebSocketAPI
     private let bluetoothService: BluetoothService
-    private var cancellables = Set<AnyCancellable>()
     
     private let feedbackResponsesSubject = PassthroughSubject<FeedbackResponse, Never>()
-    private var pendingFeedbacks: [FeedbackRequest] = []
-    private let feedbackQueue = DispatchQueue(label: "com.neocore.feedback", qos: .utility)
     
     private var lastUIUpdate = Date()
     private let uiUpdateInterval: TimeInterval = 2.0
