@@ -153,6 +153,7 @@ struct ReadingView: View {
                         thoughtId: thought.id,
                         chapterNumber: viewModel.chapters[index].chapterNumber ?? 0,
                         wordInterval: viewModel.readingSpeed,
+                        isCurrentChapter: viewModel.currentChapterIndex == index,
                         feedbackService: FeedbackService.shared,
                         onFinished: {
                             viewModel.onChapterFinished(index)
@@ -177,9 +178,9 @@ struct ReadingView: View {
                     .foregroundColor(.secondary)
                 
                 Slider(value: Binding(
-                    get: { 0.26 - viewModel.readingSpeed },
-                    set: { viewModel.readingSpeed = 0.26 - $0 }
-                ), in: 0.01...0.25)
+                    get: { 0.6 - viewModel.readingSpeed },
+                    set: { viewModel.readingSpeed = 0.6 - $0 }
+                ), in: 0.1...0.5)
                 .accentColor(.primary)
                 
                 Image(systemName: "hare")
