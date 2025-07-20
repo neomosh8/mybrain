@@ -358,6 +358,7 @@ struct ReadingView: View {
                         self.setupReading()
                     }
                 case .failure(let error):
+                    print(error)
                     self.setupReading()
                 }
             }

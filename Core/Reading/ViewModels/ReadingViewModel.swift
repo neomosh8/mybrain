@@ -78,14 +78,14 @@ class ReadingViewModel: ObservableObject {
 
     private func handleWebSocketMessage(_ message: WebSocketMessage) {
         switch message {
-        case .chapterText(let status, let message, let data):
+        case .chapterText(let status, _, let data):
             if status.isSuccess {
                 handleTextChapterResponse(data: data)
             } else {
                 isLoadingChapter = false
             }
             
-        case .chapterComplete(_, let message, let data):
+        case .chapterComplete(_, _, let data):
             if let completeData = ChapterCompleteResponseData(from: data),
                let complete = completeData.complete,
                complete {
