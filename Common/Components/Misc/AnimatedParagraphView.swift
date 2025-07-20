@@ -49,7 +49,7 @@ struct AnimatedParagraphView: View {
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
-                .padding(.bottom, 80) 
+                .padding(.bottom, 80)
         }
         .onAppear {
             if !hasSetupContent {
@@ -228,12 +228,19 @@ struct AnimatedParagraphView: View {
     }
     
     private func sendFeedback(for word: String) {
-        DispatchQueue.global(qos: .utility).async {
-            feedbackService.submitFeedbackSync(
+        Task.detached(priority: .background) {
+            let result = await feedbackService.submitFeedback(
                 thoughtId: thoughtId,
                 chapterNumber: chapterNumber,
                 word: word
             )
+            
+            switch result {
+            case .success(_):
+                break
+            case .failure(let error):
+                print("Feedback submission failed: \(error.localizedDescription)")
+            }
         }
     }
 }
