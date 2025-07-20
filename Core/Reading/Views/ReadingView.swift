@@ -342,29 +342,22 @@ struct ReadingView: View {
     
     // MARK: - Action Methods
     private func checkThoughtStatus() {
-        print("🔍 Starting status check for thought: \(thought.id)")
         isCheckingStatus = true
         
         networkService.thoughts.getThoughtStatus(thoughtId: thought.id)
             .receive(on: DispatchQueue.main)
             .sink { result in
-                print("🔍 Status check completed with result: \(result)")
-                
                 self.isCheckingStatus = false
                 
                 switch result {
                 case .success(let status):
                     self.thoughtStatus = status
-                    // Show status overlay if there's existing progress or completion
                     if status.status == "in_progress" || status.status == "finished" {
                         self.statusPickerController.open()
                     } else {
-                        // Start reading immediately for new content
                         self.setupReading()
                     }
                 case .failure(let error):
-                    print("❌ Failed to get thought status: \(error)")
-                    // Continue with reading setup on error
                     self.setupReading()
                 }
             }
@@ -372,7 +365,6 @@ struct ReadingView: View {
     }
     
     private func setupReading() {
-        print("📖 Setting up reading for thought: \(thought.id)")
         viewModel.setup(for: thought)
     }
     
