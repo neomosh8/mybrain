@@ -57,10 +57,6 @@ protocol FeedbackServiceProtocol: ObservableObject {
     ) async -> Result<FeedbackResponse, FeedbackError>
     
     var pendingFeedbackCount: Int { get }
-    
-    func retryFailedSubmissions() async
-    
-    func clearPendingFeedback()
-    
+            
     var feedbackResponses: AnyPublisher<FeedbackResponse, Never> { get }
 }
