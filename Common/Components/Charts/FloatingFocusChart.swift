@@ -13,19 +13,18 @@ class FocusChartViewModel: ObservableObject {
     @Published var currentFocus: Double = 0.0
 
     private var cancellables = Set<AnyCancellable>()
-    private let bluetoothService = BluetoothService.shared
 
     init() {
-        setupFocusDataSubscription()
-    }
-
-    private func setupFocusDataSubscription() {
-        // Subscribe to Bluetooth feedback values
-        bluetoothService.$feedbackValue
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] value in
-                DispatchQueue.main.async {
-                    self?.updateFocusData(value)
+        BluetoothService.shared
+            .feedbackPublisher
+            .receive(on: RunLoop.main)
+            .throttle(for: .milliseconds(200), scheduler: RunLoop.main, latest: true)
+            .sink { [weak self] raw in
+                guard let self = self else { return }
+                let pct = self.convertToFocusPercentage(raw)
+                self.focusHistory.append(FocusData(value: pct, timestamp: .now))
+                if self.focusHistory.count > 20 {
+                    self.focusHistory.removeFirst(self.focusHistory.count - 20)
                 }
             }
             .store(in: &cancellables)
