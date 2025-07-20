@@ -153,7 +153,6 @@ class BluetoothService: NSObject, ObservableObject {
         print("Lead-off detection \(enable ? "enabled" : "disabled")")
         isLeadOffDetectionEnabled = enable
     }
-
     
     func reconnectToPreviousDevice() {
         guard centralManager.state == .poweredOn else {
@@ -199,16 +198,16 @@ class BluetoothService: NSObject, ObservableObject {
     // MARK: - Device Information Commands
     func readSerialNumber() {
         sendCommand(featureId: NEOCORE_CORE_FEATURE_ID,
-                   pduType: PDU_TYPE_COMMAND,
-                   pduId: NEOCORE_CMD_ID_GET_SERIAL_NUM,
-                   data: nil)
+                    pduType: PDU_TYPE_COMMAND,
+                    pduId: NEOCORE_CMD_ID_GET_SERIAL_NUM,
+                    data: nil)
     }
     
     func readBatteryLevel() {
         sendCommand(featureId: NEOCORE_BATTERY_FEATURE_ID,
-                   pduType: PDU_TYPE_COMMAND,
-                   pduId: NEOCORE_CMD_ID_GET_BATTERY_LEVEL,
-                   data: nil)
+                    pduType: PDU_TYPE_COMMAND,
+                    pduId: NEOCORE_CMD_ID_GET_BATTERY_LEVEL,
+                    data: nil)
     }
     
     // MARK: - Test Signal and Data Streaming
@@ -283,7 +282,7 @@ class BluetoothService: NSObject, ObservableObject {
             }
         }
     }
-
+    
     // Add method to start lead-off analysis
     private func startLeadOffAnalysis() {
         // Create a timer that runs every second to analyze the data
@@ -308,7 +307,7 @@ class BluetoothService: NSObject, ObservableObject {
             }
         }
     }
-
+    
     // Update stopRecording to clean up lead-off analysis
     func stopRecording() {
         print("Stopping recording")
@@ -355,16 +354,16 @@ class BluetoothService: NSObject, ObservableObject {
             }
         }
     }
-
+    
     // Update the existing startTestDrive for backward compatibility
     func startTestDrive() {
         startRecording(useTestSignal: true, enableLeadOff: false)
     }
-
+    
     func stopTestDrive() {
         stopRecording()
     }
-
+    
     // Replace the handleEEGDataNotification method
     private func parseResponse(data: Data) {
         guard data.count >= 1 else {
@@ -546,17 +545,16 @@ class BluetoothService: NSObject, ObservableObject {
     }
     
     func processFeedback(word: String) -> Double {
+        let value: Double
         if isConnected && !isDevelopmentMode {
-            return calculateSignalValue()
+            value = calculateSignalValue()
         } else {
-            return generateSimulatedValue(for: word)
+            value = generateSimulatedValue(for: word)
         }
-    }
-    
-    func updateFeedbackValueForUI(_ value: Double) {
-        DispatchQueue.main.async { [weak self] in
-            self?.feedbackValue = value
-        }
+        
+        feedbackValue = value
+        
+        return value
     }
     
     private func calculateSignalValue() -> Double {
