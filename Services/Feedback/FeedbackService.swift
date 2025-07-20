@@ -10,9 +10,6 @@ class FeedbackService: FeedbackServiceProtocol {
     private let webSocketService: WebSocketAPI
     private let bluetoothService: BluetoothService
     
-    private var lastUIUpdate = Date()
-    private let uiUpdateInterval: TimeInterval = 2.0
-    
     // MARK: - Initialization
     private init(
         webSocketService: WebSocketAPI = NetworkServiceManager.shared.webSocket,
@@ -36,15 +33,7 @@ class FeedbackService: FeedbackServiceProtocol {
         }
         
         let feedbackValue = bluetoothService.processFeedback(word: cleanWord)
-        
-//        let now = Date()
-//        if now.timeIntervalSince(lastUIUpdate) > uiUpdateInterval {
-//            bluetoothService.updateFeedbackValueForUI(feedbackValue)
-//            await MainActor.run {
-//                lastUIUpdate = now
-//            }
-//        }
-        
+
         guard webSocketService.isConnected else {
             return .failure(.webSocketNotConnected)
         }
