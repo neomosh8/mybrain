@@ -29,7 +29,6 @@
 		74263C352DDADAE800953598 /* TestSignalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C1E2DDADAE800953598 /* TestSignalView.swift */; };
 		74263C362DDADAE800953598 /* BluetoothService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C0B2DDADAE800953598 /* BluetoothService.swift */; };
 		74263C382DDADAE800953598 /* OnboardingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C162DDADAE800953598 /* OnboardingViewModel.swift */; };
-		74263C392DDADAE800953598 /* SubtitleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C1D2DDADAE800953598 /* SubtitleView.swift */; };
 		74263C3B2DDADAE800953598 /* InsightCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C122DDADAE800953598 /* InsightCard.swift */; };
 		74263C3C2DDADAE800953598 /* LoginScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C132DDADAE800953598 /* LoginScreen.swift */; };
 		74263C3E2DDADAE800953598 /* TestSignalViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C1F2DDADAE800953598 /* TestSignalViewModel.swift */; };
@@ -60,6 +59,9 @@
 		745BE7AA2E23D05C00FA1CC1 /* AudioStreamingModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 745BE7A92E23D04100FA1CC1 /* AudioStreamingModels.swift */; };
 		7468256F2DDCE58B0089AE37 /* ImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7468256E2DDCE5880089AE37 /* ImageLoader.swift */; };
 		747377F72E26CC2100C50D04 /* ReadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747377F62E26CC1F00C50D04 /* ReadingView.swift */; };
+		747A2D9B2E2BCD2F00CE9B80 /* FeedbackServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747A2D9A2E2BCD2C00CE9B80 /* FeedbackServiceProtocol.swift */; };
+		747A2D9D2E2BCD3400CE9B80 /* FeedbackService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747A2D9C2E2BCD3100CE9B80 /* FeedbackService.swift */; };
+		747A2DA12E2BD1C200CE9B80 /* SubtitleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747A2DA02E2BD1C000CE9B80 /* SubtitleView.swift */; };
 		747A54B32DFDC0B400BD9541 /* ThoughtCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747A54B22DFDC0A900BD9541 /* ThoughtCard.swift */; };
 		7489330C2E2389BE007A5340 /* ReadingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7489330B2E2389BB007A5340 /* ReadingViewModel.swift */; };
 		748C65842E27684800C912FB /* ActionButtons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748C65832E27684700C912FB /* ActionButtons.swift */; };
@@ -149,7 +151,6 @@
 		74263C192DDADAE800953598 /* SceneKitUSDZView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneKitUSDZView.swift; sourceTree = "<group>"; };
 		74263C1A2DDADAE800953598 /* SignalProcessing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalProcessing.swift; sourceTree = "<group>"; };
 		74263C1C2DDADAE800953598 /* StreamThoughtView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamThoughtView.swift; sourceTree = "<group>"; };
-		74263C1D2DDADAE800953598 /* SubtitleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleView.swift; sourceTree = "<group>"; };
 		74263C1E2DDADAE800953598 /* TestSignalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestSignalView.swift; sourceTree = "<group>"; };
 		74263C1F2DDADAE800953598 /* TestSignalViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestSignalViewModel.swift; sourceTree = "<group>"; };
 		74263C442DDADAE800953598 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -179,6 +180,9 @@
 		7468256E2DDCE5880089AE37 /* ImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageLoader.swift; sourceTree = "<group>"; };
 		747377F62E26CC1F00C50D04 /* ReadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingView.swift; sourceTree = "<group>"; };
 		7479BFD92E1263F100F18A48 /* ServerAPI.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ServerAPI.md; sourceTree = "<group>"; };
+		747A2D9A2E2BCD2C00CE9B80 /* FeedbackServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackServiceProtocol.swift; sourceTree = "<group>"; };
+		747A2D9C2E2BCD3100CE9B80 /* FeedbackService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackService.swift; sourceTree = "<group>"; };
+		747A2DA02E2BD1C000CE9B80 /* SubtitleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleView.swift; sourceTree = "<group>"; };
 		747A54B22DFDC0A900BD9541 /* ThoughtCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtCard.swift; sourceTree = "<group>"; };
 		7489330B2E2389BB007A5340 /* ReadingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingViewModel.swift; sourceTree = "<group>"; };
 		748C65832E27684700C912FB /* ActionButtons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionButtons.swift; sourceTree = "<group>"; };
@@ -300,6 +304,7 @@
 		74263C562DDADCCB00953598 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				747A2D992E2BCC9800CE9B80 /* Feedback */,
 				74929B2B2E0BD175008DA6A6 /* Data */,
 				74263C602DDADDEA00953598 /* Bluetooth */,
 				74263C5F2DDADDE300953598 /* Network */,
@@ -472,7 +477,6 @@
 				74263C0D2DDADAE800953598 /* ChapterCompletionView.swift */,
 				74263C192DDADAE800953598 /* SceneKitUSDZView.swift */,
 				74263C1C2DDADAE800953598 /* StreamThoughtView.swift */,
-				74263C1D2DDADAE800953598 /* SubtitleView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -587,6 +591,7 @@
 		745BE7992E23CFF500FA1CC1 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				747A2DA02E2BD1C000CE9B80 /* SubtitleView.swift */,
 				745BE7A32E23D02E00FA1CC1 /* ListeningStatusOverlay.swift */,
 				745BE7A12E23D02A00FA1CC1 /* AudioControlsView.swift */,
 				745BE79F2E23D02500FA1CC1 /* AudioPlayerView.swift */,
@@ -625,6 +630,15 @@
 				7479BFD92E1263F100F18A48 /* ServerAPI.md */,
 			);
 			path = Docs;
+			sourceTree = "<group>";
+		};
+		747A2D992E2BCC9800CE9B80 /* Feedback */ = {
+			isa = PBXGroup;
+			children = (
+				747A2D9C2E2BCD3100CE9B80 /* FeedbackService.swift */,
+				747A2D9A2E2BCD2C00CE9B80 /* FeedbackServiceProtocol.swift */,
+			);
+			path = Feedback;
 			sourceTree = "<group>";
 		};
 		748932FF2E238960007A5340 /* Reading */ = {
@@ -856,6 +870,7 @@
 				743D5BBB2DFC464000C4F71E /* ProfileView.swift in Sources */,
 				743D5BBC2DFC464000C4F71E /* HomeView.swift in Sources */,
 				743D5BBE2DFC464000C4F71E /* SettingsView.swift in Sources */,
+				747A2D9D2E2BCD3400CE9B80 /* FeedbackService.swift in Sources */,
 				743D5BBF2DFC464000C4F71E /* DeviceView.swift in Sources */,
 				748DF72A2E1BA15400FD4080 /* AvatarImageCache.swift in Sources */,
 				74263C292DDADAE800953598 /* AnimatedParagraphView.swift in Sources */,
@@ -864,6 +879,7 @@
 				74D58B352E151AB7008B62DC /* AppStateManager.swift in Sources */,
 				74263C2B2DDADAE800953598 /* SignalProcessing.swift in Sources */,
 				74BC7E5E2E000DCB00A9C2F4 /* TokenStorage.swift in Sources */,
+				747A2DA12E2BD1C200CE9B80 /* SubtitleView.swift in Sources */,
 				74BC7E682E000E0700A9C2F4 /* ResponseModels.swift in Sources */,
 				74BC7E6A2E000E0E00A9C2F4 /* WebSocketModels.swift in Sources */,
 				74263C2D2DDADAE800953598 /* FeedbackPlotView.swift in Sources */,
@@ -879,7 +895,6 @@
 				74BC7E642E000DF900A9C2F4 /* NetworkModels.swift in Sources */,
 				7499D9082E02A652007E8C92 /* Thought+URLProcessing.swift in Sources */,
 				74263C382DDADAE800953598 /* OnboardingViewModel.swift in Sources */,
-				74263C392DDADAE800953598 /* SubtitleView.swift in Sources */,
 				74263C3B2DDADAE800953598 /* InsightCard.swift in Sources */,
 				74263C3C2DDADAE800953598 /* LoginScreen.swift in Sources */,
 				745BE7A82E23D03F00FA1CC1 /* AudioSessionManager.swift in Sources */,
@@ -893,6 +908,7 @@
 				747377F72E26CC2100C50D04 /* ReadingView.swift in Sources */,
 				74BC7E782E0013D500A9C2F4 /* ThoughtsAPI+Implementation.swift in Sources */,
 				74D58B382E152780008B62DC /* AppNavigationBar.swift in Sources */,
+				747A2D9B2E2BCD2F00CE9B80 /* FeedbackServiceProtocol.swift in Sources */,
 				74263C422DDADAE800953598 /* StreamThoughtView.swift in Sources */,
 				74B3FDAD2E1CD6AF00173269 /* BottomSheetPicker.swift in Sources */,
 				74BC7E622E000DEF00A9C2F4 /* WebSocketProtocols.swift in Sources */,
