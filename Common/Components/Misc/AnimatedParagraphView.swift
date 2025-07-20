@@ -79,12 +79,10 @@ struct AnimatedParagraphView: View {
     private func buildHighlightedText() -> AttributedString {
         var result = attributedContent
         
-        // Reset all highlighting first
         for range in wordRanges {
             result[range.range].backgroundColor = nil
         }
         
-        // Apply current word highlighting
         if isAnimating && currentWordIndex < wordRanges.count {
             let currentRange = wordRanges[currentWordIndex].range
             result[currentRange].backgroundColor = Color.blue
@@ -95,10 +93,8 @@ struct AnimatedParagraphView: View {
     }
     
     private func setupContent() {
-        // Parse HTML content preserving formatting
         parseHTMLContent()
         
-        // Only start animation if this is the current chapter
         if isCurrentChapter && !wordRanges.isEmpty {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 startAnimation()
@@ -115,23 +111,19 @@ struct AnimatedParagraphView: View {
         ]
         
         do {
-            // Parse HTML to NSAttributedString first
             let nsAttributedString = try NSAttributedString(data: data, options: options, documentAttributes: nil)
             
-            // Convert to SwiftUI AttributedString
             if let swiftUIAttributedString = try? AttributedString(nsAttributedString, including: \.uiKit) {
                 attributedContent = swiftUIAttributedString
                 overrideFontFamilyOnly()
                 extractWordRanges()
             } else {
-                // Fallback: create plain AttributedString
                 let plainText = htmlString.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
                 attributedContent = AttributedString(plainText)
                 extractWordRanges()
             }
         } catch {
             print("Error parsing HTML: \(error)")
-            // Fallback to plain text
             let plainText = htmlString.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
             attributedContent = AttributedString(plainText)
             extractWordRanges()
@@ -139,16 +131,13 @@ struct AnimatedParagraphView: View {
     }
     
     private func overrideFontFamilyOnly() {
-        // Only change font family to system font, preserve size/weight/style from HTML
         for run in attributedContent.runs {
             let runRange = run.range
             
             if let originalFont = run.uiKit.font {
-                // Get original font characteristics
                 let originalSize = originalFont.pointSize
                 let traits = originalFont.fontDescriptor.symbolicTraits
                 
-                // Create system font with same characteristics
                 var weight: Font.Weight = .regular
                 var isItalic = false
                 
@@ -159,7 +148,6 @@ struct AnimatedParagraphView: View {
                     isItalic = true
                 }
                 
-                // Apply system font with preserved characteristics
                 var newFont = Font.system(size: originalSize, weight: weight)
                 if isItalic {
                     newFont = newFont.italic()
@@ -182,9 +170,7 @@ struct AnimatedParagraphView: View {
         tagger.enumerateTags(in: fullRange, unit: .word, scheme: .tokenType) { _, tokenRange in
             let word = String(text[tokenRange]).trimmingCharacters(in: .punctuationCharacters.union(.whitespacesAndNewlines))
             
-            // Only include meaningful words
             if word.count > 1 && word.rangeOfCharacter(from: .alphanumerics) != nil {
-                // Convert String range to AttributedString range
                 if let attributedRange = Range(tokenRange, in: attributedContent) {
                     wordRanges.append((range: attributedRange, word: word))
                 }
@@ -202,17 +188,14 @@ struct AnimatedParagraphView: View {
         isAnimating = true
         currentWordIndex = 0
         
-        // Send feedback for first word
-        // sendFeedback(for: wordRanges[0].word)
+         sendFeedback(for: wordRanges[0].word)
         
-        // Start timer for subsequent words
         startAnimationTimer()
     }
     
     private func resumeAnimationFromCurrentPosition() {
         guard !wordRanges.isEmpty, isAnimating else { return }
         
-        // Continue from current word position
         startAnimationTimer()
     }
     
@@ -225,8 +208,7 @@ struct AnimatedParagraphView: View {
                     stopAnimation()
                     onFinished()
                 } else {
-                    // Send feedback for current word
-                    // sendFeedback(for: wordRanges[currentWordIndex].word)
+                     sendFeedback(for: wordRanges[currentWordIndex].word)
                     
                     // Check halfway point
                     let halfwayPoint = wordRanges.count / 2
