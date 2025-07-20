@@ -12,7 +12,7 @@ class FocusChartViewModel: ObservableObject {
     @Published var history: [FocusData] = []
     @Published var current: Double = 0
     private var cancellables = Set<AnyCancellable>()
-    
+
     init() {
         BluetoothService.shared.feedbackPublisher
             .receive(on: RunLoop.main)
@@ -22,7 +22,7 @@ class FocusChartViewModel: ObservableObject {
                 // Normalize and clamp to 0–100%
                 let pct = min(max(abs(raw) / 10, 0), 100)
                 self.current = pct
-                self.history.append(.init(value: pct, timestamp: .now))
+                self.history.append(FocusData(value: raw, timestamp: .now))
                 if self.history.count > 5 {
                     self.history.removeFirst()
                 }
@@ -36,10 +36,10 @@ struct FloatingFocusChart: View {
     @StateObject private var vm = FocusChartViewModel()
     @State private var position = CGPoint(x: 100, y: 100)
     @State private var isDragging = false
-    
+
     var body: some View {
         VStack(spacing: 4) {
-            MiniLineChart(data: vm.history)
+            MiniBarChart(data: vm.history)
                 .frame(width: 40, height: 20)
             Text("\(Int(vm.current))%")
                 .font(.caption).bold()
@@ -63,43 +63,39 @@ struct FloatingFocusChart: View {
                 }
         )
     }
-    
+
     private func snapToEdge() {
-        let w = UIScreen.main.bounds.width
-        let h = UIScreen.main.bounds.height
-        let x = position.x < w/2 ? 50 : w - 50
-        let y = min(max(position.y, 80), h - 80)
+        let screen = UIScreen.main.bounds
+        let x = position.x < screen.width / 2 ? 50 : screen.width - 50
+        let y = min(max(position.y, 80), screen.height - 80)
         withAnimation(.spring()) {
             position = CGPoint(x: x, y: y)
         }
     }
 }
 
-// MARK: - Mini Line Chart
-struct MiniLineChart: View {
+// MARK: - Mini Bar Chart
+struct MiniBarChart: View {
     let data: [FocusData]
-    
+
     var body: some View {
         GeometryReader { geo in
-            Path { path in
-                let pts = points(in: geo.size)
-                guard let first = pts.first else { return }
-                path.move(to: first)
-                pts.dropFirst().forEach { path.addLine(to: $0) }
+            let count = max(data.count, 1)
+            let barWidth = geo.size.width / CGFloat(count)
+
+            ForEach(Array(data.enumerated()), id: \ .offset) { index, entry in
+                let normalized = CGFloat(entry.value / 100)
+                let barHeight = normalized * geo.size.height
+
+                Rectangle()
+                    .fill(Color.blue)
+                    .frame(width: barWidth * 0.5,
+                           height: barHeight)
+                    .position(
+                        x: barWidth * (CGFloat(index) + 0.5),
+                        y: geo.size.height - barHeight / 2
+                    )
             }
-            .stroke(Color.blue, lineWidth: 2)
-        }
-    }
-    
-    private func points(in size: CGSize) -> [CGPoint] {
-        guard data.count > 1 else { return [] }
-        let vals = data.map { $0.value }
-        let minV = vals.min() ?? 0, maxV = vals.max() ?? 100
-        let range = maxV - minV == 0 ? 1 : maxV - minV
-        return data.enumerated().map { i, d in
-            let x = CGFloat(i) / CGFloat(data.count - 1) * size.width
-            let y = size.height * (1 - (CGFloat(d.value - minV) / CGFloat(range)))
-            return CGPoint(x: x, y: y)
         }
     }
 }
