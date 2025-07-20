@@ -168,8 +168,6 @@ final class WebSocketNetworkService: WebSocketAPI {
         
         let messageData = json["data"] as? [String: Any]
         
-        print("Parsed WebSocket message - Type: \(messageType), Status: \(status), Message: \(message)")
-        
         let webSocketMessage = WebSocketMessage(
             type: messageType,
             status: status,
