@@ -15,7 +15,7 @@ class SubtitleViewModel: ObservableObject {
     // load the .vtt file at a given index, parse it, and set `currentSegment`.
     func loadSegment(at index: Int) {
         guard index >= 0, index < segments.count else {
-//            print("loadSegment => index out of range")
+            //            print("loadSegment => index out of range")
             return
         }
         currentSegmentIndex = index
@@ -45,7 +45,7 @@ class SubtitleViewModel: ObservableObject {
             onNextSegment(newIndex)  // Tells the caller: "Load segment at newIndex"
         }
     }
-
+    
     /// Finds the segment whose [minStart, maxEnd) range contains `time`.
     /// If none match exactly, returns nil or the last if you want a fallback.
     private func findSegmentIndex(for time: Double) -> Int? {
@@ -58,7 +58,7 @@ class SubtitleViewModel: ObservableObject {
         // return segments.count - 1 to stick on the last segment
         return nil
     }
-
+    
     
     /// Download and parse the .vtt file
     private func fetchAndParseVTT(from urlString: String, completion: @escaping (SubtitleSegmentData) -> Void) {
@@ -122,9 +122,7 @@ class SubtitleViewModel: ObservableObject {
                     .filter { !$0.isEmpty }
                 
                 for w in splitted {
-                    words.append(WordTimestamp(start: startTime,
-                                               end: endTime,
-                                               text: w))
+                    words.append(WordTimestamp(start: startTime, end: endTime, text: w))
                 }
             }
         }
