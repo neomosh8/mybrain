@@ -49,6 +49,7 @@ struct AnimatedParagraphView: View {
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
+                .padding(.bottom, 100) 
         }
         .onAppear {
             if !hasSetupContent {
