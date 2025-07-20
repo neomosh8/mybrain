@@ -1,11 +1,12 @@
 import SwiftUI
 import NaturalLanguage
 
-struct AnimatedParagraphView: UIViewRepresentable {
+struct AnimatedParagraphView: View {
     let htmlString: String
     let thoughtId: String
     let chapterNumber: Int
     let wordInterval: TimeInterval
+    let isCurrentChapter: Bool
     
     var onFinished: () -> Void
     var onHalfway: () -> Void
@@ -13,12 +14,20 @@ struct AnimatedParagraphView: UIViewRepresentable {
     // Dependencies
     private let feedbackService: any FeedbackServiceProtocol
     
+    @State private var attributedContent: AttributedString = AttributedString()
+    @State private var wordRanges: [(range: Range<AttributedString.Index>, word: String)] = []
+    @State private var currentWordIndex: Int = 0
+    @State private var isAnimating: Bool = false
+    @State private var animationTimer: Timer?
+    @State private var hasSetupContent: Bool = false
+    
     // MARK: - Initialization
     init(
         htmlString: String,
         thoughtId: String,
         chapterNumber: Int,
-        wordInterval: TimeInterval = 0.4,
+        wordInterval: TimeInterval = 0.3,
+        isCurrentChapter: Bool = false,
         feedbackService: any FeedbackServiceProtocol = FeedbackService.shared,
         onFinished: @escaping () -> Void = {},
         onHalfway: @escaping () -> Void = {}
@@ -27,104 +36,89 @@ struct AnimatedParagraphView: UIViewRepresentable {
         self.thoughtId = thoughtId
         self.chapterNumber = chapterNumber
         self.wordInterval = wordInterval
+        self.isCurrentChapter = isCurrentChapter
         self.feedbackService = feedbackService
         self.onFinished = onFinished
         self.onHalfway = onHalfway
     }
     
-    func makeUIView(context: Context) -> AnimatedTextView {
-        let textView = AnimatedTextView()
-        return textView
-    }
-    
-    func updateUIView(_ uiView: AnimatedTextView, context: Context) {
-        if uiView.currentContent != htmlString {
-            uiView.configure(
-                htmlString: htmlString,
-                thoughtId: thoughtId,
-                chapterNumber: chapterNumber,
-                wordInterval: wordInterval,
-                feedbackService: feedbackService,
-                onFinished: onFinished,
-                onHalfway: onHalfway
-            )
+    var body: some View {
+        ScrollView {
+            Text(buildHighlightedText())
+                .font(.system(size: 18, weight: .regular))
+                .lineSpacing(6)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+        }
+        .onAppear {
+            if !hasSetupContent {
+                setupContent()
+                hasSetupContent = true
+            }
+        }
+        .onChange(of: isCurrentChapter) { _, newValue in
+            if newValue && !isAnimating && !wordRanges.isEmpty {
+                startAnimation()
+            } else if !newValue && isAnimating {
+                stopAnimation()
+            }
+        }
+        .onChange(of: wordInterval) { _, _ in
+            if isAnimating {
+                animationTimer?.invalidate()
+                animationTimer = nil
+                
+                resumeAnimationFromCurrentPosition()
+            }
+        }
+        .onDisappear {
+            stopAnimation()
         }
     }
-}
-
-// MARK: - AnimatedTextView
-
-class AnimatedTextView: UITextView {
-    private var wordInfo: [(range: NSRange, rect: CGRect?)] = []
-    private var shownWordsCount = 0
-    private var scheduledTask: DispatchWorkItem?
-    private var animationFinished = false
-    private var fullAttributedString: NSAttributedString?
-    private var isAnimating = false
     
-    // Configuration properties
-    var currentContent: String = ""
-    private var thoughtId: String = ""
-    private var chapterNumber: Int = 0
-    private var wordInterval: TimeInterval = 0.4
-    private var feedbackService: (any FeedbackServiceProtocol)?
-    private var onFinished: (() -> Void)?
-    private var onHalfway: (() -> Void)?
-    
-    override init(frame: CGRect, textContainer: NSTextContainer?) {
-        super.init(frame: frame, textContainer: textContainer)
-        setupTextView()
-    }
-    
-    required init?(coder: NSCoder) {
-        super.init(coder: coder)
-        setupTextView()
-    }
-    
-    private func setupTextView() {
-        isEditable = false
-        isSelectable = false
-        backgroundColor = .clear
-        textColor = .white
-        font = UIFont.systemFont(ofSize: 18, weight: .medium)
-        textAlignment = .center
-        showsVerticalScrollIndicator = false
-        showsHorizontalScrollIndicator = false
-    }
-    
-    func configure(
-        htmlString: String,
-        thoughtId: String,
-        chapterNumber: Int,
-        wordInterval: TimeInterval,
-        feedbackService: any FeedbackServiceProtocol,
-        onFinished: @escaping () -> Void,
-        onHalfway: @escaping () -> Void
-    ) {
-        stopAnimation()
+    private func buildHighlightedText() -> AttributedString {
+        var result = attributedContent
         
-        self.currentContent = htmlString
-        self.thoughtId = thoughtId
-        self.chapterNumber = chapterNumber
-        self.wordInterval = wordInterval
-        self.feedbackService = feedbackService
-        self.onFinished = onFinished
-        self.onHalfway = onHalfway
+        // Reset all highlighting first
+        for range in wordRanges {
+            result[range.range].backgroundColor = nil
+        }
         
-        setupAttributedText(from: htmlString)
-        prepareAnimation()
-        startAnimation()
+        // Apply current word highlighting
+        if isAnimating && currentWordIndex < wordRanges.count {
+            let currentRange = wordRanges[currentWordIndex].range
+            result[currentRange].backgroundColor = Color.blue
+            result[currentRange].foregroundColor = Color.white
+        }
+        
+        // Apply styling for previous and future words
+        for (index, wordRange) in wordRanges.enumerated() {
+            if index < currentWordIndex {
+                // Previous words - primary color
+                result[wordRange.range].foregroundColor = Color.primary
+            } else if index > currentWordIndex {
+                // Future words - secondary color
+                result[wordRange.range].foregroundColor = Color.secondary
+            }
+        }
+        
+        return result
     }
     
-    private func stopAnimation() {
-        scheduledTask?.cancel()
-        scheduledTask = nil
-        isAnimating = false
-        animationFinished = false
-        shownWordsCount = 0
+    private func setupContent() {
+        // Parse HTML content preserving formatting
+        parseHTMLContent()
+        
+        // Only start animation if this is the current chapter
+        if isCurrentChapter && !wordRanges.isEmpty {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                startAnimation()
+            }
+        }
     }
     
-    private func setupAttributedText(from htmlString: String) {
+    private func parseHTMLContent() {
         guard let data = htmlString.data(using: .utf8) else { return }
         
         let options: [NSAttributedString.DocumentReadingOptionKey: Any] = [
@@ -133,179 +127,109 @@ class AnimatedTextView: UITextView {
         ]
         
         do {
-            let attributedString = try NSMutableAttributedString(data: data, options: options, documentAttributes: nil)
+            // Parse HTML to NSAttributedString first
+            let nsAttributedString = try NSAttributedString(data: data, options: options, documentAttributes: nil)
             
-            // Apply consistent styling
-            let fullRange = NSRange(location: 0, length: attributedString.length)
-            attributedString.addAttribute(.foregroundColor, value: UIColor.white.withAlphaComponent(0.6), range: fullRange)
-            attributedString.addAttribute(.font, value: UIFont.systemFont(ofSize: 18, weight: .medium), range: fullRange)
-            
-            let paragraphStyle = NSMutableParagraphStyle()
-            paragraphStyle.alignment = .center
-            paragraphStyle.lineSpacing = 8
-            attributedString.addAttribute(.paragraphStyle, value: paragraphStyle, range: fullRange)
-            
-            self.fullAttributedString = attributedString
-            self.attributedText = attributedString
-            
-        } catch {
-            print("Error creating attributed string from HTML: \(error)")
-            self.text = htmlString.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
-        }
-    }
-    
-    private func prepareAnimation() {
-        guard let fullString = fullAttributedString?.string else { return }
-        
-        let tokenRanges = tokenRanges(for: fullString)
-        wordInfo = tokenRanges.map { range in
-            let rect = boundingRect(for: range)
-            return (range: range, rect: rect)
-        }
-        
-        // Start with all text hidden
-        updateHighlightedText()
-    }
-    
-    private func updateHighlightedText() {
-        guard let mutableAttrString = fullAttributedString?.mutableCopy() as? NSMutableAttributedString else { return }
-        
-        let fullRange = NSRange(location: 0, length: mutableAttrString.length)
-        
-        // Set all text to dimmed white (visible but not highlighted)
-        mutableAttrString.addAttribute(.foregroundColor, value: UIColor.white.withAlphaComponent(0.6), range: fullRange)
-        mutableAttrString.removeAttribute(.backgroundColor, range: fullRange)
-        
-        // Highlight current word with blue background and white text
-        if shownWordsCount > 0 && shownWordsCount <= wordInfo.count {
-            let currentIndex = shownWordsCount - 1
-            let range = wordInfo[currentIndex].range
-            
-            // Add blue background highlight and full white text
-            mutableAttrString.addAttribute(.backgroundColor, value: UIColor.systemBlue, range: range)
-            mutableAttrString.addAttribute(.foregroundColor, value: UIColor.white, range: range)
-        }
-        
-        // Make all previously highlighted words fully white (no background)
-        if shownWordsCount > 1 {
-            let previousWordsCount = min(shownWordsCount - 1, wordInfo.count)
-            for i in 0..<previousWordsCount {
-                let range = wordInfo[i].range
-                mutableAttrString.addAttribute(.foregroundColor, value: UIColor.white, range: range)
-                mutableAttrString.removeAttribute(.backgroundColor, range: range)
+            // Convert to SwiftUI AttributedString
+            if let swiftUIAttributedString = try? AttributedString(nsAttributedString, including: \.uiKit) {
+                attributedContent = swiftUIAttributedString
+                extractWordRanges()
+            } else {
+                // Fallback: create plain AttributedString
+                let plainText = htmlString.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+                attributedContent = AttributedString(plainText)
+                extractWordRanges()
             }
+        } catch {
+            print("Error parsing HTML: \(error)")
+            // Fallback to plain text
+            let plainText = htmlString.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+            attributedContent = AttributedString(plainText)
+            extractWordRanges()
         }
-        
-        self.attributedText = mutableAttrString
     }
     
-    private func boundingRect(for range: NSRange) -> CGRect? {
-        guard range.location != NSNotFound && range.length > 0 else { return nil }
+    private func extractWordRanges() {
+        wordRanges.removeAll()
         
-        var glyphRange = NSRange()
-        layoutManager.characterRange(forGlyphRange: range, actualGlyphRange: &glyphRange)
-        let boundingRect = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
-        return boundingRect.isEmpty ? nil : boundingRect
+        let text = String(attributedContent.characters)
+        let tagger = NLTagger(tagSchemes: [.tokenType])
+        tagger.string = text
+        
+        let fullRange = text.startIndex..<text.endIndex
+        
+        tagger.enumerateTags(in: fullRange, unit: .word, scheme: .tokenType) { _, tokenRange in
+            let word = String(text[tokenRange]).trimmingCharacters(in: .punctuationCharacters.union(.whitespacesAndNewlines))
+            
+            // Only include meaningful words
+            if word.count > 1 && word.rangeOfCharacter(from: .alphanumerics) != nil {
+                // Convert String range to AttributedString range
+                if let attributedRange = Range(tokenRange, in: attributedContent) {
+                    wordRanges.append((range: attributedRange, word: word))
+                }
+            }
+            return true
+        }
     }
-
+    
     private func startAnimation() {
-        guard wordInfo.count > 0, !isAnimating else {
-            onFinished?()
+        guard !wordRanges.isEmpty else {
+            onFinished()
             return
         }
         
         isAnimating = true
-        shownWordsCount = 1
-        updateHighlightedText()
-        sendFeedbackForWord(at: 0)
-        scheduleNextWord()
+        currentWordIndex = 0
+        
+        // Send feedback for first word
+        // sendFeedback(for: wordRanges[0].word)
+        
+        // Start timer for subsequent words
+        startAnimationTimer()
     }
-
-    private func scheduleNextWord() {
-        guard isAnimating, shownWordsCount < wordInfo.count else {
-            // Animation complete - remove highlight from last word
-            if shownWordsCount > 0 && shownWordsCount <= wordInfo.count {
-                let finalIndex = shownWordsCount - 1
-                if let mutableAttrString = fullAttributedString?.mutableCopy() as? NSMutableAttributedString {
-                    let range = wordInfo[finalIndex].range
-                    mutableAttrString.addAttribute(.foregroundColor, value: UIColor.white, range: range)
-                    mutableAttrString.removeAttribute(.backgroundColor, range: range)
-                    self.attributedText = mutableAttrString
+    
+    private func resumeAnimationFromCurrentPosition() {
+        guard !wordRanges.isEmpty, isAnimating else { return }
+        
+        // Continue from current word position
+        startAnimationTimer()
+    }
+    
+    private func startAnimationTimer() {
+        animationTimer = Timer.scheduledTimer(withTimeInterval: wordInterval, repeats: true) { [self] timer in
+            DispatchQueue.main.async {
+                currentWordIndex += 1
+                
+                if currentWordIndex >= wordRanges.count {
+                    stopAnimation()
+                    onFinished()
+                } else {
+                    // Send feedback for current word
+                    // sendFeedback(for: wordRanges[currentWordIndex].word)
+                    
+                    // Check halfway point
+                    let halfwayPoint = wordRanges.count / 2
+                    if currentWordIndex == halfwayPoint {
+                        onHalfway()
+                    }
                 }
             }
-            
-            animationFinished = true
-            isAnimating = false
-            onFinished?()
-            return
         }
-        
-        let task = DispatchWorkItem { [weak self] in
-            guard let self = self, self.isAnimating else { return }
-            
-            self.shownWordsCount += 1
-            self.updateHighlightedText()
-            self.sendFeedbackForWord(at: self.shownWordsCount - 1)
-
-            let halfwayPoint = (self.wordInfo.count + 1) / 2
-            if self.shownWordsCount == halfwayPoint {
-                self.onHalfway?()
-            }
-            
-            // Continue animation
-            self.scheduleNextWord()
-        }
-        
-        self.scheduledTask = task
-        DispatchQueue.main.asyncAfter(deadline: .now() + wordInterval, execute: task)
     }
-
-    private func sendFeedbackForWord(at index: Int) {
-        guard index >= 0 && index < wordInfo.count,
-              let feedbackService = feedbackService,
-              let fullAttributedString = fullAttributedString else { return }
-        
-        let range = wordInfo[index].range
-        let subAttr = fullAttributedString.attributedSubstring(from: range)
-        let plainWord = subAttr.string.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        guard !plainWord.isEmpty,
-              plainWord.count > 1,
-              containsAlphanumeric(plainWord) else { return }
-        
+    
+    private func stopAnimation() {
+        animationTimer?.invalidate()
+        animationTimer = nil
+        isAnimating = false
+    }
+    
+    private func sendFeedback(for word: String) {
         feedbackService.submitFeedbackSync(
             thoughtId: thoughtId,
             chapterNumber: chapterNumber,
-            word: plainWord
+            word: word
         )
         
-        print("Feedback submitted for word: \(plainWord)")
-    }
-    
-    private func containsAlphanumeric(_ string: String) -> Bool {
-        return string.rangeOfCharacter(from: CharacterSet.alphanumerics) != nil
-    }
-}
-
-// MARK: - NLTagger Utility
-extension AnimatedTextView {
-    private func tokenRanges(for string: String) -> [NSRange] {
-        var results: [NSRange] = []
-        
-        let tagger = NLTagger(tagSchemes: [.lexicalClass])
-        tagger.string = string
-
-        let fullRange = string.startIndex..<string.endIndex
-
-        tagger.enumerateTags(in: fullRange, unit: .word, scheme: .lexicalClass) { tag, tokenRange in
-            let start = tokenRange.lowerBound
-            let end   = tokenRange.upperBound
-            let nsRange = NSRange(start..<end, in: string)
-            if nsRange.length > 0 {
-                results.append(nsRange)
-            }
-            return true
-        }
-        return results
+        print("Feedback submitted for word: \(word)")
     }
 }
