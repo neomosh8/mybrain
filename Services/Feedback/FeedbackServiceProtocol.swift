@@ -56,13 +56,6 @@ protocol FeedbackServiceProtocol: ObservableObject {
         word: String
     ) async -> Result<FeedbackResponse, FeedbackError>
     
-    /// Submit feedback synchronously (for backwards compatibility)
-    func submitFeedbackSync(
-        thoughtId: String,
-        chapterNumber: Int,
-        word: String
-    )
-    
     var pendingFeedbackCount: Int { get }
     
     func retryFailedSubmissions() async
