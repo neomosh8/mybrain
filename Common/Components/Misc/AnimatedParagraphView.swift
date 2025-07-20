@@ -188,7 +188,7 @@ struct AnimatedParagraphView: View {
         isAnimating = true
         currentWordIndex = 0
         
-         sendFeedback(for: wordRanges[0].word)
+        sendFeedback(for: wordRanges[0].word)
         
         startAnimationTimer()
     }

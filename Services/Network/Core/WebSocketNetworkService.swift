@@ -152,9 +152,7 @@ final class WebSocketNetworkService: WebSocketAPI {
         }
     }
     
-    private func handleIncomingMessage(_ text: String) {
-        print("Received WebSocket message: \(text)")
-        
+    private func handleIncomingMessage(_ text: String) {       
         guard let data = text.data(using: .utf8),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             print("Failed to parse WebSocket message JSON")
