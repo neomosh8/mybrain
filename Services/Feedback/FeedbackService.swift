@@ -98,7 +98,6 @@ class FeedbackService: FeedbackServiceProtocol {
         word: String,
         completion: @escaping (Result<FeedbackResponse, FeedbackError>) -> Void
     ) {
-        // Validate input
         let cleanWord = word.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanWord.isEmpty else {
             completion(.failure(.invalidWord))
@@ -108,7 +107,6 @@ class FeedbackService: FeedbackServiceProtocol {
         // Get feedback value from BluetoothService
         let feedbackValue = bluetoothService.processFeedback(word: cleanWord)
         
-        // Create feedback request
         let feedbackRequest = FeedbackRequest(
             thoughtId: thoughtId,
             chapterNumber: chapterNumber,
@@ -116,17 +114,14 @@ class FeedbackService: FeedbackServiceProtocol {
             value: feedbackValue
         )
         
-        // Add to pending queue
         feedbackQueue.async {
             self.pendingFeedbacks.append(feedbackRequest)
             self.updatePendingCount()
         }
         
-        // Send via WebSocket
         sendFeedbackToServer(feedbackRequest) { [weak self] result in
             switch result {
             case .success(let response):
-                // Remove from pending queue on success
                 self?.feedbackQueue.async {
                     self?.pendingFeedbacks.removeAll { $0.thoughtId == thoughtId && $0.word == cleanWord }
                     self?.updatePendingCount()
@@ -143,17 +138,14 @@ class FeedbackService: FeedbackServiceProtocol {
         _ feedback: FeedbackRequest,
         completion: @escaping (Result<FeedbackResponse, FeedbackError>) -> Void
     ) {
-        // Check WebSocket connection
         guard webSocketService.isConnected else {
             completion(.failure(.webSocketNotConnected))
             return
         }
         
-        // Store completion for response handling
         let requestId = "\(feedback.thoughtId)_\(feedback.chapterNumber)_\(feedback.word)_\(feedback.timestamp.timeIntervalSince1970)"
         pendingCompletions[requestId] = completion
         
-        // Send feedback via WebSocket
         webSocketService.sendFeedback(
             thoughtId: feedback.thoughtId,
             chapterNumber: feedback.chapterNumber,
@@ -161,8 +153,7 @@ class FeedbackService: FeedbackServiceProtocol {
             value: feedback.value
         )
         
-        // Set timeout for response
-        DispatchQueue.main.asyncAfter(deadline: .now() + 30) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
             if let storedCompletion = self.pendingCompletions.removeValue(forKey: requestId) {
                 storedCompletion(.failure(.submissionFailed("Request timeout")))
             }
@@ -189,24 +180,22 @@ class FeedbackService: FeedbackServiceProtocol {
                 chapterNumber: data?["chapter_number"] as? Int,
                 word: data?["word"] as? String
             )
-            
-            // Publish response
+                        
             feedbackResponsesSubject.send(response)
             
-            // Handle pending completions
             if let thoughtId = response.thoughtId,
+               let chapterNumber = response.chapterNumber,
                let word = response.word {
-                let completionsToNotify = pendingCompletions.filter { key, _ in
-                    key.contains(thoughtId) && key.contains(word)
+                                
+                let exactKey = pendingCompletions.keys.first { key in
+                    key.hasPrefix("\(thoughtId)_\(chapterNumber)_\(word)_")
                 }
                 
-                for (key, completion) in completionsToNotify {
-                    pendingCompletions.removeValue(forKey: key)
-                    if response.success {
-                        completion(.success(response))
-                    } else {
-                        completion(.failure(.submissionFailed(response.message)))
-                    }
+                if let key = exactKey,
+                   let completion = pendingCompletions.removeValue(forKey: key) {
+                    completion(.success(response))
+                } else {
+                    print("⚠️ No pending completion found")
                 }
             }
             
