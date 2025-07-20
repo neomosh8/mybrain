@@ -8,8 +8,13 @@ class BluetoothService: NSObject, ObservableObject {
     static let shared = BluetoothService()
     
     @Published var isDevelopmentMode = false
-    @Published var feedbackValue: Double = 0.0
+
+    private let feedbackSubject = PassthroughSubject<Double, Never>()
     
+    var feedbackPublisher: AnyPublisher<Double, Never> {
+        feedbackSubject.eraseToAnyPublisher()
+    }
+
     // MARK: - Simulation state
     private var simPhase: Double = 0.0
     private let simStep:  Double = 0.15
@@ -552,8 +557,8 @@ class BluetoothService: NSObject, ObservableObject {
             value = generateSimulatedValue(for: word)
         }
         
-        feedbackValue = value
-        
+        feedbackSubject.send(value)
+
         return value
     }
     
