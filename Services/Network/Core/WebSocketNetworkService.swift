@@ -53,7 +53,7 @@ final class WebSocketNetworkService: WebSocketAPI {
         request.setValue(NetworkConstants.userTimezone, forHTTPHeaderField: "User-Timezone")
         
         webSocketTask = session.webSocketTask(with: request)
-        receiveMessage()
+        startReceiving()
         webSocketTask?.resume()
         
         connectionStateSubject.send(.connected)
@@ -120,27 +120,34 @@ final class WebSocketNetworkService: WebSocketAPI {
         }
     }
     
-    private func receiveMessage() {
-        webSocketTask?.receive { [weak self] result in
-            guard let self = self else { return }
-            
-            switch result {
-            case .success(let message):
-                switch message {
-                case .string(let text):
-                    self.handleIncomingMessage(text)
-                case .data(let data):
-                    if let text = String(data: data, encoding: .utf8) {
+    private func startReceiving() {
+        Task { [weak self] in
+            await self?.receiveMessages()
+        }
+    }
+    
+    private func receiveMessages() async {
+        while let webSocketTask = webSocketTask, webSocketTask.state == .running {
+            do {
+                let message = try await webSocketTask.receive()
+                await MainActor.run {
+                    switch message {
+                    case .string(let text):
                         self.handleIncomingMessage(text)
+                    case .data(let data):
+                        if let text = String(data: data, encoding: .utf8) {
+                            self.handleIncomingMessage(text)
+                        }
+                    @unknown default:
+                        break
                     }
-                @unknown default:
-                    break
                 }
-                self.receiveMessage() // Continue receiving
-                
-            case .failure(let error):
+            } catch {
                 print("WebSocket receive error: \(error)")
-                self.connectionStateSubject.send(.failed(error))
+                await MainActor.run {
+                    self.connectionStateSubject.send(.failed(error))
+                }
+                break
             }
         }
     }
