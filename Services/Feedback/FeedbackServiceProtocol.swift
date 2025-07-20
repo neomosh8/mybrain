@@ -3,22 +3,6 @@ import Combine
 
 // MARK: - Feedback Models
 
-struct FeedbackRequest {
-    let thoughtId: String
-    let chapterNumber: Int
-    let word: String
-    let value: Double
-    let timestamp: Date
-    
-    init(thoughtId: String, chapterNumber: Int, word: String, value: Double) {
-        self.thoughtId = thoughtId
-        self.chapterNumber = chapterNumber
-        self.word = word
-        self.value = value
-        self.timestamp = Date()
-    }
-}
-
 struct FeedbackResponse {
     let success: Bool
     let message: String
@@ -55,6 +39,4 @@ protocol FeedbackServiceProtocol: ObservableObject {
         chapterNumber: Int,
         word: String
     ) async -> Result<FeedbackResponse, FeedbackError>
-                
-    var feedbackResponses: AnyPublisher<FeedbackResponse, Never> { get }
 }
