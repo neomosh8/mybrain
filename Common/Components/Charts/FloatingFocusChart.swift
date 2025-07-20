@@ -24,23 +24,30 @@ class FocusChartViewModel: ObservableObject {
         bluetoothService.$feedbackValue
             .receive(on: DispatchQueue.main)
             .sink { [weak self] value in
-                self?.updateFocusData(value)
+                DispatchQueue.main.async {
+                    self?.updateFocusData(value)
+                }
             }
             .store(in: &cancellables)
     }
 
     private func updateFocusData(_ value: Double) {
-        // Convert raw EEG value to focus percentage (0-100)
-        let focusPercentage = convertToFocusPercentage(value)
-        currentFocus = focusPercentage
+        // Ensure we're not in a view update cycle by using async
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
+            // Convert raw EEG value to focus percentage (0-100)
+            let focusPercentage = self.convertToFocusPercentage(value)
+            self.currentFocus = focusPercentage
 
-        // Add to history
-        let focusData = FocusData(value: focusPercentage, timestamp: Date())
-        focusHistory.append(focusData)
+            // Add to history
+            let focusData = FocusData(value: focusPercentage, timestamp: Date())
+            self.focusHistory.append(focusData)
 
-        // Keep only last 5 values
-        if focusHistory.count > 5 {
-            focusHistory.removeFirst()
+            // Keep only last 5 values
+            if self.focusHistory.count > 5 {
+                self.focusHistory.removeFirst()
+            }
         }
     }
 
