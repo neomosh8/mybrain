@@ -45,7 +45,6 @@ struct AnimatedParagraphView: View {
     var body: some View {
         ScrollView {
             Text(buildHighlightedText())
-                .font(.system(size: 18, weight: .regular))
                 .lineSpacing(6)
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -92,17 +91,6 @@ struct AnimatedParagraphView: View {
             result[currentRange].foregroundColor = Color.white
         }
         
-        // Apply styling for previous and future words
-        for (index, wordRange) in wordRanges.enumerated() {
-            if index < currentWordIndex {
-                // Previous words - primary color
-                result[wordRange.range].foregroundColor = Color.primary
-            } else if index > currentWordIndex {
-                // Future words - secondary color
-                result[wordRange.range].foregroundColor = Color.secondary
-            }
-        }
-        
         return result
     }
     
@@ -133,6 +121,7 @@ struct AnimatedParagraphView: View {
             // Convert to SwiftUI AttributedString
             if let swiftUIAttributedString = try? AttributedString(nsAttributedString, including: \.uiKit) {
                 attributedContent = swiftUIAttributedString
+                overrideFontFamilyOnly()
                 extractWordRanges()
             } else {
                 // Fallback: create plain AttributedString
@@ -146,6 +135,38 @@ struct AnimatedParagraphView: View {
             let plainText = htmlString.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
             attributedContent = AttributedString(plainText)
             extractWordRanges()
+        }
+    }
+    
+    private func overrideFontFamilyOnly() {
+        // Only change font family to system font, preserve size/weight/style from HTML
+        for run in attributedContent.runs {
+            let runRange = run.range
+            
+            if let originalFont = run.uiKit.font {
+                // Get original font characteristics
+                let originalSize = originalFont.pointSize
+                let traits = originalFont.fontDescriptor.symbolicTraits
+                
+                // Create system font with same characteristics
+                var weight: Font.Weight = .regular
+                var isItalic = false
+                
+                if traits.contains(.traitBold) {
+                    weight = .bold
+                }
+                if traits.contains(.traitItalic) {
+                    isItalic = true
+                }
+                
+                // Apply system font with preserved characteristics
+                var newFont = Font.system(size: originalSize, weight: weight)
+                if isItalic {
+                    newFont = newFont.italic()
+                }
+                
+                attributedContent[runRange].font = newFont
+            }
         }
     }
     
