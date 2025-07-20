@@ -79,22 +79,16 @@ class ReadingViewModel: ObservableObject {
     private func handleWebSocketMessage(_ message: WebSocketMessage) {
         switch message {
         case .chapterText(let status, let message, let data):
-            print("📖 Chapter text response: \(status.rawValue) - \(message)")
-            
             if status.isSuccess {
                 handleTextChapterResponse(data: data)
             } else {
-                print("📖 Chapter text response error: \(message)")
                 isLoadingChapter = false
             }
             
         case .chapterComplete(_, let message, let data):
-            print("📖 Chapter complete: \(message)")
-            
             if let completeData = ChapterCompleteResponseData(from: data),
                let complete = completeData.complete,
                complete {
-                print("📖 All chapters completed")
                 isLastChapter = true
                 hasCompletedAllChapters = true
             }
@@ -106,20 +100,13 @@ class ReadingViewModel: ObservableObject {
     }
 
     private func handleTextChapterResponse(data: [String: Any]?) {
-        print("📖 handleTextChapterResponse called")
-        
         isLoadingChapter = false
         
         guard let chapterData = ChapterTextResponseData(from: data) else {
-            print("📖 Invalid chapter text response data")
             return
         }
-        
-        print("📖 Processing chapter \(chapterData.chapterNumber ?? 0): \(chapterData.title ?? "Untitled")")
-        
+                
         addChapter(chapterData: chapterData)
-        
-        print("📖 Chapter \(chapterData.chapterNumber ?? 0) added. Total chapters: \(displayedChapterCount)")
     }
     
     private func addChapter(chapterData: ChapterTextResponseData) {
