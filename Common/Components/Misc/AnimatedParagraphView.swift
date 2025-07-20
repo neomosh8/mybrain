@@ -124,7 +124,6 @@ struct AnimatedParagraphView: View {
                 extractWordRanges()
             }
         } catch {
-            print("Error parsing HTML: \(error)")
             let plainText = htmlString.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
             attributedContent = AttributedString(plainText)
             extractWordRanges()
@@ -234,7 +233,5 @@ struct AnimatedParagraphView: View {
             chapterNumber: chapterNumber,
             word: word
         )
-        
-        print("Feedback submitted for word: \(word)")
     }
 }
