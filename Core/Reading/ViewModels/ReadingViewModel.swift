@@ -15,7 +15,7 @@ class ReadingViewModel: ObservableObject {
     @Published var isLastChapter = false
     
     // UI state
-    @Published var readingSpeed: Double = 0.15
+    @Published var readingSpeed: Double = 0.3
     @Published var sliderPosition = CGPoint(x: 100, y: 200)
     @Published var isLoadingChapter = false
     
