@@ -200,7 +200,7 @@ struct AnimatedParagraphView: View {
     }
     
     private func startAnimationTimer() {
-        animationTimer = Timer.scheduledTimer(withTimeInterval: wordInterval, repeats: true) { [self] timer in
+        let timer = Timer(timeInterval: wordInterval, repeats: true) { [self] timer in
             DispatchQueue.main.async {
                 currentWordIndex += 1
                 
@@ -208,9 +208,8 @@ struct AnimatedParagraphView: View {
                     stopAnimation()
                     onFinished()
                 } else {
-                     sendFeedback(for: wordRanges[currentWordIndex].word)
+                    sendFeedback(for: wordRanges[currentWordIndex].word)
                     
-                    // Check halfway point
                     let halfwayPoint = wordRanges.count / 2
                     if currentWordIndex == halfwayPoint {
                         onHalfway()
@@ -218,6 +217,8 @@ struct AnimatedParagraphView: View {
                 }
             }
         }
+        RunLoop.current.add(timer, forMode: .common)
+        animationTimer = timer
     }
     
     private func stopAnimation() {
