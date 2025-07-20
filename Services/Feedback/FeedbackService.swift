@@ -18,6 +18,9 @@ class FeedbackService: FeedbackServiceProtocol {
     private var pendingFeedbacks: [FeedbackRequest] = []
     private let feedbackQueue = DispatchQueue(label: "com.neocore.feedback", qos: .utility)
     
+    private var lastUIUpdate = Date()
+    private let uiUpdateInterval: TimeInterval = 2.0
+
     // MARK: - Public Properties
     var feedbackResponses: AnyPublisher<FeedbackResponse, Never> {
         feedbackResponsesSubject.eraseToAnyPublisher()
@@ -31,7 +34,7 @@ class FeedbackService: FeedbackServiceProtocol {
         self.webSocketService = webSocketService
         self.bluetoothService = bluetoothService
         
-        setupWebSocketListener()
+//        setupWebSocketListener()
     }
     
     // MARK: - FeedbackServiceProtocol Implementation
@@ -42,29 +45,43 @@ class FeedbackService: FeedbackServiceProtocol {
         word: String
     ) async -> Result<FeedbackResponse, FeedbackError> {
         
-        return await withCheckedContinuation { continuation in
-            submitFeedbackInternal(
-                thoughtId: thoughtId,
-                chapterNumber: chapterNumber,
-                word: word
-            ) { result in
-                continuation.resume(returning: result)
+        let cleanWord = word.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanWord.isEmpty else {
+            return .failure(.invalidWord)
+        }
+        
+        // Get feedback value (no UI update in the method)
+        let feedbackValue = bluetoothService.processFeedback(word: cleanWord)
+        
+        // Batch UI updates - only update every 2 seconds
+        let now = Date()
+        if now.timeIntervalSince(lastUIUpdate) > uiUpdateInterval {
+            bluetoothService.updateFeedbackValueForUI(feedbackValue)
+            await MainActor.run {
+                lastUIUpdate = now
             }
         }
-    }
-    
-    func submitFeedbackSync(
-        thoughtId: String,
-        chapterNumber: Int,
-        word: String
-    ) {
-        submitFeedbackInternal(
+        
+        // Fire and forget - just send to server without completion tracking
+        guard webSocketService.isConnected else {
+            return .failure(.webSocketNotConnected)
+        }
+        
+        webSocketService.sendFeedback(
             thoughtId: thoughtId,
             chapterNumber: chapterNumber,
-            word: word
-        ) { _ in
-            // Fire and forget for sync calls
-        }
+            word: cleanWord,
+            value: feedbackValue
+        )
+        
+        // Return immediate success since we're doing fire-and-forget
+        return .success(FeedbackResponse(
+            success: true,
+            message: "Feedback sent",
+            thoughtId: thoughtId,
+            chapterNumber: chapterNumber,
+            word: cleanWord
+        ))
     }
     
     func retryFailedSubmissions() async {
@@ -90,119 +107,140 @@ class FeedbackService: FeedbackServiceProtocol {
         }
     }
     
+    
+//    func submitFeedback(
+//        thoughtId: String,
+//        chapterNumber: Int,
+//        word: String
+//    ) async -> Result<FeedbackResponse, FeedbackError> {
+//        return await withCheckedContinuation { continuation in
+//            submitFeedbackInternal(
+//                thoughtId: thoughtId,
+//                chapterNumber: chapterNumber,
+//                word: word
+//            ) { result in
+//                continuation.resume(returning: result)
+//            }
+//        }
+//    }
+    
     // MARK: - Private Methods
     
-    private func submitFeedbackInternal(
-        thoughtId: String,
-        chapterNumber: Int,
-        word: String,
-        completion: @escaping (Result<FeedbackResponse, FeedbackError>) -> Void
-    ) {
-        let cleanWord = word.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !cleanWord.isEmpty else {
-            completion(.failure(.invalidWord))
-            return
-        }
-        
-        // Get feedback value from BluetoothService
-        let feedbackValue = bluetoothService.processFeedback(word: cleanWord)
-        
-        let feedbackRequest = FeedbackRequest(
-            thoughtId: thoughtId,
-            chapterNumber: chapterNumber,
-            word: cleanWord,
-            value: feedbackValue
-        )
-        
-        feedbackQueue.async {
-            self.pendingFeedbacks.append(feedbackRequest)
-            self.updatePendingCount()
-        }
-        
-        sendFeedbackToServer(feedbackRequest) { [weak self] result in
-            switch result {
-            case .success(let response):
-                self?.feedbackQueue.async {
-                    self?.pendingFeedbacks.removeAll { $0.thoughtId == thoughtId && $0.word == cleanWord }
-                    self?.updatePendingCount()
-                }
-                completion(.success(response))
-                
-            case .failure(let error):
-                completion(.failure(error))
-            }
-        }
-    }
+//    private func submitFeedbackInternal(
+//        thoughtId: String,
+//        chapterNumber: Int,
+//        word: String,
+//        completion: @escaping (Result<FeedbackResponse, FeedbackError>) -> Void
+//    ) {
+//        let cleanWord = word.trimmingCharacters(in: .whitespacesAndNewlines)
+//        guard !cleanWord.isEmpty else {
+//            completion(.failure(.invalidWord))
+//            return
+//        }
+//        
+//        // Get feedback value from BluetoothService
+//        let feedbackValue = bluetoothService.processFeedback(word: cleanWord)
+//        
+//        let now = Date()
+//        if now.timeIntervalSince(lastUIUpdate) > uiUpdateInterval {
+//            bluetoothService.updateFeedbackValueForUI(feedbackValue)
+//            lastUIUpdate = now
+//        }
+//        
+//        let feedbackRequest = FeedbackRequest(
+//            thoughtId: thoughtId,
+//            chapterNumber: chapterNumber,
+//            word: cleanWord,
+//            value: feedbackValue
+//        )
+//        
+//        pendingFeedbacks.append(feedbackRequest)
+//        updatePendingCount()
+//        
+//        sendFeedbackToServer(feedbackRequest) { [weak self] result in
+//            switch result {
+//            case .success(let response):
+//                self?.feedbackQueue.async {
+//                    self?.pendingFeedbacks.removeAll { $0.thoughtId == thoughtId && $0.word == cleanWord }
+//                    self?.updatePendingCount()
+//                }
+//                completion(.success(response))
+//                
+//            case .failure(let error):
+//                completion(.failure(error))
+//            }
+//        }
+//    }
     
-    private func sendFeedbackToServer(
-        _ feedback: FeedbackRequest,
-        completion: @escaping (Result<FeedbackResponse, FeedbackError>) -> Void
-    ) {
-        guard webSocketService.isConnected else {
-            completion(.failure(.webSocketNotConnected))
-            return
-        }
-        
-        let requestId = "\(feedback.thoughtId)_\(feedback.chapterNumber)_\(feedback.word)_\(feedback.timestamp.timeIntervalSince1970)"
-        pendingCompletions[requestId] = completion
-        
-        webSocketService.sendFeedback(
-            thoughtId: feedback.thoughtId,
-            chapterNumber: feedback.chapterNumber,
-            word: feedback.word,
-            value: feedback.value
-        )
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-            if let storedCompletion = self.pendingCompletions.removeValue(forKey: requestId) {
-                storedCompletion(.failure(.submissionFailed("Request timeout")))
-            }
-        }
-    }
+//    private func sendFeedbackToServer(
+//        _ feedback: FeedbackRequest,
+//        completion: @escaping (Result<FeedbackResponse, FeedbackError>) -> Void
+//    ) {
+//        guard webSocketService.isConnected else {
+//            completion(.failure(.webSocketNotConnected))
+//            return
+//        }
+//        
+//        let requestId = "\(feedback.thoughtId)_\(feedback.chapterNumber)_\(feedback.word)_\(feedback.timestamp.timeIntervalSince1970)"
+//        pendingCompletions[requestId] = completion
+//        
+//        webSocketService.sendFeedback(
+//            thoughtId: feedback.thoughtId,
+//            chapterNumber: feedback.chapterNumber,
+//            word: feedback.word,
+//            value: feedback.value
+//        )
+//        
+//        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+//            if let storedCompletion = self.pendingCompletions.removeValue(forKey: requestId) {
+//                storedCompletion(.failure(.submissionFailed("Request timeout")))
+//            }
+//        }
+//    }
     
-    private var pendingCompletions: [String: (Result<FeedbackResponse, FeedbackError>) -> Void] = [:]
+//    private var pendingCompletions: [String: (Result<FeedbackResponse, FeedbackError>) -> Void] = [:]
     
-    private func setupWebSocketListener() {
-        webSocketService.messages
-            .sink { [weak self] message in
-                self?.handleWebSocketMessage(message)
-            }
-            .store(in: &cancellables)
-    }
-    
-    private func handleWebSocketMessage(_ message: WebSocketMessage) {
-        switch message {
-        case .feedbackResponse(let status, let messageText, let data):
-            let response = FeedbackResponse(
-                success: status.isSuccess,
-                message: messageText,
-                thoughtId: data?["thought_id"] as? String,
-                chapterNumber: data?["chapter_number"] as? Int,
-                word: data?["word"] as? String
-            )
-                        
-            feedbackResponsesSubject.send(response)
-            
-            if let thoughtId = response.thoughtId,
-               let chapterNumber = response.chapterNumber,
-               let word = response.word {
-                                
-                let exactKey = pendingCompletions.keys.first { key in
-                    key.hasPrefix("\(thoughtId)_\(chapterNumber)_\(word)_")
-                }
-                
-                if let key = exactKey,
-                   let completion = pendingCompletions.removeValue(forKey: key) {
-                    completion(.success(response))
-                } else {
-                    print("⚠️ No pending completion found")
-                }
-            }
-            
-        default:
-            break
-        }
-    }
+//    private func setupWebSocketListener() {
+//        webSocketService.messages
+//            .sink { [weak self] message in
+//                self?.handleWebSocketMessage(message)
+//            }
+//            .store(in: &cancellables)
+//    }
+//    
+//    private func handleWebSocketMessage(_ message: WebSocketMessage) {
+//        switch message {
+//        case .feedbackResponse(let status, let messageText, let data):
+//            let response = FeedbackResponse(
+//                success: status.isSuccess,
+//                message: messageText,
+//                thoughtId: data?["thought_id"] as? String,
+//                chapterNumber: data?["chapter_number"] as? Int,
+//                word: data?["word"] as? String
+//            )
+//                        
+//            feedbackResponsesSubject.send(response)
+//            
+//            if let thoughtId = response.thoughtId,
+//               let chapterNumber = response.chapterNumber,
+//               let word = response.word {
+//                                
+//                let exactKey = pendingCompletions.keys.first { key in
+//                    key.hasPrefix("\(thoughtId)_\(chapterNumber)_\(word)_")
+//                }
+//                
+//                if let key = exactKey,
+//                   let completion = pendingCompletions.removeValue(forKey: key) {
+//                    completion(.success(response))
+//                } else {
+//                    print("⚠️ No pending completion found")
+//                }
+//            }
+//            
+//        default:
+//            break
+//        }
+//    }
     
     private func updatePendingCount() {
         DispatchQueue.main.async {
