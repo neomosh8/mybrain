@@ -61,17 +61,20 @@ struct AudioPlayerView: View {
     
     private var audioContentView: some View {
         VStack(spacing: 20) {
-            // Thought info
             thoughtInfoView
             
-            // Audio controls
             AudioControlsView(viewModel: viewModel)
             
-            // Subtitles
             SubtitleView(
-                viewModel: subtitleViewModel,
+                subtitles: subtitleViewModel.currentSegment?.words ?? [],
                 thoughtId: thought.id,
-                chapterNumber: $viewModel.currentChapterNumber
+                chapterNumber: viewModel.currentChapterNumber,
+                currentTime: Binding(
+                    get: { subtitleViewModel.currentGlobalTime },
+                    set: { newTime in
+                        subtitleViewModel.updateCurrentTime(newTime)
+                    }
+                )
             )
             .onReceive(NotificationCenter.default.publisher(for: Notification.Name("InitialSubtitleLoad"))) { notification in
                 if let data = notification.object as? [String: Any],
@@ -91,7 +94,6 @@ struct AudioPlayerView: View {
                 if let currentTime = notification.object as? Double {
                     subtitleViewModel.updateCurrentTime(currentTime)
                     
-                    // Check if we need to switch to a different subtitle segment
                     subtitleViewModel.checkSegmentBoundary { newIndex in
                         print("Switching to subtitle segment \(newIndex) at time \(currentTime)")
                         subtitleViewModel.loadSegment(at: newIndex)
