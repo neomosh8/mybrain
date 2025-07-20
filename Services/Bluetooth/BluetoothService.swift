@@ -104,6 +104,11 @@ class BluetoothService: NSObject, ObservableObject {
     }
     
     func autoConnect() {
+        guard centralManager.state == .poweredOn else {
+            print("Bluetooth not ready, waiting for powered on state")
+            return
+        }
+        
         // If we have a saved device, try to reconnect
         if let savedID = UserDefaults.standard.string(forKey: savedDeviceKey) {
             print("Attempting to auto-connect to saved device: \(savedID)")
@@ -151,6 +156,11 @@ class BluetoothService: NSObject, ObservableObject {
 
     
     func reconnectToPreviousDevice() {
+        guard centralManager.state == .poweredOn else {
+            print("Bluetooth not ready for reconnection")
+            return
+        }
+        
         guard let savedID = UserDefaults.standard.string(forKey: savedDeviceKey) else { return }
         
         // Start scanning to find the device
@@ -671,8 +681,16 @@ extension BluetoothService: CBCentralManagerDelegate {
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         checkPermissions()
         
-        if central.state == .poweredOn {
+        switch central.state {
+        case .poweredOn:
+            print("Bluetooth powered on, ready for operations")
             reconnectToPreviousDevice()
+        case .poweredOff:
+            print("Bluetooth powered off")
+        case .unauthorized:
+            print("Bluetooth unauthorized")
+        default:
+            print("Bluetooth state: \(central.state.rawValue)")
         }
     }
     
