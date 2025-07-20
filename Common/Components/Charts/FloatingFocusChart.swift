@@ -23,27 +23,23 @@ class FocusChartViewModel: ObservableObject {
                 guard let self = self else { return }
                 let pct = self.convertToFocusPercentage(raw)
                 self.focusHistory.append(FocusData(value: pct, timestamp: .now))
-                if self.focusHistory.count > 20 {
-                    self.focusHistory.removeFirst(self.focusHistory.count - 20)
+                if self.focusHistory.count > 5 {
+                    self.focusHistory.removeFirst(self.focusHistory.count - 5)
                 }
             }
             .store(in: &cancellables)
     }
 
     private func updateFocusData(_ value: Double) {
-        // Ensure we're not in a view update cycle by using async
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
-            // Convert raw EEG value to focus percentage (0-100)
             let focusPercentage = self.convertToFocusPercentage(value)
             self.currentFocus = focusPercentage
 
-            // Add to history
             let focusData = FocusData(value: focusPercentage, timestamp: Date())
             self.focusHistory.append(focusData)
 
-            // Keep only last 5 values
             if self.focusHistory.count > 5 {
                 self.focusHistory.removeFirst()
             }
@@ -51,9 +47,8 @@ class FocusChartViewModel: ObservableObject {
     }
 
     private func convertToFocusPercentage(_ rawValue: Double) -> Double {
-        // Convert raw EEG value to 0-100 percentage
-        // This is a simplified conversion - adjust based on your EEG data range
-        let normalized = abs(rawValue) / 1000.0  // Adjust divisor based on your data range
+        // This is a simplified conversion
+        let normalized = abs(rawValue) / 1000.0
         return min(max(normalized * 100, 0), 100)
     }
 
@@ -170,7 +165,6 @@ struct MiniLineChart: View {
                     )
                 )
 
-                // Data points
                 ForEach(
                     Array(calculatePoints(in: geometry.size).enumerated()),
                     id: \.offset
@@ -181,7 +175,6 @@ struct MiniLineChart: View {
                         .position(point)
                 }
             } else {
-                // Placeholder when not enough data
                 Rectangle()
                     .fill(Color.gray.opacity(0.3))
                     .frame(height: 1)
