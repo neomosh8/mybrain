@@ -540,12 +540,20 @@ class BluetoothService: NSObject, ObservableObject {
         if isConnected && !isDevelopmentMode {
             // Use real Bluetooth data
             let avgValue = calculateSignalValue()
-            feedbackValue = avgValue
+
+            DispatchQueue.main.async { [weak self] in
+                self?.feedbackValue = avgValue
+            }
+
             return avgValue
         } else {
             // Development mode - generate simulated data
             let simulatedValue = generateSimulatedValue(for: word)
-            feedbackValue = simulatedValue
+
+            DispatchQueue.main.async { [weak self] in
+                self?.feedbackValue = simulatedValue
+            }
+
             return simulatedValue
         }
     }
