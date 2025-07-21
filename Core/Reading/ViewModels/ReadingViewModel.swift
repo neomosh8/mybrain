@@ -115,18 +115,27 @@ class ReadingViewModel: ObservableObject {
         chapters.append(chapterData)
         displayedChapterCount = chapters.count
         
-        // Start animation on first chapter
         if displayedChapterCount == 1 {
             currentChapterIndex = 0
+            isPlaying = true
         }
     }
     
     func togglePlayback() {
         isPlaying.toggle()
-        // Add your pause/resume logic here
+
+        NotificationCenter.default.post(
+            name: .readingPlaybackStateChanged,
+            object: nil,
+            userInfo: ["isPlaying": isPlaying]
+        )
     }
     
     deinit {
         cancellables.removeAll()
     }
+}
+
+extension Notification.Name {
+    static let readingPlaybackStateChanged = Notification.Name("readingPlaybackStateChanged")
 }
