@@ -3,10 +3,11 @@ import Combine
 import NaturalLanguage
 
 struct AnimatedParagraphView: View {
+    @Binding var wordInterval: TimeInterval
+
     let htmlString: String
     let thoughtId: String
     let chapterNumber: Int
-    let wordInterval: TimeInterval
     let isCurrentChapter: Bool
     
     var onFinished: () -> Void
@@ -30,7 +31,7 @@ struct AnimatedParagraphView: View {
         htmlString: String,
         thoughtId: String,
         chapterNumber: Int,
-        wordInterval: TimeInterval = 0.3,
+        wordInterval: Binding<TimeInterval>,
         isCurrentChapter: Bool = false,
         feedbackService: any FeedbackServiceProtocol = FeedbackService.shared,
         onFinished: @escaping () -> Void = {},
@@ -39,7 +40,7 @@ struct AnimatedParagraphView: View {
         self.htmlString = htmlString
         self.thoughtId = thoughtId
         self.chapterNumber = chapterNumber
-        self.wordInterval = wordInterval
+        self._wordInterval = wordInterval
         self.isCurrentChapter = isCurrentChapter
         self.feedbackService = feedbackService
         self.onFinished = onFinished

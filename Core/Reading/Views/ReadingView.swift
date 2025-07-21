@@ -166,7 +166,7 @@ struct ReadingView: View {
                         htmlString: viewModel.chapters[index].content ?? "",
                         thoughtId: thought.id,
                         chapterNumber: viewModel.chapters[index].chapterNumber ?? 0,
-                        wordInterval: viewModel.readingSpeed,
+                        wordInterval: $viewModel.readingSpeed,
                         isCurrentChapter: viewModel.currentChapterIndex == index,
                         feedbackService: FeedbackService.shared,
                         onFinished: {
