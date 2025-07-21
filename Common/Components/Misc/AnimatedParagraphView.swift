@@ -237,25 +237,24 @@ struct AnimatedParagraphView: View {
     }
 
     private func startAnimationTimer() {
-        let timer = Timer(timeInterval: wordInterval, repeats: true) { [self] timer in
-            DispatchQueue.main.async {
-                currentWordIndex += 1
-                
-                if currentWordIndex >= wordRanges.count {
-                    stopAnimation()
-                    onFinished()
-                } else {
-                    sendFeedback(for: wordRanges[currentWordIndex].word)
-                    
-                    let halfwayPoint = wordRanges.count / 2
-                    if currentWordIndex == halfwayPoint {
-                        onHalfway()
-                    }
-                }
+        animationTimer?.invalidate()
+        
+        animationTimer = Timer.scheduledTimer(withTimeInterval: wordInterval, repeats: true) { _ in
+            currentWordIndex += 1
+            
+            if currentWordIndex >= wordRanges.count {
+                stopAnimation()
+                onFinished()
+                return
             }
+            
+            let halfwayPoint = wordRanges.count / 2
+            if currentWordIndex == halfwayPoint {
+                onHalfway()
+            }
+            
+            sendFeedback(for: wordRanges[currentWordIndex].word)
         }
-        RunLoop.current.add(timer, forMode: .common)
-        animationTimer = timer
     }
     
     private func stopAnimation() {
