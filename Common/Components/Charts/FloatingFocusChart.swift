@@ -23,7 +23,7 @@ class FocusChartViewModel: ObservableObject {
                 let pct = min(max(abs(raw) / 10, 0), 100)
                 self.current = pct
                 self.history.append(FocusData(value: raw, timestamp: .now))
-                if self.history.count > 5 {
+                if self.history.count > 4 {
                     self.history.removeFirst()
                 }
             }
@@ -34,15 +34,18 @@ class FocusChartViewModel: ObservableObject {
 // MARK: - Floating Chart View
 struct FloatingFocusChart: View {
     @StateObject private var vm = FocusChartViewModel()
-    @State private var position = CGPoint(x: 100, y: 100)
+    @State private var position = CGPoint(x: UIScreen.main.bounds.width - 100, y: 0)
     @State private var isDragging = false
 
     var body: some View {
         VStack(spacing: 4) {
             MiniBarChart(data: vm.history)
-                .frame(width: 40, height: 20)
+                .frame(width: 30, height: 25)
             Text("\(Int(vm.current))%")
                 .font(.caption).bold()
+            Text("Focus")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(Color(.black).opacity(0.7))
         }
         .padding(8)
         .background(RoundedRectangle(cornerRadius: 12)
@@ -87,9 +90,9 @@ struct MiniBarChart: View {
                 let normalized = CGFloat(entry.value / 100)
                 let barHeight = normalized * geo.size.height
 
-                Rectangle()
+                RoundedRectangle(cornerRadius: 8)
                     .fill(Color.blue)
-                    .frame(width: barWidth * 0.5,
+                    .frame(width: barWidth * 0.6,
                            height: barHeight)
                     .position(
                         x: barWidth * (CGFloat(index) + 0.5),
