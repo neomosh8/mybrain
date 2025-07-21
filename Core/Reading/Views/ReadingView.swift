@@ -18,6 +18,20 @@ struct ReadingView: View {
     @State private var showSpeedSlider = true
     @State private var showMenuPopup = false
     
+    private var canTogglePlayback: Bool {
+        return !viewModel.isLoadingChapter &&
+               !viewModel.chapters.isEmpty &&
+               !isCheckingStatus
+    }
+
+    private var playPauseIcon: String {
+        return viewModel.isPlaying ? "pause.fill" : "play.fill"
+    }
+
+    private var playPauseText: String {
+        return viewModel.isPlaying ? "Pause" : "Play"
+    }
+    
     var body: some View {
         ZStack {
             if isCheckingStatus {
@@ -182,11 +196,14 @@ struct ReadingView: View {
                     set: { viewModel.readingSpeed = 0.6 - $0 }
                 ), in: 0.1...0.5)
                 .accentColor(.primary)
+                .disabled(!canTogglePlayback)
                 
                 Image(systemName: "hare")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
+            .opacity(canTogglePlayback ? 1.0 : 0.6)
+            .animation(.easeInOut(duration: 0.2), value: canTogglePlayback)
             .padding(.horizontal, 24)
             .padding(.vertical, 12)
             .frame(width: 280)
@@ -224,21 +241,36 @@ struct ReadingView: View {
             .opacity(0)
             
             Button(action: {
-                viewModel.togglePlayback()
+                if canTogglePlayback {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        viewModel.togglePlayback()
+                    }
+                }
             }) {
                 HStack(spacing: 6) {
-                    Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.system(size: 16, weight: .medium))
-                    Text(viewModel.isPlaying ? "Pause" : "Play")
-                        .font(.system(size: 15, weight: .medium))
+                    ZStack {
+                        Image(systemName: playPauseIcon)
+                            .font(.system(size: 16, weight: .medium))
+                            .animation(.easeInOut(duration: 0.1), value: playPauseIcon)
+                    }
+                    .frame(width: 10)
+                    
+                    ZStack {
+                        Text(playPauseText)
+                            .font(.system(size: 15, weight: .medium))
+                            .animation(.easeInOut(duration: 0.1), value: playPauseText)
+                    }
+                    .frame(width: 50)
                 }
-                .foregroundColor(.white)
+                .foregroundColor(canTogglePlayback ? .white : .gray)
                 .frame(width: 90, height: 40)
                 .background(
                     RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.blue)
+                        .fill(canTogglePlayback ? Color.blue : Color.gray.opacity(0.3))
+                        .animation(.easeInOut(duration: 0.1), value: canTogglePlayback)
                 )
             }
+            .disabled(!canTogglePlayback)
             
             Button(action: {
                 // TODO: Add chapters functionality
@@ -271,7 +303,7 @@ struct ReadingView: View {
                 .ignoresSafeArea(edges: .bottom)
         )
     }
-    
+
     private var statusPickerOverlay: some View {
         BottomSheetPicker(
             title: "Reading Options",
