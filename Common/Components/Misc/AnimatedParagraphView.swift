@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 import NaturalLanguage
 
 struct AnimatedParagraphView: View {
@@ -20,6 +21,9 @@ struct AnimatedParagraphView: View {
     @State private var isAnimating: Bool = false
     @State private var animationTimer: Timer?
     @State private var hasSetupContent: Bool = false
+    
+    @State private var isPaused: Bool = false
+    @State private var playbackObserver: AnyCancellable?
     
     // MARK: - Initialization
     init(
@@ -56,25 +60,49 @@ struct AnimatedParagraphView: View {
                 setupContent()
                 hasSetupContent = true
             }
+            setupPlaybackObserver()
         }
         .onChange(of: isCurrentChapter) { _, newValue in
-            if newValue && !isAnimating && !wordRanges.isEmpty {
+            if newValue && !isAnimating && !wordRanges.isEmpty && !isPaused {
                 startAnimation()
             } else if !newValue && isAnimating {
                 stopAnimation()
             }
         }
         .onChange(of: wordInterval) { _, _ in
-            if isAnimating {
+            if isAnimating && !isPaused {
                 animationTimer?.invalidate()
                 animationTimer = nil
-                
                 resumeAnimationFromCurrentPosition()
             }
         }
         .onDisappear {
             stopAnimation()
+            playbackObserver?.cancel()
         }
+    }
+    
+    private func setupPlaybackObserver() {
+        playbackObserver = NotificationCenter.default
+            .publisher(for: .readingPlaybackStateChanged)
+            .sink { notification in
+                guard let isPlaying = notification.userInfo?["isPlaying"] as? Bool else { return }
+                
+                if isPlaying && isPaused && isCurrentChapter {
+                    // Resume animation
+                    isPaused = false
+                    resumeAnimationFromCurrentPosition()
+                } else if !isPlaying && isAnimating {
+                    // Pause animation
+                    isPaused = true
+                    pauseAnimation()
+                }
+            }
+    }
+
+    private func pauseAnimation() {
+        animationTimer?.invalidate()
+        animationTimer = nil
     }
     
     private func buildHighlightedText() -> AttributedString {
@@ -186,19 +214,28 @@ struct AnimatedParagraphView: View {
         }
         
         isAnimating = true
-        currentWordIndex = 0
+        isPaused = false
         
-        sendFeedback(for: wordRanges[0].word)
+        if currentWordIndex == 0 {
+            sendFeedback(for: wordRanges[0].word)
+        }
         
         startAnimationTimer()
     }
-    
+
     private func resumeAnimationFromCurrentPosition() {
-        guard !wordRanges.isEmpty, isAnimating else { return }
+        guard !wordRanges.isEmpty, !isPaused else { return }
+        
+        if !isAnimating {
+            isAnimating = true
+            if currentWordIndex == 0 {
+                sendFeedback(for: wordRanges[0].word)
+            }
+        }
         
         startAnimationTimer()
     }
-    
+
     private func startAnimationTimer() {
         let timer = Timer(timeInterval: wordInterval, repeats: true) { [self] timer in
             DispatchQueue.main.async {
@@ -225,6 +262,7 @@ struct AnimatedParagraphView: View {
         animationTimer?.invalidate()
         animationTimer = nil
         isAnimating = false
+        isPaused = false
     }
     
     private func sendFeedback(for word: String) {
