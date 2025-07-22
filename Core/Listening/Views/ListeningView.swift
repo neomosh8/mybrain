@@ -176,38 +176,19 @@ struct ListeningView: View {
     
     private func currentSubtitleView(subtitles: [WordTimestamp]) -> some View {
         VStack(spacing: 8) {
-            // Debug what getCurrentWordGroup returns
             if let wordGroup = getCurrentWordGroup(from: subtitles) {
-                Text("Debug: Group has \(wordGroup.count) words")
-                    .foregroundColor(.yellow)
-                    .font(.caption)
-                
                 HStack(spacing: 4) {
                     ForEach(Array(wordGroup.enumerated()), id: \.offset) { index, wordTimestamp in
                         Text(wordTimestamp.text)
                             .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(.white)  // Make it simple - just white
-                            .padding(8)
-                            .background(Color.red)  // Red background to see each word
-                            .cornerRadius(4)
+                            .foregroundColor(isCurrentWord(wordTimestamp, subtitles: subtitles) ? .blue : .black)
+                            .scaleEffect(isCurrentWord(wordTimestamp, subtitles: subtitles) ? 1.1 : 1.0)
+                            .animation(.easeInOut(duration: 0.2), value: currentWordIndex)
                     }
                 }
                 .multilineTextAlignment(.center)
-                .padding(20)
-                .background(Color.blue)  // Blue background for the whole word group
-                .cornerRadius(8)
-            } else {
-                Text("Debug: No word group found")
-                    .foregroundColor(.red)
-                    .font(.caption)
-                    .padding(20)
-                    .background(Color.green)  // Green background when no words
-                    .cornerRadius(8)
             }
         }
-        .padding(20)
-        .background(Color.purple)  // Purple background for entire subtitle view
-        .cornerRadius(12)
     }
     
     private func progressIndicator(subtitles: [WordTimestamp]) -> some View {
