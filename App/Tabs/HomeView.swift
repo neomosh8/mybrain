@@ -127,7 +127,7 @@ struct HomeView: View {
                     ReadingView(thought: thought)
                 }
             case .listening:
-                ListeningContainerView(thought: thought)
+                ListeningView(thought: thought)
             }
         }
         .onAppear {
