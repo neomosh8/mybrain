@@ -13,7 +13,7 @@ class AudioStreamingViewModel: ObservableObject {
     @Published var playerError: Error?
     @Published var streamingState: AudioStreamingState = .idle
     @Published var chapterManager = ChapterManager()
-
+    
     // MARK: - Chapter Progress State
     @Published var currentChapterNumber: Int = 1
     @Published var nextChapterRequested = false
@@ -108,7 +108,7 @@ class AudioStreamingViewModel: ObservableObject {
             }
             .store(in: &cancellables)
     }
-
+    
     private func handleWebSocketMessage(_ message: WebSocketMessage) {
         switch message {
         case .streamingLinksResponse(let status, let message, let data):
@@ -148,33 +148,42 @@ class AudioStreamingViewModel: ObservableObject {
         }
     }
     
+    
     private func handleStreamingLinksResponse(data: [String: Any]?) {
         isFetchingLinks = false
         
-        guard let streamingData = StreamingLinksResponseData(from: data),
-              let masterPlaylist = streamingData.masterPlaylist else {
-            print("🎵 Invalid streaming links response data")
-            streamingState = .error(playerError ?? NSError(domain: "StreamingError", code: -1))
-            playerError = NSError(domain: "StreamingError", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid streaming links data"])
+        // Debug: Print the actual data received
+        print("🎵 Raw streaming data received: \(String(describing: data))")
+        
+        guard let data = data else {
+            print("🎵 No data in streaming response")
+            streamingState = .error(NSError(domain: "StreamingError", code: -1))
             return
         }
         
-        let fullURL = "\(NetworkConstants.baseURL)\(masterPlaylist)"
-        
-        print("🎵 Received streaming links:")
-        print("🎵 Master playlist: \(fullURL)")
-        
-        if let audioPlaylist = streamingData.audioPlaylist {
-            print("🎵 Audio playlist: \(NetworkConstants.baseURL)\(audioPlaylist)")
+        // Try direct access first (without using the struct)
+        if let masterPlaylist = data["master_playlist"] as? String {
+            let fullURL = "\(NetworkConstants.baseURL)\(masterPlaylist)"
+            print("🎵 Direct access - Master playlist: \(fullURL)")
+            
+            if let subtitlesPlaylist = data["subtitles_playlist"] as? String {
+                let subtitlesURL = "\(NetworkConstants.baseURL)\(subtitlesPlaylist)"
+                self.subtitlesURL = subtitlesURL
+            }
+            
+            setupAudioPlayer(with: fullURL)
+        } else {
+            print("🎵 No master_playlist found in data keys: \(data.keys)")
+            streamingState = .error(NSError(domain: "StreamingError", code: -1))
         }
-        
-        if let subtitlesPlaylist = streamingData.subtitlesPlaylist {
-            let subtitlesURL = "\(NetworkConstants.baseURL)\(subtitlesPlaylist)"
-            print("🎵 Subtitles playlist: \(subtitlesURL)")
-            self.subtitlesURL = subtitlesURL
-        }
-        
-        setupAudioPlayer(with: fullURL)
+    }
+    
+    private func setupPlayer(with url: URL) {
+        let playerItem = AVPlayerItem(url: url)
+        player = AVPlayer(playerItem: playerItem)
+        streamingState = .ready
+        setupPlayerObservations()
+        configurePlayerForBackground() 
     }
     
     private func setupAudioPlayer(with url: String) {
@@ -191,6 +200,16 @@ class AudioStreamingViewModel: ObservableObject {
         startTime = Date()
         
         setupPlayerObservations()
+        
+        // Send subtitle notification AFTER player setup
+        if let subtitleURL = subtitlesURL {
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(
+                    name: Notification.Name("InitialSubtitleLoad"),
+                    object: ["url": subtitleURL]
+                )
+            }
+        }
     }
     
     private func configurePlayerForBackground() {
@@ -255,15 +274,16 @@ class AudioStreamingViewModel: ObservableObject {
         // Update now playing info
         updateNowPlayingInfo()
         
-        // Update subtitle timing - send current time to subtitle view
-        NotificationCenter.default.post(
-            name: Notification.Name("UpdateSubtitleTime"),
-            object: currentSeconds
-        )
+         // Send CURRENT chapter time, not global time
+         NotificationCenter.default.post(
+             name: Notification.Name("UpdateSubtitleTime"),
+             object: currentSeconds  // Remove the + durationsSoFar here
+         )
         
-        // Check if we need to request next chapter
+        // Check if we need to request next chapter using global time
+        let globalTime = currentSeconds + durationsSoFar
         guard let nextChapterTime = nextChapterTime,
-              currentSeconds >= (nextChapterTime - chapterBuffer),
+              globalTime >= (nextChapterTime - chapterBuffer),
               !nextChapterRequested else { return }
         
         nextChapterRequested = true
@@ -276,39 +296,38 @@ class AudioStreamingViewModel: ObservableObject {
     }
     
     private func handleChapterAudioResponse(data: [String: Any]?) {
-        guard let chapterData = ChapterAudioResponseData(from: data),
-              let chapterNumber = chapterData.chapterNumber,
-              let audioDuration = chapterData.audioDuration else {
-            print("🎵 Invalid chapter audio response data")
+        guard let data = data else {
+            print("🎵 No chapter data received")
             return
         }
         
-        let title = chapterData.title
-        let generationTime = chapterData.generationTime
+        let chapterNumber = data["chapter_number"] as? Int ?? 0
+        let audioDuration = data["audio_duration"] as? Double ?? 0.0
+        let generationTime = data["generation_time"] as? Double ?? 0.0
+        let isComplete = data["complete"] as? Bool ?? false
         
-        print("🎵 Processing chapter \(chapterNumber): \(title ?? "Untitled")")
-        print("🎵 Chapter duration: \(audioDuration)s, Generation time: \(generationTime ?? 0)s")
+        currentChapterNumber = chapterNumber
         
-        let chapter = ChapterInfo(
-            number: chapterNumber,
-            title: title,
-            duration: audioDuration,
-            startTime: durationsSoFar,
-            isComplete: false
-        )
+        let playableDuration = audioDuration - generationTime
+        nextChapterTime = durationsSoFar + (playableDuration * (1 - chapterBuffer))
         
-        chapterManager.addChapter(chapter)
-        durationsSoFar += audioDuration
-        
-        // Calculate when to request next chapter (60s before this chapter ends)
-        let chapterEndTime = chapter.startTime + audioDuration
-        nextChapterTime = max(0, chapterEndTime - chapterBuffer)
-        
-        print("🎵 Chapter \(chapterNumber) added. Next chapter request at: \(nextChapterTime ?? 0)s")
-        
-        // Reset the flag so we can request the next chapter when needed
         nextChapterRequested = false
+        durationsSoFar += audioDuration
+        lastChapterComplete = isComplete
+        
+        print("🎵 Chapter \(chapterNumber) completed. Total duration so far: \(durationsSoFar)")
+        
+        // Refresh subtitles for new chapter if subtitle URL exists
+        if let subtitleURL = subtitlesURL {
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(
+                    name: Notification.Name("RefreshSubtitles"),
+                    object: ["url": subtitleURL]
+                )
+            }
+        }
     }
+    
     
     private func handlePlaybackCompletion() {
         DispatchQueue.main.async {
