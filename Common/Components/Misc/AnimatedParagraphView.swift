@@ -2,9 +2,10 @@ import SwiftUI
 import Combine
 import NaturalLanguage
 
+// MARK: - Main View
 struct AnimatedParagraphView: View {
     @Binding var wordInterval: TimeInterval
-
+    
     let htmlString: String
     let thoughtId: String
     let chapterNumber: Int
@@ -25,6 +26,9 @@ struct AnimatedParagraphView: View {
     
     @State private var isPaused: Bool = false
     @State private var playbackObserver: AnyCancellable?
+    
+    @State private var paragraphs: [[WordData]] = []
+    @State private var words: [WordData] = []
     
     // MARK: - Initialization
     init(
@@ -47,14 +51,16 @@ struct AnimatedParagraphView: View {
         self.onHalfway = onHalfway
     }
     
+    // MARK: - Body
     var body: some View {
         ScrollView {
-            Text(buildHighlightedText())
-                .lineSpacing(6)
-                .multilineTextAlignment(.leading)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding()
-                .padding(.bottom, 80)
+            WordByWordTextView(
+                paragraphs: paragraphs,
+                currentWordIndex: currentWordIndex,
+                isAnimating: isAnimating
+            )
+            .padding()
+            .padding(.bottom, 80)
         }
         .onAppear {
             if !hasSetupContent {
@@ -82,47 +88,11 @@ struct AnimatedParagraphView: View {
             playbackObserver?.cancel()
         }
     }
-    
-    private func setupPlaybackObserver() {
-        playbackObserver = NotificationCenter.default
-            .publisher(for: .readingPlaybackStateChanged)
-            .sink { notification in
-                guard let isPlaying = notification.userInfo?["isPlaying"] as? Bool else { return }
-                
-                if isPlaying && isPaused && isCurrentChapter {
-                    // Resume animation
-                    isPaused = false
-                    resumeAnimationFromCurrentPosition()
-                } else if !isPlaying && isAnimating {
-                    // Pause animation
-                    isPaused = true
-                    pauseAnimation()
-                }
-            }
-    }
+}
 
-    private func pauseAnimation() {
-        animationTimer?.invalidate()
-        animationTimer = nil
-    }
-    
-    private func buildHighlightedText() -> AttributedString {
-        var result = attributedContent
-        
-        for range in wordRanges {
-            result[range.range].backgroundColor = nil
-        }
-        
-        if isAnimating && currentWordIndex < wordRanges.count {
-            let currentRange = wordRanges[currentWordIndex].range
-            result[currentRange].backgroundColor = Color.blue
-            result[currentRange].foregroundColor = Color.white
-        }
-        
-        return result
-    }
-    
-    private func setupContent() {
+// MARK: - Content Setup Methods
+private extension AnimatedParagraphView {
+    func setupContent() {
         parseHTMLContent()
         
         if isCurrentChapter && !wordRanges.isEmpty {
@@ -132,7 +102,7 @@ struct AnimatedParagraphView: View {
         }
     }
     
-    private func parseHTMLContent() {
+    func parseHTMLContent() {
         guard let data = htmlString.data(using: .utf8) else { return }
         
         let options: [NSAttributedString.DocumentReadingOptionKey: Any] = [
@@ -147,19 +117,22 @@ struct AnimatedParagraphView: View {
                 attributedContent = swiftUIAttributedString
                 overrideFontFamilyOnly()
                 extractWordRanges()
+                buildWordDataArray()
             } else {
                 let plainText = htmlString.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
                 attributedContent = AttributedString(plainText)
                 extractWordRanges()
+                buildWordDataArray()
             }
         } catch {
             let plainText = htmlString.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
             attributedContent = AttributedString(plainText)
             extractWordRanges()
+            buildWordDataArray()
         }
     }
     
-    private func overrideFontFamilyOnly() {
+    func overrideFontFamilyOnly() {
         for run in attributedContent.runs {
             let runRange = run.range
             
@@ -187,7 +160,7 @@ struct AnimatedParagraphView: View {
         }
     }
     
-    private func extractWordRanges() {
+    func extractWordRanges() {
         wordRanges.removeAll()
         
         let text = String(attributedContent.characters)
@@ -208,7 +181,57 @@ struct AnimatedParagraphView: View {
         }
     }
     
-    private func startAnimation() {
+    func buildWordDataArray() {
+        paragraphs = []
+        words = []
+        
+        var currentParagraph: [WordData] = []
+        
+        for (index, wordRange) in wordRanges.enumerated() {
+            if index > 0 {
+                let prevRange = wordRanges[index - 1].range
+                let between = attributedContent.characters[prevRange.upperBound..<wordRange.range.lowerBound]
+                if between.contains("\n") {
+                    if !currentParagraph.isEmpty {
+                        paragraphs.append(currentParagraph)
+                    }
+                    currentParagraph = []
+                }
+            }
+            let substring = AttributedString(attributedContent[wordRange.range])
+            let wordText = String(attributedContent.characters[wordRange.range])
+            let data = WordData(text: wordText, attributes: substring, originalIndex: index)
+            currentParagraph.append(data)
+            words.append(data)
+        }
+        if !currentParagraph.isEmpty {
+            paragraphs.append(currentParagraph)
+        }
+    }
+}
+
+// MARK: - Playback Observer Methods
+private extension AnimatedParagraphView {
+    func setupPlaybackObserver() {
+        playbackObserver = NotificationCenter.default
+            .publisher(for: .readingPlaybackStateChanged)
+            .sink { notification in
+                guard let isPlaying = notification.userInfo?["isPlaying"] as? Bool else { return }
+                
+                if isPlaying && isPaused && isCurrentChapter {
+                    isPaused = false
+                    resumeAnimationFromCurrentPosition()
+                } else if !isPlaying && isAnimating {
+                    isPaused = true
+                    pauseAnimation()
+                }
+            }
+    }
+}
+
+// MARK: - Animation Control Methods
+private extension AnimatedParagraphView {
+    func startAnimation() {
         guard !wordRanges.isEmpty else {
             onFinished()
             return
@@ -223,8 +246,8 @@ struct AnimatedParagraphView: View {
         
         startAnimationTimer()
     }
-
-    private func resumeAnimationFromCurrentPosition() {
+    
+    func resumeAnimationFromCurrentPosition() {
         guard !wordRanges.isEmpty, !isPaused else { return }
         
         if !isAnimating {
@@ -236,8 +259,8 @@ struct AnimatedParagraphView: View {
         
         startAnimationTimer()
     }
-
-    private func startAnimationTimer() {
+    
+    func startAnimationTimer() {
         animationTimer?.invalidate()
         
         animationTimer = Timer.scheduledTimer(withTimeInterval: wordInterval, repeats: true) { _ in
@@ -258,14 +281,22 @@ struct AnimatedParagraphView: View {
         }
     }
     
-    private func stopAnimation() {
+    func pauseAnimation() {
+        animationTimer?.invalidate()
+        animationTimer = nil
+    }
+    
+    func stopAnimation() {
         animationTimer?.invalidate()
         animationTimer = nil
         isAnimating = false
         isPaused = false
     }
-    
-    private func sendFeedback(for word: String) {
+}
+
+// MARK: - Feedback Methods
+private extension AnimatedParagraphView {
+    func sendFeedback(for word: String) {
         Task.detached(priority: .background) {
             let result = await feedbackService.submitFeedback(
                 thoughtId: thoughtId,
@@ -280,5 +311,161 @@ struct AnimatedParagraphView: View {
                 print("Feedback submission failed: \(error.localizedDescription)")
             }
         }
+    }
+}
+
+// MARK: - Supporting Data Models
+extension AnimatedParagraphView {
+    struct WordData: Identifiable {
+        let id = UUID()
+        let text: String
+        let attributes: AttributedString
+        let originalIndex: Int
+    }
+}
+
+// MARK: - Word-by-Word Layout Components
+struct WordByWordTextView: View {
+    let paragraphs: [[AnimatedParagraphView.WordData]]
+    let currentWordIndex: Int
+    let isAnimating: Bool
+    
+    @State private var wordFrames: [Int: CGRect] = [:]
+    @State private var highlightFrame: CGRect = .zero
+    @Namespace private var namespace
+    
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            if isAnimating && highlightFrame != .zero {
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(LinearGradient(
+                        gradient: Gradient(colors: [Color.blue, Color.cyan]),
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    ))
+                    .opacity(0.8)
+                    .frame(width: highlightFrame.width + 5, height: highlightFrame.height + 3)
+                    .position(x: highlightFrame.midX, y: highlightFrame.midY)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: highlightFrame)
+            }
+            
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(Array(paragraphs.enumerated()), id: \.offset) { _, paragraph in
+                    FlowLayout(spacing: 4, lineSpacing: 6) {
+                        ForEach(paragraph) { wordData in
+                            Text(getModifiedAttributedString(for: wordData))
+                                .background(
+                                    GeometryReader { proxy in
+                                        Color.clear
+                                            .preference(key: WordFrameKey.self, value: [wordData.originalIndex: proxy.frame(in: .named("container"))])
+                                    }
+                                )
+                        }
+                    }
+                    .padding(.bottom, 8)
+                }
+            }
+            .coordinateSpace(name: "container")
+            .onPreferenceChange(WordFrameKey.self) { frames in
+                wordFrames = frames
+                updateHighlightFrame()
+            }
+        }
+        .onAppear {
+            if isAnimating {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    updateHighlightFrame()
+                }
+            }
+        }
+        .onChange(of: currentWordIndex) { _, _ in
+            updateHighlightFrame()
+        }
+        .onChange(of: isAnimating) { _, newValue in
+            if newValue {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    updateHighlightFrame()
+                }
+            }
+        }
+    }
+    
+    private func getModifiedAttributedString(for wordData: AnimatedParagraphView.WordData) -> AttributedString {
+        var modifiedString = wordData.attributes
+        
+        if isAnimating && wordData.originalIndex == currentWordIndex {
+            modifiedString.foregroundColor = .white
+        }
+        
+        return modifiedString
+    }
+    
+    private func updateHighlightFrame() {
+        guard isAnimating,
+              let frame = wordFrames[currentWordIndex] else {
+            highlightFrame = .zero
+            return
+        }
+        highlightFrame = frame
+    }
+}
+
+
+// MARK: - Flow Layout
+struct FlowLayout: Layout {
+    let spacing: CGFloat
+    let lineSpacing: CGFloat
+    
+    init(spacing: CGFloat = 8, lineSpacing: CGFloat = 6) {
+        self.spacing = spacing
+        self.lineSpacing = lineSpacing
+    }
+    
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let sizes = subviews.map { $0.sizeThatFits(.unspecified) }
+        return layout(sizes: sizes, spacing: spacing, lineSpacing: lineSpacing, containerWidth: proposal.width ?? .infinity).size
+    }
+    
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let sizes = subviews.map { $0.sizeThatFits(.unspecified) }
+        let offsets = layout(sizes: sizes, spacing: spacing, lineSpacing: lineSpacing, containerWidth: bounds.width).offsets
+        
+        for (offset, subview) in zip(offsets, subviews) {
+            subview.place(at: CGPoint(x: bounds.minX + offset.x, y: bounds.minY + offset.y), proposal: .unspecified)
+        }
+    }
+    
+    private func layout(sizes: [CGSize], spacing: CGFloat, lineSpacing: CGFloat, containerWidth: CGFloat) -> (offsets: [CGPoint], size: CGSize) {
+        var offsets: [CGPoint] = []
+        var currentRowY: CGFloat = 0
+        var currentRowX: CGFloat = 0
+        var currentRowHeight: CGFloat = 0
+        var maxWidth: CGFloat = 0
+        
+        for size in sizes {
+            if currentRowX + size.width > containerWidth && currentRowX > 0 {
+                currentRowY += currentRowHeight + lineSpacing
+                currentRowX = 0
+                currentRowHeight = 0
+            }
+            
+            offsets.append(CGPoint(x: currentRowX, y: currentRowY))
+            currentRowX += size.width + spacing
+            currentRowHeight = max(currentRowHeight, size.height)
+            maxWidth = max(maxWidth, currentRowX - spacing)
+        }
+        
+        let totalHeight = currentRowY + currentRowHeight
+        
+        return (offsets, CGSize(width: min(maxWidth, containerWidth), height: totalHeight))
+    }
+}
+
+// MARK: - Preference Key
+struct WordFrameKey: PreferenceKey {
+    static var defaultValue: [Int: CGRect] = [:]
+    
+    static func reduce(value: inout [Int: CGRect], nextValue: () -> [Int: CGRect]) {
+        value.merge(nextValue()) { _, new in new }
     }
 }
