@@ -15,19 +15,24 @@ class SubtitleViewModel: ObservableObject {
     // load the .vtt file at a given index, parse it, and set `currentSegment`.
     func loadSegment(at index: Int) {
         guard index >= 0, index < segments.count else {
-            //            print("loadSegment => index out of range")
+            print("🎵 loadSegment => index \(index) out of range (total: \(segments.count))")
             return
         }
         currentSegmentIndex = index
         
         let link = segments[index]
+        print("🎵 Loading segment \(index): \(link.urlString)")
         fetchAndParseVTT(from: link.urlString) { [weak self] segmentData in
             DispatchQueue.main.async {
+                print("🎵 Loaded segment with \(segmentData.words.count) words")
+                if segmentData.words.count > 0 {
+                    print("🎵 First few words: \(Array(segmentData.words.prefix(5)).map { $0.text })")
+                }
                 self?.currentSegment = segmentData
             }
         }
     }
-    
+
     /// Directly store the player's global time.
     func updateCurrentTime(_ globalPlayerTime: Double) {
         self.currentGlobalTime = globalPlayerTime
