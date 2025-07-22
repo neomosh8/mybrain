@@ -615,3 +615,14 @@ struct WordTimestamp: Identifiable {
     let end: Double
     let text: String
 }
+
+struct SubtitleSegmentData {
+    let paragraph: String
+    let words: [WordTimestamp]
+    let minStart: Double
+    let maxEnd: Double
+    
+    var duration: Double {
+        maxEnd - minStart
+    }
+}
