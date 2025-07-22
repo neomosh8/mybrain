@@ -144,9 +144,6 @@ struct ListeningView: View {
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
-//        .onAppear {
-//            startTimeUpdates(for: player)
-//        }
         .onDisappear {
             timeUpdateTimer?.invalidate()
         }
@@ -158,13 +155,8 @@ struct ListeningView: View {
         VStack(spacing: 20) {
             let subtitles = subtitleViewModel.currentSegment?.words ?? []
             
-            Text("Debug: \(subtitles.count) words, current index: \(currentWordIndex)")
-                .foregroundColor(.red)
-                .font(.caption)
-            
             if !subtitles.isEmpty {
                 currentSubtitleView(subtitles: subtitles)
-                progressIndicator(subtitles: subtitles)
             } else {
                 Text("No subtitles available")
                     .foregroundColor(.white.opacity(0.6))
@@ -187,16 +179,6 @@ struct ListeningView: View {
                     }
                 }
                 .multilineTextAlignment(.center)
-            }
-        }
-    }
-    
-    private func progressIndicator(subtitles: [WordTimestamp]) -> some View {
-        HStack {
-            ForEach(0..<min(subtitles.count, 20), id: \.self) { index in
-                Circle()
-                    .fill(index <= currentWordIndex ? Color.blue : Color.gray.opacity(0.3))
-                    .frame(width: 6, height: 6)
             }
         }
     }
@@ -389,7 +371,7 @@ struct ListeningView: View {
         if newIndex < subtitles.count {
             print("🎵 Word at index \(newIndex): '\(subtitles[newIndex].text)' (start: \(subtitles[newIndex].start))")
         }
-
+        
         
         if newIndex != currentWordIndex {
             withAnimation(.easeInOut(duration: 0.2)) {
@@ -403,7 +385,7 @@ struct ListeningView: View {
                 
                 Task.detached(priority: .background) {
                     print("🎵 Submitting feedback for '\(currentWord.text)' - checking biometric value...")
-
+                    
                     
                     let result = await feedbackService.submitFeedback(
                         thoughtId: thought.id,
@@ -462,7 +444,7 @@ struct ListeningView: View {
     
     private func fetchSubtitlePlaylist(playlistURL: String) {
         print("🎵 Starting subtitle fetch for: \(playlistURL)")
-
+        
         
         guard let url = URL(string: playlistURL) else { return }
         
@@ -505,7 +487,7 @@ struct ListeningView: View {
     
     private func processVTTFiles(_ vttFiles: [String]) {
         print("🎵 Processing \(vttFiles.count) VTT files")
-
+        
         processVTTFile(at: 0, from: vttFiles, accumulated: [])
     }
     
@@ -626,13 +608,6 @@ struct ListeningView: View {
     }
 }
 
-
-// MARK: - WordTimestamp Model
-//struct WordTimestamp {
-//    let text: String
-//    let start: Double
-//    let end: Double
-//}
 
 struct WordTimestamp: Identifiable {
     let id = UUID()
