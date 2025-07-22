@@ -46,7 +46,6 @@ class ReadingViewModel: ObservableObject {
     }
     
     func onChapterHalfway() {
-        // Only request next chapter once per halfway trigger
         guard !hasRequestedNextChapter else { return }
         hasRequestedNextChapter = true
         requestNextChapter()
@@ -56,13 +55,10 @@ class ReadingViewModel: ObservableObject {
         let nextIndex = index + 1
         
         if nextIndex < displayedChapterCount {
-            // Move to next chapter
             currentChapterIndex = nextIndex
         } else if isLastChapter {
-            // All chapters completed
             hasCompletedAllChapters = true
         }
-        // If not last chapter and no next chapter loaded, wait for server response
     }
     
     // MARK: - Updated WebSocket handling in ReadingViewModel
