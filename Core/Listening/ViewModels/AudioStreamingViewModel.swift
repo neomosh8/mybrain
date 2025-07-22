@@ -274,11 +274,11 @@ class AudioStreamingViewModel: ObservableObject {
         // Update now playing info
         updateNowPlayingInfo()
         
-         // Send CURRENT chapter time, not global time
-         NotificationCenter.default.post(
-             name: Notification.Name("UpdateSubtitleTime"),
-             object: currentSeconds  // Remove the + durationsSoFar here
-         )
+        // Send CURRENT chapter time, not global time
+        NotificationCenter.default.post(
+            name: Notification.Name("UpdateSubtitleTime"),
+            object: currentSeconds  // Remove the + durationsSoFar here
+        )
         
         // Check if we need to request next chapter using global time
         let globalTime = currentSeconds + durationsSoFar
