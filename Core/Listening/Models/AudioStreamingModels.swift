@@ -208,15 +208,6 @@ struct SubtitleSegment {
     }
 }
 
-
-///// A single link in the subtitles .m3u8, e.g. (vttURL, duration).
-//struct SubtitleSegmentLink {
-//    let urlString: String
-//    let duration: Double
-//    var minStart: Double
-//    var maxEnd: Double
-//}
-
 struct SubtitleSegmentLink {
     let urlString: String
     let minStart: Double
@@ -235,5 +226,25 @@ struct SubtitlePlaylist {
         return segments.filter { subtitle in
             subtitle.startTime <= range.upperBound && subtitle.endTime >= range.lowerBound
         }
+    }
+}
+
+
+
+struct WordTimestamp: Identifiable {
+    let id = UUID()
+    let start: Double
+    let end: Double
+    let text: String
+}
+
+struct SubtitleSegmentData {
+    let paragraph: String
+    let words: [WordTimestamp]
+    let minStart: Double
+    let maxEnd: Double
+    
+    var duration: Double {
+        maxEnd - minStart
     }
 }

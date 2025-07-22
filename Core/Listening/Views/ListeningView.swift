@@ -607,22 +607,3 @@ struct ListeningView: View {
         return Double(hours * 3600 + minutes * 60 + seconds) + Double(milliseconds) / 1000.0
     }
 }
-
-
-struct WordTimestamp: Identifiable {
-    let id = UUID()
-    let start: Double
-    let end: Double
-    let text: String
-}
-
-struct SubtitleSegmentData {
-    let paragraph: String
-    let words: [WordTimestamp]
-    let minStart: Double
-    let maxEnd: Double
-    
-    var duration: Double {
-        maxEnd - minStart
-    }
-}
