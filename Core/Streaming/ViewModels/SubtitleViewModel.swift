@@ -32,7 +32,7 @@ class SubtitleViewModel: ObservableObject {
             }
         }
     }
-
+    
     /// Directly store the player's global time.
     func updateCurrentTime(_ globalPlayerTime: Double) {
         self.currentGlobalTime = globalPlayerTime
