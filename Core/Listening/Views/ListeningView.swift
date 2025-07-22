@@ -144,9 +144,9 @@ struct ListeningView: View {
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
-        .onAppear {
-            startTimeUpdates(for: player)
-        }
+//        .onAppear {
+//            startTimeUpdates(for: player)
+//        }
         .onDisappear {
             timeUpdateTimer?.invalidate()
         }
@@ -158,11 +158,12 @@ struct ListeningView: View {
         VStack(spacing: 20) {
             let subtitles = subtitleViewModel.currentSegment?.words ?? []
             
+            Text("Debug: \(subtitles.count) words, current index: \(currentWordIndex)")
+                .foregroundColor(.red)
+                .font(.caption)
+            
             if !subtitles.isEmpty {
-                // Current subtitle group
                 currentSubtitleView(subtitles: subtitles)
-                
-                // Progress indicator
                 progressIndicator(subtitles: subtitles)
             } else {
                 Text("No subtitles available")
@@ -171,27 +172,42 @@ struct ListeningView: View {
             }
         }
         .padding(.horizontal, 20)
-        .onChange(of: currentTime) { _, newTime in
-            updateCurrentWord(for: newTime, subtitles: subtitleViewModel.currentSegment?.words ?? [])
-        }
     }
     
     private func currentSubtitleView(subtitles: [WordTimestamp]) -> some View {
         VStack(spacing: 8) {
-            // Display current word group (3-5 words)
+            // Debug what getCurrentWordGroup returns
             if let wordGroup = getCurrentWordGroup(from: subtitles) {
+                Text("Debug: Group has \(wordGroup.count) words")
+                    .foregroundColor(.yellow)
+                    .font(.caption)
+                
                 HStack(spacing: 4) {
                     ForEach(Array(wordGroup.enumerated()), id: \.offset) { index, wordTimestamp in
                         Text(wordTimestamp.text)
                             .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(isCurrentWord(wordTimestamp, subtitles: subtitles) ? .white : .white.opacity(0.6))
-                            .scaleEffect(isCurrentWord(wordTimestamp, subtitles: subtitles) ? 1.1 : 1.0)
-                            .animation(.easeInOut(duration: 0.2), value: currentWordIndex)
+                            .foregroundColor(.white)  // Make it simple - just white
+                            .padding(8)
+                            .background(Color.red)  // Red background to see each word
+                            .cornerRadius(4)
                     }
                 }
                 .multilineTextAlignment(.center)
+                .padding(20)
+                .background(Color.blue)  // Blue background for the whole word group
+                .cornerRadius(8)
+            } else {
+                Text("Debug: No word group found")
+                    .foregroundColor(.red)
+                    .font(.caption)
+                    .padding(20)
+                    .background(Color.green)  // Green background when no words
+                    .cornerRadius(8)
             }
         }
+        .padding(20)
+        .background(Color.purple)  // Purple background for entire subtitle view
+        .cornerRadius(12)
     }
     
     private func progressIndicator(subtitles: [WordTimestamp]) -> some View {
@@ -337,20 +353,38 @@ struct ListeningView: View {
     }
     
     private func handleTimeUpdate(_ notification: Notification) {
-        if let newTime = notification.object as? Double {
-            subtitleViewModel.updateCurrentTime(newTime)
+        if let globalTime = notification.object as? Double {
+            // Update currentTime for UI display (use the raw chapter time)
+            currentTime = globalTime  // Don't subtract durationsSoFar
             
-            subtitleViewModel.checkSegmentBoundary { newIndex in
-                print("Switching to subtitle segment \(newIndex) at time \(newTime)")
-                subtitleViewModel.loadSegment(at: newIndex)
+            // Find correct segment for this time
+            if let correctSegmentIndex = subtitleViewModel.segments.firstIndex(where: {
+                globalTime >= $0.minStart && globalTime <= $0.maxEnd
+            }) {
+                print("🎵 Should be on segment \(correctSegmentIndex) (current: \(subtitleViewModel.currentSegmentIndex))")
+                
+                if correctSegmentIndex != subtitleViewModel.currentSegmentIndex {
+                    subtitleViewModel.loadSegment(at: correctSegmentIndex)
+                }
+                
+                // Only call updateCurrentWord once here
+                if let currentSegment = subtitleViewModel.currentSegment {
+                    updateCurrentWord(for: globalTime, subtitles: currentSegment.words)
+                }
+            } else {
+                print("🎵 No segment found for time \(globalTime)")
             }
+            
+            subtitleViewModel.updateCurrentTime(globalTime)
         }
     }
+    
     
     private func updateCurrentTime(from player: AVPlayer) {
         let current = player.currentTime().seconds
         if current.isFinite {
             currentTime = current
+            // Calculate global time including previous chapters
             let globalTime = current + audioViewModel.durationsSoFar
             subtitleViewModel.updateCurrentTime(globalTime)
         }
@@ -363,20 +397,33 @@ struct ListeningView: View {
         }
     }
     
-    private func updateCurrentWord(for time: Double, subtitles: [WordTimestamp]) {
+    
+    private func updateCurrentWord(for globalTime: Double, subtitles: [WordTimestamp]) {
         guard !subtitles.isEmpty else { return }
         
-        let newIndex = subtitles.lastIndex { $0.start <= time } ?? 0
+        // Find word based on global time
+        let newIndex = subtitles.lastIndex { $0.start <= globalTime } ?? 0
+        
+        print("🎵 Global time: \(globalTime), found index: \(newIndex)")
+        if newIndex < subtitles.count {
+            print("🎵 Word at index \(newIndex): '\(subtitles[newIndex].text)' (start: \(subtitles[newIndex].start))")
+        }
+
         
         if newIndex != currentWordIndex {
-            previousWordIndex = currentWordIndex
-            currentWordIndex = newIndex
+            withAnimation(.easeInOut(duration: 0.2)) {
+                previousWordIndex = currentWordIndex
+                currentWordIndex = newIndex
+            }
             
             // Submit biometric feedback when word changes
             if newIndex < subtitles.count {
                 let currentWord = subtitles[newIndex]
                 
                 Task.detached(priority: .background) {
+                    print("🎵 Submitting feedback for '\(currentWord.text)' - checking biometric value...")
+
+                    
                     let result = await feedbackService.submitFeedback(
                         thoughtId: thought.id,
                         chapterNumber: audioViewModel.currentChapterNumber,
@@ -396,19 +443,24 @@ struct ListeningView: View {
     }
     
     private func getCurrentWordGroup(from subtitles: [WordTimestamp]) -> [WordTimestamp]? {
-        guard !subtitles.isEmpty, currentWordIndex < subtitles.count else { return nil }
+        guard !subtitles.isEmpty, currentWordIndex < subtitles.count else {
+            print("🎵 getCurrentWordGroup: subtitles=\(subtitles.count), currentWordIndex=\(currentWordIndex)")
+            return nil
+        }
         
         let groupSize = 4
         let startIndex = max(0, currentWordIndex - groupSize/2)
         let endIndex = min(subtitles.count, startIndex + groupSize)
         
-        return Array(subtitles[startIndex..<endIndex])
+        let group = Array(subtitles[startIndex..<endIndex])
+        print("🎵 Word group: \(group.map { $0.text })")
+        
+        return group
     }
     
     private func isCurrentWord(_ wordTimestamp: WordTimestamp, subtitles: [WordTimestamp]) -> Bool {
         guard currentWordIndex < subtitles.count else { return false }
-        return subtitles[currentWordIndex].start == wordTimestamp.start &&
-               subtitles[currentWordIndex].text == wordTimestamp.text
+        return subtitles[currentWordIndex].text == wordTimestamp.text
     }
     
     private func formatTime(_ time: Double) -> String {
@@ -428,6 +480,9 @@ struct ListeningView: View {
     // MARK: - Subtitle Processing (Simplified from AudioPlayerView)
     
     private func fetchSubtitlePlaylist(playlistURL: String) {
+        print("🎵 Starting subtitle fetch for: \(playlistURL)")
+
+        
         guard let url = URL(string: playlistURL) else { return }
         
         URLSession.shared.dataTask(with: url) { data, _, error in
@@ -468,6 +523,8 @@ struct ListeningView: View {
     }
     
     private func processVTTFiles(_ vttFiles: [String]) {
+        print("🎵 Processing \(vttFiles.count) VTT files")
+
         processVTTFile(at: 0, from: vttFiles, accumulated: [])
     }
     
@@ -497,6 +554,11 @@ struct ListeningView: View {
         let sortedNew = trulyNew.sorted { $0.minStart < $1.minStart }
         
         subtitleViewModel.segments.append(contentsOf: sortedNew)
+        
+        print("🎵 Segment ranges:")
+        for (i, segment) in subtitleViewModel.segments.enumerated() {
+            print("🎵 Segment \(i): \(segment.minStart) - \(segment.maxEnd)")
+        }
         
         if subtitleViewModel.currentSegment == nil, !subtitleViewModel.segments.isEmpty {
             subtitleViewModel.loadSegment(at: 0)
