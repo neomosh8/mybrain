@@ -21,7 +21,7 @@ struct AnimatedParagraphView: View {
     @State private var wordRanges: [(range: Range<AttributedString.Index>, word: String)] = []
     @State private var currentWordIndex: Int = 0
     @State private var isAnimating: Bool = false
-    @State private var animationTimer: Timer?
+    @State private var animationTimer: DispatchSourceTimer?
     @State private var hasSetupContent: Bool = false
     
     @State private var isPaused: Bool = false
@@ -78,7 +78,7 @@ struct AnimatedParagraphView: View {
         }
         .onChange(of: wordInterval) { _, _ in
             if isAnimating && !isPaused {
-                animationTimer?.invalidate()
+                animationTimer?.cancel()
                 animationTimer = nil
                 resumeAnimationFromCurrentPosition()
             }
@@ -261,33 +261,41 @@ private extension AnimatedParagraphView {
     }
     
     func startAnimationTimer() {
-        animationTimer?.invalidate()
+        animationTimer?.cancel()
         
-        animationTimer = Timer.scheduledTimer(withTimeInterval: wordInterval, repeats: true) { _ in
-            currentWordIndex += 1
-            
-            if currentWordIndex >= wordRanges.count {
-                stopAnimation()
-                onFinished()
-                return
+        let timer = DispatchSource.makeTimerSource(queue: DispatchQueue.global(qos: .userInteractive))
+        timer.schedule(deadline: .now() + wordInterval, repeating: wordInterval)
+        
+        timer.setEventHandler {
+            DispatchQueue.main.async {                
+                self.currentWordIndex += 1
+                
+                if self.currentWordIndex >= self.wordRanges.count {
+                    self.stopAnimation()
+                    self.onFinished()
+                    return
+                }
+                
+                let halfwayPoint = self.wordRanges.count / 2
+                if self.currentWordIndex == halfwayPoint {
+                    self.onHalfway()
+                }
+                
+                self.sendFeedback(for: self.wordRanges[self.currentWordIndex].word)
             }
-            
-            let halfwayPoint = wordRanges.count / 2
-            if currentWordIndex == halfwayPoint {
-                onHalfway()
-            }
-            
-            sendFeedback(for: wordRanges[currentWordIndex].word)
         }
+        
+        timer.resume()
+        animationTimer = timer
     }
     
     func pauseAnimation() {
-        animationTimer?.invalidate()
+        animationTimer?.cancel()
         animationTimer = nil
     }
     
     func stopAnimation() {
-        animationTimer?.invalidate()
+        animationTimer?.cancel()
         animationTimer = nil
         isAnimating = false
         isPaused = false
