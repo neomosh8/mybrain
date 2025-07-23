@@ -38,6 +38,7 @@ struct MainTabView: View {
         case 0:
             NavigationStack {
                 HomeView(
+                    thoughtsViewModel: thoughtsViewModel,
                     onNavigateToDevice: {
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                             selectedTab = 2
@@ -53,10 +54,10 @@ struct MainTabView: View {
             NavigationStack {
                 ProfileView(
                     onNavigateToHome: {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        selectedTab = 0
-                    }
-                })
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            selectedTab = 0
+                        }
+                    })
                 .transition(.asymmetric(
                     insertion: .move(edge: .leading).combined(with: .opacity),
                     removal: .move(edge: .trailing).combined(with: .opacity)
@@ -81,8 +82,11 @@ struct MainTabView: View {
         default:
             NavigationStack {
                 HomeView(
+                    thoughtsViewModel: thoughtsViewModel,
                     onNavigateToDevice: {
-                        selectedTab = 2
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            selectedTab = 2
+                        }
                     }
                 )
             }
