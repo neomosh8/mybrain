@@ -738,7 +738,6 @@ GET /thoughts/{{hashed_thought_id}}/stream/master.m3u8
 - `/thoughts/{{hashed_thought_id}}/stream/{{segment_file}}` - Individual segments (.ts or .vtt files)
 
 ---
-
 ## WebSocket API
 
 ### Connection
@@ -844,7 +843,71 @@ All WebSocket messages use this JSON structure:
 }
 ```
 
-### 3. Chapter Processing Messages
+### 3. Thought Status Messages
+
+#### Thought Status Success
+```json
+{
+  "type": "thought_status",
+  "status": "success",
+  "message": "Thought status retrieved successfully",
+  "data": {
+    "id": "hashed_thought_id",
+    "name": "Thought Name",
+    "description": "Thought description",
+    "content_type": "url",
+    "cover": "cover_url",
+    "model_3d": "model_url",
+    "status": "processed",
+    "progress": {
+      "total": 5,
+      "completed": 2,
+      "remaining": 3
+    },
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+  }
+}
+```
+
+#### Thought Status Errors
+```json
+{
+  "type": "thought_status",
+  "status": "error",
+  "message": "Thought ID is required",
+  "data": null
+}
+```
+
+```json
+{
+  "type": "thought_status",
+  "status": "error",
+  "message": "Invalid thought ID",
+  "data": null
+}
+```
+
+```json
+{
+  "type": "thought_status",
+  "status": "error",
+  "message": "Thought not found",
+  "data": null
+}
+```
+
+```json
+{
+  "type": "thought_status",
+  "status": "error",
+  "message": "Failed to retrieve thought status: {error_details}",
+  "data": null
+}
+```
+
+### 4. Chapter Processing Messages
 
 #### Audio Chapter Response (`chapter_audio`)
 For chapters with audio generation (`generate_audio: true`).
@@ -939,7 +1002,7 @@ Both `chapter_audio` and `chapter_text` can return these error types:
 }
 ```
 
-### 4. Feedback Messages
+### 5. Feedback Messages
 
 #### Feedback Success
 ```json
@@ -983,7 +1046,7 @@ Both `chapter_audio` and `chapter_text` can return these error types:
 }
 ```
 
-### 5. Streaming Links Messages
+### 6. Streaming Links Messages
 
 #### Streaming Links Success
 ```json
@@ -1040,7 +1103,7 @@ Both `chapter_audio` and `chapter_text` can return these error types:
 }
 ```
 
-### 6. Thought Status Updates
+### 7. Thought Status Updates
 
 These messages are sent asynchronously from background Celery tasks to notify clients of thought processing progress.
 
@@ -1086,7 +1149,23 @@ These messages are sent asynchronously from background Celery tasks to notify cl
 
 ### Available Actions
 
-#### 1. Get Next Chapter
+#### 1. Get Thought Status
+
+Retrieve the current status and data for a specific thought.
+
+**Send:**
+```json
+{
+  "action": "thought_status",
+  "data": {
+    "thought_id": "Rp9Wq3Kv"
+  }
+}
+```
+
+**Response:** See Thought Status Messages above.
+
+#### 2. Get Next Chapter
 
 Process and retrieve the next chapter of a thought.
 
@@ -1106,7 +1185,7 @@ Process and retrieve the next chapter of a thought.
 - If `generate_audio: false` → `chapter_text` message type  
 - If no more chapters → `chapter_complete` message type
 
-#### 2. Submit Feedback
+#### 3. Submit Feedback
 
 Submit user engagement feedback for content.
 
@@ -1125,7 +1204,7 @@ Submit user engagement feedback for content.
 
 **Response:** See Feedback Messages above.
 
-#### 3. Get Streaming Links
+#### 4. Get Streaming Links
 
 Get HLS streaming URLs for audio playback. This action will first generate an audio chapter, then return streaming links.
 
@@ -1144,54 +1223,6 @@ Get HLS streaming URLs for audio playback. This action will first generate an au
 2. Then sends a `streaming_links` message with the URLs
 3. If no more chapters, sends `chapter_complete` message
 
-### Client-Side Handling Example
-
-```javascript
-websocket.onmessage = (event) => {
-  const message = JSON.parse(event.data);
-  
-  switch(message.type) {
-    case 'chapter_audio':
-      if (message.status === 'success') {
-        handleAudioChapter(message.data);
-      } else {
-        handleChapterError(message.message);
-      }
-      break;
-      
-    case 'chapter_text':
-      if (message.status === 'success') {
-        handleTextChapter(message.data);
-      } else {
-        handleChapterError(message.message);
-      }
-      break;
-      
-    case 'chapter_complete':
-      handleThoughtComplete(message.data);
-      break;
-      
-    case 'streaming_links':
-      if (message.status === 'success') {
-        handleStreamingLinks(message.data);
-      } else {
-        handleStreamingError(message.message);
-      }
-      break;
-      
-    case 'feedback_response':
-      handleFeedbackResponse(message);
-      break;
-      
-    case 'thought_update':
-      handleThoughtStatusUpdate(message.data);
-      break;
-      
-    default:
-      console.warn('Unknown message type:', message.type);
-  }
-};
-```
 
 ### Status Values
 
