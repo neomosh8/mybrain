@@ -12,4 +12,5 @@ protocol WebSocketAPI {
     func requestNextChapter(thoughtId: String, generateAudio: Bool)
     func sendFeedback(thoughtId: String, chapterNumber: Int, word: String, value: Double)
     func activateReceiveMessage(callback: @escaping (WebSocketMessage) -> Void)
+    func requestThoughtStatus(thoughtId: String)
 }

@@ -89,6 +89,11 @@ final class WebSocketNetworkService: WebSocketAPI {
         sendAction(action)
     }
     
+    func requestThoughtStatus(thoughtId: String) {
+        let action = WebSocketAction.thoughtStatus(thoughtId: thoughtId)
+        sendAction(action)
+    }
+    
     func activateReceiveMessage(callback: @escaping (WebSocketMessage) -> Void) {
         messages.sink { message in
             callback(message)

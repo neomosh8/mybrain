@@ -6,7 +6,8 @@ enum WebSocketAction {
     case streamingLinks(thoughtId: String)
     case nextChapter(thoughtId: String, generateAudio: Bool)
     case feedback(thoughtId: String, chapterNumber: Int, word: String, value: Double)
-    
+    case thoughtStatus(thoughtId: String)
+
     func toDictionary() -> [String: Any] {
         switch self {
         case .streamingLinks(let thoughtId):
@@ -34,6 +35,12 @@ enum WebSocketAction {
                     "value": value
                 ]
             ]
+            
+        case .thoughtStatus(let thoughtId):
+            return [
+                "action": "thought_status",
+                "data": ["thought_id": thoughtId]
+            ]
         }
     }
 }
@@ -49,6 +56,7 @@ enum WebSocketMessage {
     case feedbackResponse(status: WebSocketStatus, message: String, data: [String: Any]?)
     case actionResponse(status: WebSocketStatus, message: String, data: [String: Any]?)
     case thoughtUpdate(status: WebSocketStatus, message: String, data: [String: Any])
+    case thoughtStatus(status: WebSocketStatus, message: String, data: [String: Any]?)
     case unknown(type: String, status: WebSocketStatus, message: String, data: [String: Any]?)
     
     init(type: String, status: String, message: String, data: [String: Any]?) {
@@ -72,6 +80,8 @@ enum WebSocketMessage {
             self = .actionResponse(status: wsStatus, message: message, data: data)
         case "thought_update":
             self = .thoughtUpdate(status: wsStatus, message: message, data: messageData)
+        case "thought_status":
+            self = .thoughtStatus(status: wsStatus, message: message, data: data)
         default:
             self = .unknown(type: type, status: wsStatus, message: message, data: data)
         }
@@ -111,6 +121,7 @@ extension WebSocketMessage {
              .feedbackResponse(let status, _, _),
              .actionResponse(let status, _, _),
              .thoughtUpdate(let status, _, _),
+             .thoughtStatus(let status, _, _),
              .unknown(_, let status, _, _):
             return status
         }
@@ -126,6 +137,7 @@ extension WebSocketMessage {
              .feedbackResponse(_, let message, _),
              .actionResponse(_, let message, _),
              .thoughtUpdate(_, let message, _),
+             .thoughtStatus(_, let message, _),
              .unknown(_, _, let message, _):
             return message
         }
@@ -141,6 +153,7 @@ extension WebSocketMessage {
              .streamingLinksResponse(_, _, let data),
              .feedbackResponse(_, _, let data),
              .actionResponse(_, _, let data),
+             .thoughtStatus(_, _, let data),
              .unknown(_, _, _, let data):
             return data
         case .thoughtUpdate(_, _, let data):
@@ -166,6 +179,8 @@ extension WebSocketMessage {
             return "action_response"
         case .thoughtUpdate:
             return "thought_update"
+        case .thoughtStatus:
+            return "thought_status"
         case .unknown(let type, _, _, _):
             return type
         }
