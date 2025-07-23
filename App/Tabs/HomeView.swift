@@ -23,7 +23,6 @@ struct HomeView: View {
     @State private var batteryCancellable: AnyCancellable?
     
     // Status Update
-    @State private var lastActiveThoughtId: String?
     @Environment(\.scenePhase) private var scenePhase
     
     // Timer for battery level
@@ -169,9 +168,9 @@ struct HomeView: View {
             }
         }
         .onChange(of: scenePhase) { _, newPhase in
-            if newPhase == .active, let thoughtId = lastActiveThoughtId {
-                refreshThoughtStatus(thoughtId: thoughtId)
-                lastActiveThoughtId = nil
+            if newPhase == .active, let thought = selectedThought {
+                refreshThoughtStatus(thoughtId: thought.id)
+                selectedThought = nil
             }
         }
         .refreshable {
@@ -231,8 +230,6 @@ struct HomeView: View {
         }
         
         print("🎯 Navigating to thought: \(thought.name) in \(selectedMode.title) mode")
-        lastActiveThoughtId = thought.id
-        
         selectedThought = thought
     }
     
