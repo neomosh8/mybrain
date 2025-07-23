@@ -10,12 +10,21 @@ class ThoughtsViewModel: ObservableObject {
     // MARK: - Private Properties
     private let networkService = NetworkServiceManager.shared
     private var cancellables = Set<AnyCancellable>()
-    private var isWebSocketConnected = false
     
     // MARK: - Public Methods
     
     init() {
+        setupWebSocketConnection()
         fetchThoughts()
+    }
+    
+    private func setupWebSocketConnection() {
+        networkService.webSocket.messages
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] message in
+                self?.handleWebSocketMessage(message)
+            }
+            .store(in: &cancellables)
     }
     
     func fetchThoughts() {
@@ -87,7 +96,7 @@ class ThoughtsViewModel: ObservableObject {
         case .thoughtStatus(let status, let message, let data):
             if status.isSuccess, let data = data,
                let thoughtData = ThoughtData(from: data) {
-                updateThoughtFromStatus(thoughtData: thoughtData)
+                updateThought(with: thoughtData)
             } else {
                 print("Failed to get thought status: \(message)")
             }
@@ -104,26 +113,14 @@ class ThoughtsViewModel: ObservableObject {
             return
         }
         
-        if let index = thoughts.firstIndex(where: { $0.id == thoughtData.id }) {
-            updateThought(at: index, with: thoughtData)
-        }
+        updateThought(with: thoughtData)
     }
     
     func refreshThoughtStatus(thoughtId: String) {
-        if !isWebSocketConnected {
-            networkService.webSocket.messages
-                .receive(on: DispatchQueue.main)
-                .sink { [weak self] message in
-                    self?.handleWebSocketMessage(message)
-                }
-                .store(in: &cancellables)
-            isWebSocketConnected = true
-        }
-        
         networkService.webSocket.requestThoughtStatus(thoughtId: thoughtId)
     }
     
-    private func updateThoughtFromStatus(thoughtData: ThoughtData) {
+    private func updateThought(with thoughtData: ThoughtData) {
         guard let index = thoughts.firstIndex(where: { $0.id == thoughtData.id }) else { return }
         
         let currentThought = thoughts[index]
@@ -142,29 +139,7 @@ class ThoughtsViewModel: ObservableObject {
         
         thoughts[index] = updatedThought
         
-        print("Updated thought status: \(updatedThought.name) - Progress: \(updatedThought.progress.completed)/\(updatedThought.progress.total)")
-    }
-
-    
-    private func updateThought(at index: Int, with thoughtData: ThoughtData) {
-        let currentThought = thoughts[index]
-        
-        let updatedThought = Thought(
-            id: thoughtData.id,
-            name: thoughtData.name,
-            description: currentThought.description,
-            contentType: currentThought.contentType,
-            cover: thoughtData.cover,
-            model3d: thoughtData.model3d,
-            status: thoughtData.status,
-            progress: thoughtData.progress ?? currentThought.progress,
-            createdAt: thoughtData.createdAt,
-            updatedAt: thoughtData.updatedAt
-        ).withProcessedURLs()
-        
-        thoughts[index] = updatedThought
-        
-        print("Updated thought: \(updatedThought.name) - Status: \(updatedThought.status)")
+        print("Updated thought: \(updatedThought.name) - Status: \(updatedThought.status) - Progress: \(updatedThought.progress.completed)/\(updatedThought.progress.total)")
     }
     
     deinit {
