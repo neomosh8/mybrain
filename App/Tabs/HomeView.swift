@@ -4,6 +4,8 @@ import Combine
 
 struct HomeView: View {
     @EnvironmentObject var bluetoothService: BluetoothService
+    @ObservedObject var thoughtsViewModel: ThoughtsViewModel
+
     @State private var selectedMode: ContentMode = .reading
     @State private var showDeviceCard = true
     @State private var selectedThought: Thought?
@@ -15,9 +17,7 @@ struct HomeView: View {
     // Search/Filter states
     @State private var showSearchField = false
     @State private var searchText = ""
-    
-    @StateObject private var thoughtsViewModel = ThoughtsViewModel()
-    
+        
     // Battery related states
     @State private var batteryLevel: Int?
     @State private var batteryCancellable: AnyCancellable?
@@ -34,7 +34,8 @@ struct HomeView: View {
     
     var onNavigateToDevice: (() -> Void)?
     
-    init(onNavigateToDevice: (() -> Void)? = nil) {
+    init(thoughtsViewModel: ThoughtsViewModel, onNavigateToDevice: (() -> Void)? = nil) {
+        self.thoughtsViewModel = thoughtsViewModel
         self.onNavigateToDevice = onNavigateToDevice
     }
     
