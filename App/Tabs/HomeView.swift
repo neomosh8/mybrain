@@ -22,6 +22,10 @@ struct HomeView: View {
     @State private var batteryLevel: Int?
     @State private var batteryCancellable: AnyCancellable?
     
+    // Status Update
+    @State private var lastActiveThoughtId: String?
+    @Environment(\.scenePhase) private var scenePhase
+    
     // Timer for battery level
     private var batteryLevelTimer: Timer.TimerPublisher = Timer.publish(
         every: 300, // seconds
@@ -123,9 +127,7 @@ struct HomeView: View {
         .navigationDestination(item: $selectedThought) { thought in
             switch selectedMode {
             case .reading:
-                NavigationStack {
-                    ReadingView(thought: thought)
-                }
+                ReadingView(thought: thought)
             case .listening:
                 ListeningView(thought: thought)
             }
@@ -164,6 +166,12 @@ struct HomeView: View {
             } else {
                 stopBatteryLevelTimer()
                 batteryLevel = nil
+            }
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active, let thoughtId = lastActiveThoughtId {
+                refreshThoughtStatus(thoughtId: thoughtId)
+                lastActiveThoughtId = nil
             }
         }
         .refreshable {
@@ -223,7 +231,13 @@ struct HomeView: View {
         }
         
         print("🎯 Navigating to thought: \(thought.name) in \(selectedMode.title) mode")
+        lastActiveThoughtId = thought.id
+        
         selectedThought = thought
+    }
+    
+    private func refreshThoughtStatus(thoughtId: String) {
+        thoughtsViewModel.refreshThoughtStatus(thoughtId: thoughtId)
     }
     
     
