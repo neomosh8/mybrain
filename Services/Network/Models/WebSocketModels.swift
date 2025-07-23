@@ -276,14 +276,15 @@ struct FeedbackResponseData {
 }
 
 struct ThoughtUpdateData {
-    let thought: ThoughtData?
+    let thought: ThoughtData
     
     init?(from data: [String: Any]) {
-        if let thoughtData = data["thought"] as? [String: Any] {
-            self.thought = ThoughtData(from: thoughtData)
-        } else {
-            self.thought = nil
+        guard let thoughtData = data["thought"] as? [String: Any],
+              let validThought = ThoughtData(from: thoughtData) else {
+            return nil
         }
+        
+        self.thought = validThought
     }
 }
 

@@ -86,9 +86,9 @@ class ThoughtsViewModel: ObservableObject {
             }
             
         case .thoughtUpdate(let status, let message, let data):
-            if status.isSuccess {
-                print("Thought update received: \(message)")
-                handleThoughtUpdate(data: data)
+            if status.isSuccess,
+               let thoughtUpdateData = ThoughtUpdateData(from: data) {
+                updateThought(with: thoughtUpdateData.thought)
             } else {
                 print("Thought update error: \(message)")
             }
@@ -104,16 +104,6 @@ class ThoughtsViewModel: ObservableObject {
         default:
             break
         }
-    }
-    
-    private func handleThoughtUpdate(data: [String: Any]) {
-        guard let thoughtUpdateData = ThoughtUpdateData(from: data),
-              let thoughtData = thoughtUpdateData.thought else {
-            print("Invalid thought update data")
-            return
-        }
-        
-        updateThought(with: thoughtData)
     }
     
     func refreshThoughtStatus(thoughtId: String) {
