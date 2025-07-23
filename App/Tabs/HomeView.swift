@@ -17,7 +17,7 @@ struct HomeView: View {
     // Search/Filter states
     @State private var showSearchField = false
     @State private var searchText = ""
-        
+    
     // Battery related states
     @State private var batteryLevel: Int?
     @State private var batteryCancellable: AnyCancellable?
@@ -145,10 +145,9 @@ struct HomeView: View {
                 bluetoothService.batteryLevel = 0
             }
             
-            
             if !AppStateManager.shared.hasShownHomeIntro {
                 AppStateManager.shared.hasShownHomeIntro = true
-                                
+                
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                     hideDeviceCardWithAnimation()
                 }
@@ -168,10 +167,9 @@ struct HomeView: View {
                 batteryLevel = nil
             }
         }
-        .onChange(of: scenePhase) { _, newPhase in
-            if newPhase == .active, let thought = selectedThought {
-                refreshThoughtStatus(thoughtId: thought.id)
-                selectedThought = nil
+        .onReceive(NotificationCenter.default.publisher(for: .thoughtProgressUpdated)) { notification in
+            if let thoughtId = notification.userInfo?["thoughtId"] as? String {
+                refreshThoughtStatus(thoughtId: thoughtId)
             }
         }
         .refreshable {
@@ -180,7 +178,7 @@ struct HomeView: View {
     }
     
     // MARK: - Computed Properties
-
+    
     private var filteredThoughts: [Thought] {
         if searchText.isEmpty {
             return thoughtsViewModel.thoughts
@@ -243,16 +241,16 @@ struct HomeView: View {
     
     private func fetchBatteryLevel() {
         let level = 30
-//        performanceVM.fetchBatteryLevel()
-//            .sink(receiveCompletion: { completion in
-//                if case .failure(let error) = completion {
-//                    print("Failed to fetch battery level: \(error)")
-//                }
-//            }, receiveValue: { level in
-                self.batteryLevel = level
-                self.bluetoothService.batteryLevel = level
-//            })
-//            .store(in: &performanceVM.cancellables)
+        //        performanceVM.fetchBatteryLevel()
+        //            .sink(receiveCompletion: { completion in
+        //                if case .failure(let error) = completion {
+        //                    print("Failed to fetch battery level: \(error)")
+        //                }
+        //            }, receiveValue: { level in
+        self.batteryLevel = level
+        self.bluetoothService.batteryLevel = level
+        //            })
+        //            .store(in: &performanceVM.cancellables)
     }
     
     private func startBatteryLevelTimer() {
@@ -415,9 +413,9 @@ struct DeviceStatusCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(bluetoothService.isConnected ?
                          (bluetoothService.connectedDevice?.name ?? "Unknown Device") :
-                         "Not Connected")
-                        .font(.headline)
-                        .fontWeight(.semibold)
+                            "Not Connected")
+                    .font(.headline)
+                    .fontWeight(.semibold)
                     
                     Text("Model: NL-2024")
                         .font(.subheadline)
@@ -729,4 +727,9 @@ struct EmptyThoughtsView: View {
         }
         .padding(.vertical, 40)
     }
+}
+
+
+extension Notification.Name {
+    static let thoughtProgressUpdated = Notification.Name("thoughtProgressUpdated")
 }

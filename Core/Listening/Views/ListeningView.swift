@@ -40,6 +40,12 @@ struct ListeningView: View {
         .onDisappear {
             audioViewModel.cleanup()
             timeUpdateTimer?.invalidate()
+            
+            NotificationCenter.default.post(
+                name: .thoughtProgressUpdated,
+                object: nil,
+                userInfo: ["thoughtId": thought.id]
+            )
         }
     }
     

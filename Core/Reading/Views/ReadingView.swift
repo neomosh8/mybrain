@@ -79,6 +79,12 @@ struct ReadingView: View {
         }
         .onDisappear {
             viewModel.cleanup()
+            
+            NotificationCenter.default.post(
+                name: .thoughtProgressUpdated,
+                object: nil,
+                userInfo: ["thoughtId": thought.id]
+            )
         }
     }
     
