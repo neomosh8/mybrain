@@ -22,9 +22,9 @@ struct HomeView: View {
     @State private var batteryLevel: Int?
     @State private var batteryCancellable: AnyCancellable?
     
-    // Status Update
-    @Environment(\.scenePhase) private var scenePhase
     
+    @State private var cancellables = Set<AnyCancellable>()
+        
     // Timer for battery level
     private var batteryLevelTimer: Timer.TimerPublisher = Timer.publish(
         every: 300, // seconds
@@ -240,17 +240,14 @@ struct HomeView: View {
     // MARK: - Battery Functions
     
     private func fetchBatteryLevel() {
-        let level = 30
-        //        performanceVM.fetchBatteryLevel()
-        //            .sink(receiveCompletion: { completion in
-        //                if case .failure(let error) = completion {
-        //                    print("Failed to fetch battery level: \(error)")
-        //                }
-        //            }, receiveValue: { level in
-        self.batteryLevel = level
-        self.bluetoothService.batteryLevel = level
-        //            })
-        //            .store(in: &performanceVM.cancellables)
+        bluetoothService.readBatteryLevel()
+        
+        bluetoothService.$batteryLevel
+            .compactMap { $0 }
+            .sink { level in
+                self.batteryLevel = level
+            }
+            .store(in: &cancellables)
     }
     
     private func startBatteryLevelTimer() {
