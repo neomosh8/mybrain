@@ -2,10 +2,11 @@ import SwiftUI
 
 struct DeviceView: View {
     @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject var bluetoothService: BluetoothService
+    @EnvironmentObject var bluetoothService: MockBluetoothService
     @State private var showTestSignalView = false
     @State private var showDeviceScanner = false
-    
+    @State private var showDeviceDetails = false
+
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
@@ -14,8 +15,8 @@ struct DeviceView: View {
                     deviceSetupHeaderView
                     
                     signalQualityView
-                    
-                    deviceInformationView
+                                        
+                    deviceSettingsView
                     
                     deviceTestingView
                     
@@ -62,44 +63,209 @@ struct DeviceView: View {
 // MARK: - Device Setup Header
 extension DeviceView {
     private var deviceSetupHeaderView: some View {
-        VStack(spacing: 16) {
-            // Device Icon with Connection Status
-            ZStack {
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.blue)
-                    .frame(width: 80, height: 80)
-                
-                Image("Neurolink")
-                    .renderingMode(.template)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 40, height: 40)
-                    .foregroundColor(.white)
-                
-                // Green checkmark overlay
-                Circle()
-                    .fill(Color.green)
-                    .frame(width: 24, height: 24)
-                    .overlay(
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.white)
+        VStack(spacing: 0) {
+            // Main card content
+            VStack(spacing: 16) {
+                // Top row with device icon, info and status
+                HStack(spacing: 12) {
+                    // Device icon
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.blue)
+                        .frame(width: 48, height: 48)
+                        .overlay(
+                            Image("Neurolink")
+                                .renderingMode(.template)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 24, height: 24)
+                                .foregroundColor(.white)
+                        )
+                    
+                    // Device info
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("NeuroLink Pro")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                        
+                        Text("Serial: \(bluetoothService.serialNumber ?? "NL240892")")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    // Connection status
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(Color.green)
+                            .frame(width: 8, height: 8)
+                        
+                        Text("Connected")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(.green)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.green.opacity(0.1))
                     )
-                    .offset(x: 28, y: -28)
-            }
-            
-            VStack(spacing: 4) {
-                Text("NeuroLink Pro Connected")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .foregroundColor(.primary)
+                }
                 
-                Text("Device is ready for optimal performance")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                // Device Details button or collapse button
+                if !showDeviceDetails {
+                    Button(action: {
+                        withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                            showDeviceDetails = true
+                        }
+                    }) {
+                        Text("Device Details")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.blue)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.blue.opacity(0.1))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                                    )
+                            )
+                    }
+                } else {
+                    // Collapse button with modern pill design
+                    Button(action: {
+                        withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                            showDeviceDetails = false
+                        }
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "chevron.up")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.secondary)
+                            
+                            Text("Collapse")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(
+                            Capsule()
+                                .fill(Color(.systemGray6))
+                                .overlay(
+                                    Capsule()
+                                        .stroke(Color(.systemGray4), lineWidth: 0.5)
+                                )
+                        )
+                    }
+                    .frame(maxWidth: .infinity, alignment: .center)
+                }
+            }
+            .padding(20)
+            
+            // Expandable device details section
+            if showDeviceDetails {
+                deviceDetailsExpandedView
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .top).combined(with: .opacity),
+                        removal: .move(edge: .top).combined(with: .opacity)
+                    ))
             }
         }
-        .padding(.vertical, 20)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.secondarySystemGroupedBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color(.systemGray5), lineWidth: 0.5)
+                )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+    
+    private var deviceDetailsExpandedView: some View {
+        VStack(spacing: 0) {
+            // Separator line
+            Rectangle()
+                .fill(Color(.systemGray5))
+                .frame(height: 1)
+                .padding(.horizontal, 20)
+            
+            // Device information content
+            VStack(spacing: 16) {
+                HStack {
+                    Text("Device Information")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                    Spacer()
+                }
+                
+                VStack(spacing: 12) {
+                    deviceDetailRow(
+                        title: "Model",
+                        value: "NeuroLink Pro"
+                    )
+                    
+                    deviceDetailRow(
+                        title: "Serial Number",
+                        value: bluetoothService.serialNumber ?? "NL-2024-8847"
+                    )
+                    
+                    deviceDetailRow(
+                        title: "Firmware",
+                        value: "v2.1.4"
+                    )
+                    
+                    // Battery level with icon
+                    HStack {
+                        Text("Battery Level")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        
+                        Spacer()
+                        
+                        HStack(spacing: 8) {
+                            Image(systemName: getBatteryIconName())
+                                .foregroundColor(getBatteryColor())
+                                .font(.system(size: 16))
+                            
+                            Text("\(bluetoothService.batteryLevel ?? 78)%")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundColor(.primary)
+                        }
+                    }
+                    
+                    deviceDetailRow(
+                        title: "Connection Time",
+                        value: "00:24:18"
+                    )
+                }
+            }
+            .padding(20)
+        }
+    }
+    
+    private func deviceDetailRow(title: String, value: String) -> some View {
+        HStack {
+            Text(title)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+            
+            Spacer()
+            
+            Text(value)
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundColor(.primary)
+        }
     }
 }
 
@@ -172,71 +338,13 @@ extension DeviceView {
     }
 }
 
-// MARK: - Device Information
+// MARK: - Device Settings
 extension DeviceView {
-    private var deviceInformationView: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text("Device Information")
-                    .font(.headline)
-                    .foregroundColor(.primary)
-                Spacer()
-            }
-            .padding(.bottom, 16)
-            
-            VStack(spacing: 0) {
-                deviceInfoRow(
-                    title: "Model",
-                    value: "NeuroLink Pro"
-                )
-                
-                Divider()
-                    .padding(.vertical, 12)
-                
-                deviceInfoRow(
-                    title: "Serial Number",
-                    value: bluetoothService.serialNumber ?? "NL-2024-8847"
-                )
-                
-                Divider()
-                    .padding(.vertical, 12)
-                
-                deviceInfoRow(
-                    title: "Firmware",
-                    value: "v2.1.4"
-                )
-                
-                Divider()
-                    .padding(.vertical, 12)
-                
-                HStack {
-                    Text("Battery Level")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    
-                    Spacer()
-                    
-                    HStack(spacing: 8) {
-                        // Battery icon
-                        Image(systemName: getBatteryIconName())
-                            .foregroundColor(getBatteryColor())
-                            .font(.system(size: 16))
-                        
-                        Text("\(bluetoothService.batteryLevel ?? 78)%")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                            .foregroundColor(.primary)
-                    }
-                }
-                
-                Divider()
-                    .padding(.vertical, 12)
-                
-                deviceInfoRow(
-                    title: "Connection Time",
-                    value: "00:24:18"
-                )
-            }
+    private var deviceSettingsView: some View {
+        VStack(spacing: 20) {
+            signalQualityThresholdView
+            leadOffDetectionView
+            autoReconnectionView
         }
         .padding(20)
         .background(
@@ -249,21 +357,120 @@ extension DeviceView {
         )
     }
     
-    private func deviceInfoRow(title: String, value: String) -> some View {
+    private var signalQualityThresholdView: some View {
+        VStack(spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Signal Quality Threshold")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                    
+                    Text("Minimum signal quality for recording")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+            }
+            
+            HStack(spacing: 16) {
+                Text("Low")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                Spacer()
+                
+                Text("75%")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.blue)
+                
+                Spacer()
+                
+                Text("High")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            
+            // Slider representation
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(Color(.systemGray5))
+                    .frame(height: 4)
+                
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(Color.blue)
+                    .frame(width: 220, height: 4) // 75% of total width
+                
+                Circle()
+                    .fill(Color.blue)
+                    .frame(width: 20, height: 20)
+                    .offset(x: 220) // Position at 75%
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+    
+    private var leadOffDetectionView: some View {
         HStack {
-            Text(title)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Lead-off Detection")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+                
+                Text("Alert when electrodes disconnect")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
             
             Spacer()
             
-            Text(value)
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .foregroundColor(.primary)
+            // Toggle switch
+            ZStack {
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.blue)
+                    .frame(width: 50, height: 30)
+                
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: 26, height: 26)
+                    .offset(x: 10) // Positioned to the right (on state)
+            }
+        }
+    }
+    
+    private var autoReconnectionView: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Auto Reconnection")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+                
+                Text("Automatically reconnect when in range")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+            
+            // Toggle switch
+            ZStack {
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.blue)
+                    .frame(width: 50, height: 30)
+                
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: 26, height: 26)
+                    .offset(x: 10) // Positioned to the right (on state)
+            }
         }
     }
 }
+
 
 // MARK: - Device Testing
 extension DeviceView {
