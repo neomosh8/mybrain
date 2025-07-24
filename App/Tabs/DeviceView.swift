@@ -6,16 +6,16 @@ struct DeviceView: View {
     @State private var showTestSignalView = false
     @State private var showDeviceScanner = false
     @State private var showDeviceDetails = false
-
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
                 if bluetoothService.isConnected, let device = bluetoothService.connectedDevice {
-
+                    
                     deviceSetupHeaderView
                     
                     signalQualityView
-                                        
+                    
                     deviceSettingsView
                     
                     deviceTestingView
@@ -35,7 +35,8 @@ struct DeviceView: View {
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.bottom, 100) // Account for tab bar
+            .padding(.top, 24)
+            .padding(.bottom, 100)
         }
         .appNavigationBar(
             title: "Device Setup",
@@ -69,26 +70,26 @@ extension DeviceView {
                 // Top row with device icon, info and status
                 HStack(spacing: 12) {
                     // Device icon
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.blue)
-                        .frame(width: 48, height: 48)
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color.white)
+                        .frame(width: 40, height: 40)
                         .overlay(
                             Image("Neurolink")
                                 .renderingMode(.template)
                                 .resizable()
                                 .scaledToFit()
-                                .frame(width: 24, height: 24)
-                                .foregroundColor(.white)
+                                .frame(width: 20, height: 20)
+                                .foregroundColor(.blue)
                         )
                     
                     // Device info
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("NeuroLink Pro")
+                        Text(bluetoothService.connectedDevice?.name ?? "NeuroLink Pro")
                             .font(.headline)
                             .fontWeight(.semibold)
                             .foregroundColor(.primary)
                         
-                        Text("Serial: \(bluetoothService.serialNumber ?? "NL240892")")
+                        Text("Serial: \(bluetoothService.serialNumber ?? "Loading...")")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
@@ -117,7 +118,7 @@ extension DeviceView {
                 // Device Details button or collapse button
                 if !showDeviceDetails {
                     Button(action: {
-                        withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                        withAnimation(.easeInOut(duration: 0.4)) {
                             showDeviceDetails = true
                         }
                     }) {
@@ -129,7 +130,7 @@ extension DeviceView {
                             .frame(height: 44)
                             .background(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.blue.opacity(0.1))
+                                    .fill(Color.white)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12)
                                             .stroke(Color.blue.opacity(0.3), lineWidth: 1)
@@ -139,7 +140,7 @@ extension DeviceView {
                 } else {
                     // Collapse button with modern pill design
                     Button(action: {
-                        withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                        withAnimation(.easeInOut(duration: 0.4)) {
                             showDeviceDetails = false
                         }
                     }) {
@@ -180,10 +181,10 @@ extension DeviceView {
         }
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color(.secondarySystemGroupedBackground))
+                .fill(Color.blue.opacity(0.05))
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color(.systemGray5), lineWidth: 0.5)
+                        .stroke(Color.blue.opacity(0.3), lineWidth: 1)
                 )
         )
         .clipShape(RoundedRectangle(cornerRadius: 16))
@@ -210,12 +211,12 @@ extension DeviceView {
                 VStack(spacing: 12) {
                     deviceDetailRow(
                         title: "Model",
-                        value: "NeuroLink Pro"
+                        value: bluetoothService.connectedDevice?.name ?? "NeuroLink Pro"
                     )
                     
                     deviceDetailRow(
                         title: "Serial Number",
-                        value: bluetoothService.serialNumber ?? "NL-2024-8847"
+                        value: bluetoothService.serialNumber ?? "Loading..."
                     )
                     
                     deviceDetailRow(
@@ -236,7 +237,7 @@ extension DeviceView {
                                 .foregroundColor(getBatteryColor())
                                 .font(.system(size: 16))
                             
-                            Text("\(bluetoothService.batteryLevel ?? 78)%")
+                            Text("\(bluetoothService.batteryLevel ?? 0)%")
                                 .font(.subheadline)
                                 .fontWeight(.medium)
                                 .foregroundColor(.primary)
@@ -245,7 +246,7 @@ extension DeviceView {
                     
                     deviceDetailRow(
                         title: "Connection Time",
-                        value: "00:24:18"
+                        value: formatConnectionTime()
                     )
                 }
             }
@@ -267,6 +268,14 @@ extension DeviceView {
                 .foregroundColor(.primary)
         }
     }
+    
+    
+    private func formatConnectionTime() -> String {
+        // This would ideally track actual connection time
+        // For now, return a placeholder or calculate from connection timestamp
+        return "00:24:18"
+    }
+    
 }
 
 // MARK: - Signal Quality
