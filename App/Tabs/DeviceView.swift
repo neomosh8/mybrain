@@ -10,7 +10,7 @@ struct DeviceView: View {
         ScrollView {
             VStack(spacing: 24) {
                 if bluetoothService.isConnected, let device = bluetoothService.connectedDevice {
-                    // Connected Device Content
+
                     deviceSetupHeaderView
                     
                     signalQualityView
@@ -703,9 +703,4 @@ extension DeviceView {
         default: return .red
         }
     }
-}
-
-#Preview {
-    DeviceView()
-        .environmentObject(BluetoothService.shared)
 }
