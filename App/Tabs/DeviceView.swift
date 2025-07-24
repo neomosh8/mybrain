@@ -34,8 +34,8 @@ struct DeviceView: View {
                     noDeviceConnectedView
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 24)
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
             .padding(.bottom, 100)
         }
         .appNavigationBar(

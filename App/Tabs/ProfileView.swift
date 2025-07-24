@@ -75,10 +75,10 @@ struct ProfileView: View {
                     
                     dangerZoneSection
                 }
-                
-                Spacer(minLength: 70)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+            .padding(.bottom, 100)
         }
         .appNavigationBar(
             title: "Profile",
@@ -170,7 +170,7 @@ struct ProfileHeaderView: View {
                 Spacer()
             }
             .padding(.horizontal, 24)
-            .padding(.vertical, 24)
+            .padding(.bottom, 24)
         }
     }
     
