@@ -123,68 +123,60 @@ extension DeviceView {
                 }
                 
                 // Device Details button or collapse button
-                if !showDeviceDetails {
-                    Button(action: {
-                        withAnimation(.easeInOut(duration: 0.4)) {
-                            showDeviceDetails = true
-                        }
-                    }) {
-                        Text("Device Details")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                            .foregroundColor(.blue)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 44)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.white)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-                                    )
-                            )
-                    }
-                } else {
-                    // Collapse button with modern pill design
-                    Button(action: {
-                        withAnimation(.easeInOut(duration: 0.4)) {
-                            showDeviceDetails = false
-                        }
-                    }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "chevron.up")
-                                .font(.system(size: 12, weight: .semibold))
+                HStack {
+                    if !showDeviceDetails {
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.4)) {
+                                showDeviceDetails = true
+                            }
+                        }) {
+                            Text("Device Details")
+                                .font(.caption)
+                                .fontWeight(.medium)
                                 .foregroundColor(.secondary)
-                            
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .frame(width: 120)
+                                .background(
+                                    Capsule()
+                                        .fill(Color.white)
+                                        .overlay(
+                                            Capsule()
+                                                .stroke(Color.blue.opacity(0.3), lineWidth: 0.5)
+                                        )
+                                )
+                        }
+                    } else {
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.4)) {
+                                showDeviceDetails = false
+                            }
+                        }) {
                             Text("Collapse")
                                 .font(.caption)
                                 .fontWeight(.medium)
                                 .foregroundColor(.secondary)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(
-                            Capsule()
-                                .fill(Color(.systemGray6))
-                                .overlay(
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .frame(width: 120)
+                                .background(
                                     Capsule()
-                                        .stroke(Color(.systemGray4), lineWidth: 0.5)
+                                        .fill(Color(.systemGray6))
+                                        .overlay(
+                                            Capsule()
+                                                .stroke(Color(.systemGray4), lineWidth: 0.5)
+                                        )
                                 )
-                        )
+                        }
                     }
-                    .frame(maxWidth: .infinity, alignment: .center)
                 }
             }
             .padding(20)
             
             // Expandable device details section
-            if showDeviceDetails {
-                deviceDetailsExpandedView
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .top).combined(with: .opacity),
-                        removal: .move(edge: .top).combined(with: .opacity)
-                    ))
-            }
+            deviceDetailsExpandedView
+                .frame(height: showDeviceDetails ? nil : 0, alignment: .top)
+                .clipped()
         }
         .background(
             RoundedRectangle(cornerRadius: 16)
