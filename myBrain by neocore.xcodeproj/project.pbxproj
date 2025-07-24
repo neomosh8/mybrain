@@ -38,7 +38,6 @@
 		74263C512DDADAE800953598 /* loadingAnimation.json in Resources */ = {isa = PBXBuildFile; fileRef = 74263C452DDADAE800953598 /* loadingAnimation.json */; };
 		74263C522DDADAE800953598 /* MainInterface.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 74263C472DDADAE800953598 /* MainInterface.storyboard */; };
 		74263C532DDADAE800953598 /* myAnimation.gif in Resources */ = {isa = PBXBuildFile; fileRef = 74263C482DDADAE800953598 /* myAnimation.gif */; };
-		74263C7C2DDAF4AA00953598 /* BluetoothModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C7B2DDAF4A700953598 /* BluetoothModels.swift */; };
 		74263C872DDAF63500953598 /* AnimatedLineChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C862DDAF63500953598 /* AnimatedLineChartView.swift */; };
 		74263C892DDAF66400953598 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C882DDAF66200953598 /* Constants.swift */; };
 		74263C8F2DDAF6F700953598 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 74263C8E2DDAF6F400953598 /* Localizable.strings */; };
@@ -57,6 +56,7 @@
 		747A2D9B2E2BCD2F00CE9B80 /* FeedbackServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747A2D9A2E2BCD2C00CE9B80 /* FeedbackServiceProtocol.swift */; };
 		747A2D9D2E2BCD3400CE9B80 /* FeedbackService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747A2D9C2E2BCD3100CE9B80 /* FeedbackService.swift */; };
 		747A54B32DFDC0B400BD9541 /* ThoughtCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747A54B22DFDC0A900BD9541 /* ThoughtCard.swift */; };
+		747E83BF2E31E3AF00F28F50 /* Mockery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747E83BE2E31E3AA00F28F50 /* Mockery.swift */; };
 		7489330C2E2389BE007A5340 /* ReadingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7489330B2E2389BB007A5340 /* ReadingViewModel.swift */; };
 		748C65842E27684800C912FB /* ActionButtons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748C65832E27684700C912FB /* ActionButtons.swift */; };
 		748C65882E27A80D00C912FB /* FloatingFocusChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748C65872E27A80900C912FB /* FloatingFocusChart.swift */; };
@@ -151,7 +151,6 @@
 		74263C4A2DDADAE800953598 /* ShareExtensionProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareExtensionProgressView.swift; sourceTree = "<group>"; };
 		74263C4B2DDADAE800953598 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
 		74263C4C2DDADAE800953598 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/MainInterface.storyboard; sourceTree = "<group>"; };
-		74263C7B2DDAF4A700953598 /* BluetoothModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothModels.swift; sourceTree = "<group>"; };
 		74263C862DDAF63500953598 /* AnimatedLineChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedLineChartView.swift; sourceTree = "<group>"; };
 		74263C882DDAF66200953598 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		74263C8E2DDAF6F400953598 /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = Localizable.strings; sourceTree = "<group>"; };
@@ -171,6 +170,7 @@
 		747A2D9A2E2BCD2C00CE9B80 /* FeedbackServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackServiceProtocol.swift; sourceTree = "<group>"; };
 		747A2D9C2E2BCD3100CE9B80 /* FeedbackService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackService.swift; sourceTree = "<group>"; };
 		747A54B22DFDC0A900BD9541 /* ThoughtCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtCard.swift; sourceTree = "<group>"; };
+		747E83BE2E31E3AA00F28F50 /* Mockery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mockery.swift; sourceTree = "<group>"; };
 		7489330B2E2389BB007A5340 /* ReadingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingViewModel.swift; sourceTree = "<group>"; };
 		748C65832E27684700C912FB /* ActionButtons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionButtons.swift; sourceTree = "<group>"; };
 		748C65872E27A80900C912FB /* FloatingFocusChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingFocusChart.swift; sourceTree = "<group>"; };
@@ -349,7 +349,6 @@
 			children = (
 				74263C692DDADEA800953598 /* Views */,
 				74263C682DDADEA200953598 /* ViewModels */,
-				74263C662DDADE4400953598 /* Models */,
 			);
 			path = Bluetooth;
 			sourceTree = "<group>";
@@ -368,6 +367,7 @@
 		74263C602DDADDEA00953598 /* Bluetooth */ = {
 			isa = PBXGroup;
 			children = (
+				747E83BE2E31E3AA00F28F50 /* Mockery.swift */,
 				74263C0B2DDADAE800953598 /* BluetoothService.swift */,
 				74263C1A2DDADAE800953598 /* SignalProcessing.swift */,
 			);
@@ -417,14 +417,6 @@
 				74263C0A2DDADAE800953598 /* AnimatedParagraphView.swift */,
 			);
 			path = Misc;
-			sourceTree = "<group>";
-		};
-		74263C662DDADE4400953598 /* Models */ = {
-			isa = PBXGroup;
-			children = (
-				74263C7B2DDAF4A700953598 /* BluetoothModels.swift */,
-			);
-			path = Models;
 			sourceTree = "<group>";
 		};
 		74263C682DDADEA200953598 /* ViewModels */ = {
@@ -861,6 +853,7 @@
 				74263C3B2DDADAE800953598 /* InsightCard.swift in Sources */,
 				74263C3C2DDADAE800953598 /* LoginScreen.swift in Sources */,
 				745BE7A82E23D03F00FA1CC1 /* AudioSessionManager.swift in Sources */,
+				747E83BF2E31E3AF00F28F50 /* Mockery.swift in Sources */,
 				74263C892DDAF66400953598 /* Constants.swift in Sources */,
 				74263C3E2DDADAE800953598 /* TestSignalViewModel.swift in Sources */,
 				74BC7E722E0010D200A9C2F4 /* ProfileAPI+Implementation.swift in Sources */,
@@ -877,7 +870,6 @@
 				74BC7E662E000E0000A9C2F4 /* RequestModels.swift in Sources */,
 				6844270E2D13D862002E9BC6 /* AuthViewModel.swift in Sources */,
 				684427032D13D580002E9BC6 /* myBrainApp.swift in Sources */,
-				74263C7C2DDAF4AA00953598 /* BluetoothModels.swift in Sources */,
 				684427382D13F22E002E9BC6 /* SharedDataManager.swift in Sources */,
 				74929B2D2E0BD17F008DA6A6 /* ProfileManager.swift in Sources */,
 				74BC7E6C2E000E1B00A9C2F4 /* KeychainHelper.swift in Sources */,
