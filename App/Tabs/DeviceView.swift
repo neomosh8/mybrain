@@ -14,6 +14,17 @@ struct DeviceView: View {
     @State private var showDeviceScanner = false
     @State private var showDeviceDetails = false
     
+    // Test Signal states (moved from TestSignalView)
+    @State private var isRecording = false
+    @State private var showDebugInfo = false
+    @State private var startTime: Date?
+    @State private var recordingDuration: TimeInterval = 0
+    @State private var timer: Timer?
+    @State private var normalized = true
+    @State private var selectedChannel = 0 // 0 = both, 1 = channel1, 2 = channel2
+    @State private var useTestSignal = true // Toggle between test signal and normal mode
+    @State private var enableLeadOffDetection = false // Toggle for lead-off detection
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
@@ -36,6 +47,10 @@ struct DeviceView: View {
                     troubleshootingView
                     
                     availableDevicesView
+                    
+                    // Test Signal Section (moved from TestSignalView)
+                    testSignalSection
+                    
                 } else {
                     // No Device Connected
                     noDeviceConnectedView
@@ -60,10 +75,13 @@ struct DeviceView: View {
             .foregroundColor(.blue)
         }
         .sheet(isPresented: $showTestSignalView) {
-            TestSignalView(bluetoothService: bluetoothService)
+//            TestSignalView(bluetoothService: bluetoothService)
         }
         .sheet(isPresented: $showDeviceScanner) {
-            DeviceDetailsView(bluetoothService: bluetoothService)
+//            DeviceDetailsView(bluetoothService: bluetoothService)
+        }
+        .onDisappear {
+            stopRecordingIfNeeded()
         }
     }
 }
@@ -835,6 +853,362 @@ extension DeviceView {
     }
 }
 
+// MARK: - Test Signal Section (Moved from TestSignalView)
+extension DeviceView {
+    private var testSignalSection: some View {
+        VStack(spacing: 20) {
+            // Header
+            HStack {
+                Text(useTestSignal ? "Test Signal" : "EEG Recording")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+                Spacer()
+            }
+            
+            // Mode toggles
+            VStack(alignment: .leading, spacing: 12) {
+                Toggle("Use Test Signal", isOn: $useTestSignal)
+                    .disabled(isRecording)
+                
+                Toggle("Enable Lead-Off Detection", isOn: $enableLeadOffDetection)
+                    .disabled(isRecording)
+            }
+            
+            // Channel selection
+            Picker("Channel", selection: $selectedChannel) {
+                Text("Both Channels").tag(0)
+                Text("Channel 1").tag(1)
+                Text("Channel 2").tag(2)
+            }
+            .pickerStyle(SegmentedPickerStyle())
+            
+            // Signal plot
+            signalPlotView
+            
+            // Recording duration
+            Text(String(format: "Recording: %.1f seconds", recordingDuration))
+                .font(.headline)
+                .foregroundColor(isRecording ? .green : .secondary)
+            
+            // Recording controls
+            recordingControlsView
+            
+            // Connection quality indicators
+            connectionQualityView
+            
+            // Normalization toggle
+            Toggle("Normalize Signal", isOn: $normalized)
+            
+            // Signal statistics
+            signalStatisticsView
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(.systemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color(.systemGray5), lineWidth: 1)
+                )
+        )
+    }
+    
+    private var signalPlotView: some View {
+        ZStack {
+            Rectangle()
+                .fill(Color.black.opacity(0.05))
+                .cornerRadius(8)
+            
+            if bluetoothService.eegChannel1.isEmpty && bluetoothService.eegChannel2.isEmpty {
+                if isRecording {
+                    ProgressView("Waiting for data...")
+                } else {
+                    Text("No signal data - Press Start Recording")
+                        .foregroundColor(.gray)
+                }
+            } else {
+                VStack {
+                    if selectedChannel == 0 {
+                        // Both channels
+                        WaveformView(
+                            dataPoints: bluetoothService.eegChannel1,
+                            normalized: normalized,
+                            color: .blue
+                        )
+                        
+                        WaveformView(
+                            dataPoints: bluetoothService.eegChannel2,
+                            normalized: normalized,
+                            color: .green
+                        )
+                    } else if selectedChannel == 1 {
+                        // Only Channel 1
+                        WaveformView(
+                            dataPoints: bluetoothService.eegChannel1,
+                            normalized: normalized,
+                            color: .blue
+                        )
+                    } else {
+                        // Only Channel 2
+                        WaveformView(
+                            dataPoints: bluetoothService.eegChannel2,
+                            normalized: normalized,
+                            color: .green
+                        )
+                    }
+                }
+                .padding(8)
+            }
+        }
+        .frame(height: 260)
+    }
+    
+    private var recordingControlsView: some View {
+        HStack(spacing: 30) {
+            Button(action: toggleRecording) {
+                HStack {
+                    Image(systemName: isRecording ? "stop.fill" : "play.fill")
+                    Text(isRecording ? "Stop Recording" : "Start Recording")
+                }
+                .font(.headline)
+                .foregroundColor(.white)
+                .padding()
+                .frame(minWidth: 200)
+                .background(isRecording ? Color.red : Color.green)
+                .cornerRadius(10)
+            }
+        }
+    }
+    
+    private var connectionQualityView: some View {
+        VStack(spacing: 8) {
+            if bluetoothService.isLeadOffDetectionEnabled {
+                Text("Connection Quality")
+                    .font(.headline)
+                    .padding(.top, 4)
+                
+                // Channel 1 quality
+                HStack {
+                    Text("Channel 1:")
+                        .foregroundColor(.blue)
+                        .font(.subheadline)
+                        .frame(width: 80, alignment: .leading)
+                    
+                    connectionQualityBar(
+                        quality: bluetoothService.ch1ConnectionStatus.quality,
+                        isConnected: bluetoothService.ch1ConnectionStatus.connected
+                    )
+                    
+                    let qualityText = getQualityText(
+                        quality: bluetoothService.ch1ConnectionStatus.quality,
+                        isConnected: bluetoothService.ch1ConnectionStatus.connected
+                    )
+                    
+                    Text(qualityText)
+                        .font(.caption)
+                        .foregroundColor(getQualityColor(
+                            quality: bluetoothService.ch1ConnectionStatus.quality,
+                            isConnected: bluetoothService.ch1ConnectionStatus.connected
+                        ))
+                        .frame(width: 80, alignment: .leading)
+                }
+                
+                // Channel 2 quality
+                HStack {
+                    Text("Channel 2:")
+                        .foregroundColor(.green)
+                        .font(.subheadline)
+                        .frame(width: 80, alignment: .leading)
+                    
+                    connectionQualityBar(
+                        quality: bluetoothService.ch2ConnectionStatus.quality,
+                        isConnected: bluetoothService.ch2ConnectionStatus.connected
+                    )
+                    
+                    let qualityText = getQualityText(
+                        quality: bluetoothService.ch2ConnectionStatus.quality,
+                        isConnected: bluetoothService.ch2ConnectionStatus.connected
+                    )
+                    
+                    Text(qualityText)
+                        .font(.caption)
+                        .foregroundColor(getQualityColor(
+                            quality: bluetoothService.ch2ConnectionStatus.quality,
+                            isConnected: bluetoothService.ch2ConnectionStatus.connected
+                        ))
+                        .frame(width: 80, alignment: .leading)
+                }
+            }
+            
+            // Debug info section
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Device Status:")
+                    .font(.subheadline)
+                    .bold()
+                
+                Text("Test Signal: \(bluetoothService.isTestSignalEnabled ? "Yes" : "No")")
+                Text("Lead-Off Active: \(bluetoothService.isLeadOffDetectionEnabled ? "Yes" : "No")")
+                Text("Streaming Enabled: \(bluetoothService.isStreamingEnabled ? "Yes" : "No")")
+                Text("Receiving Data: \(bluetoothService.isReceivingTestData ? "Yes" : "No")")
+                
+                if let device = bluetoothService.connectedDevice {
+                    Text("Device: \(device.name)")
+                }
+            }
+            .font(.caption)
+            .foregroundColor(.secondary)
+        }
+        .padding()
+        .background(Color.gray.opacity(0.1))
+        .cornerRadius(10)
+    }
+    
+    private var signalStatisticsView: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if !bluetoothService.eegChannel1.isEmpty || !bluetoothService.eegChannel2.isEmpty {
+                Text("Signal Statistics:")
+                    .font(.headline)
+                
+                // Channel 1 stats
+                if !bluetoothService.eegChannel1.isEmpty {
+                    HStack {
+                        Text("CH1:")
+                            .foregroundColor(.blue)
+                            .bold()
+                        Text("Samples: \(bluetoothService.eegChannel1.count)")
+                        Spacer()
+                        Text("Min: \(bluetoothService.eegChannel1.min() ?? 0)")
+                        Spacer()
+                        Text("Max: \(bluetoothService.eegChannel1.max() ?? 0)")
+                    }
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                }
+                
+                // Channel 2 stats
+                if !bluetoothService.eegChannel2.isEmpty {
+                    HStack {
+                        Text("CH2:")
+                            .foregroundColor(.green)
+                            .bold()
+                        Text("Samples: \(bluetoothService.eegChannel2.count)")
+                        Spacer()
+                        Text("Min: \(bluetoothService.eegChannel2.min() ?? 0)")
+                        Spacer()
+                        Text("Max: \(bluetoothService.eegChannel2.max() ?? 0)")
+                    }
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                }
+            }
+        }
+        .padding()
+        .background(Color.gray.opacity(0.1))
+        .cornerRadius(10)
+    }
+    
+    // MARK: - Connection Quality Helper Views
+    
+    private func connectionQualityBar(quality: Double, isConnected: Bool) -> some View {
+        HStack(spacing: 2) {
+            ForEach(0..<5, id: \.self) { index in
+                Rectangle()
+                    .fill(getBarColor(index: index, quality: quality, isConnected: isConnected))
+                    .frame(width: 15, height: 8)
+                    .cornerRadius(1)
+            }
+        }
+    }
+    
+    private func getBarColor(index: Int, quality: Double, isConnected: Bool) -> Color {
+        if !isConnected {
+            return .gray
+        }
+        
+        let threshold = Double(index + 1) * 0.2 // 0.2, 0.4, 0.6, 0.8, 1.0
+        return quality >= threshold ? .green : .gray.opacity(0.3)
+    }
+    
+    private func getQualityText(quality: Double, isConnected: Bool) -> String {
+        if !isConnected {
+            return "Disconnected"
+        }
+        
+        let percentage = Int(quality * 100)
+        if percentage >= 80 {
+            return "Excellent (\(percentage)%)"
+        } else if percentage >= 60 {
+            return "Good (\(percentage)%)"
+        } else if percentage >= 40 {
+            return "Fair (\(percentage)%)"
+        } else if percentage >= 20 {
+            return "Poor (\(percentage)%)"
+        } else {
+            return "Very Poor (\(percentage)%)"
+        }
+    }
+    
+    private func getQualityColor(quality: Double, isConnected: Bool) -> Color {
+        if !isConnected {
+            return .gray
+        }
+        
+        let percentage = quality * 100
+        if percentage >= 60 {
+            return .green
+        } else if percentage >= 40 {
+            return .yellow
+        } else if percentage >= 20 {
+            return .orange
+        } else {
+            return .red
+        }
+    }
+    
+    // MARK: - Recording Control Methods
+    
+    private func toggleRecording() {
+        if isRecording {
+            stopRecording()
+        } else {
+            startRecording()
+        }
+    }
+    
+    private func startRecording() {
+        isRecording = true
+        startTime = Date()
+        
+        // Start the timer
+        timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+            guard let startTime = startTime else { return }
+            recordingDuration = Date().timeIntervalSince(startTime)
+        }
+        
+        // Start recording with current mode settings
+        bluetoothService.startRecording(
+            useTestSignal: useTestSignal,
+            enableLeadOff: enableLeadOffDetection
+        )
+    }
+    
+    private func stopRecording() {
+        isRecording = false
+        timer?.invalidate()
+        timer = nil
+        
+        // Stop recording
+        bluetoothService.stopRecording()
+    }
+    
+    private func stopRecordingIfNeeded() {
+        if isRecording {
+            stopRecording()
+        }
+    }
+}
+
 // MARK: - No Device Connected
 extension DeviceView {
     private var noDeviceConnectedView: some View {
@@ -869,6 +1243,8 @@ extension DeviceView {
                 }
             }
             
+            // here instead of this button, we should show the scan device part that already have.
+
             Button(action: {
                 showDeviceScanner = true
             }) {
@@ -888,6 +1264,67 @@ extension DeviceView {
             
             Spacer()
         }
+    }
+}
+
+// MARK: - Waveform View for Signal Display
+struct WaveformView: View {
+    let dataPoints: [Int32]
+    let normalized: Bool
+    let color: Color
+    
+    var body: some View {
+        GeometryReader { geo in
+            Canvas { context, size in
+                guard !dataPoints.isEmpty else { return }
+                
+                let width = size.width
+                let height = size.height
+                
+                var path = Path()
+                
+                if normalized {
+                    // Find min and max for normalization
+                    let minValue = CGFloat(dataPoints.min() ?? 0)
+                    let maxValue = CGFloat(dataPoints.max() ?? 1)
+                    let range = maxValue - minValue
+                    
+                    // Avoid division by zero
+                    let scaleFactor = range != 0 ? height / range : 1.0
+                    
+                    for (index, value) in dataPoints.enumerated() {
+                        let x = CGFloat(index) / CGFloat(dataPoints.count - 1) * width
+                        let normalizedValue = (CGFloat(value) - minValue) * scaleFactor
+                        let y = height - normalizedValue
+                        
+                        if index == 0 {
+                            path.move(to: CGPoint(x: x, y: y))
+                        } else {
+                            path.addLine(to: CGPoint(x: x, y: y))
+                        }
+                    }
+                } else {
+                    // Use raw values
+                    let maxDisplayValue: CGFloat = 32768 // Typical 16-bit signed range
+                    let midPoint = height / 2
+                    
+                    for (index, value) in dataPoints.enumerated() {
+                        let x = CGFloat(index) / CGFloat(dataPoints.count - 1) * width
+                        let scaledValue = CGFloat(value) / maxDisplayValue * (height / 2)
+                        let y = midPoint - scaledValue
+                        
+                        if index == 0 {
+                            path.move(to: CGPoint(x: x, y: y))
+                        } else {
+                            path.addLine(to: CGPoint(x: x, y: y))
+                        }
+                    }
+                }
+                
+                context.stroke(path, with: .color(color), lineWidth: 1.5)
+            }
+        }
+        .frame(height: 100)
     }
 }
 
