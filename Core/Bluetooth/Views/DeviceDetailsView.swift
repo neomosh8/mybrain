@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct DeviceDetailsView: View {
-    @ObservedObject var bluetoothService: BluetoothService
+    @ObservedObject var bluetoothService: MockBluetoothService
     @Environment(\.presentationMode) var presentationMode
     @Environment(\.colorScheme) var colorScheme
     

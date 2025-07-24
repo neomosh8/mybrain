@@ -8,11 +8,11 @@ class OnboardingViewModel: ObservableObject {
     @Published var isReconnecting = false
     
     // MARK: - Private Properties
-    private var bluetoothService: BluetoothService
+    private var bluetoothService: MockBluetoothService
     private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Initialization
-    init(bluetoothService: BluetoothService) {
+    init(bluetoothService: MockBluetoothService) {
         self.bluetoothService = bluetoothService
         
         // Monitor connection status

@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct TestSignalView: View {
-    @ObservedObject var bluetoothService: BluetoothService
+    @ObservedObject var bluetoothService: MockBluetoothService
     @Environment(\.presentationMode) var presentationMode
     
     @State private var isRecording = false

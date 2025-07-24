@@ -14,7 +14,7 @@ class FocusChartViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     init() {
-        BluetoothService.shared.feedbackPublisher
+        MockBluetoothService.shared.feedbackPublisher
             .receive(on: RunLoop.main)
             .throttle(for: .milliseconds(200), scheduler: RunLoop.main, latest: true)
             .sink { [weak self] raw in

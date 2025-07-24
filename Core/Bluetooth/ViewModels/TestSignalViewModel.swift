@@ -11,13 +11,13 @@ class TestSignalViewModel: ObservableObject {
     @Published var normalizedData = true
     
     // MARK: - Private Properties
-    private var bluetoothService: BluetoothService
+    private var bluetoothService: MockBluetoothService
     private var cancellables = Set<AnyCancellable>()
     private var startTime: Date?
     private var timer: Timer?
     
     // MARK: - Initialization
-    init(bluetoothService: BluetoothService) {
+    init(bluetoothService: MockBluetoothService) {
         self.bluetoothService = bluetoothService
         
         // Subscribe to test signal data updates
