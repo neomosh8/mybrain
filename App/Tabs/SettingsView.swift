@@ -9,16 +9,11 @@ struct SettingsView: View {
     init(onNavigateToHome: (() -> Void)? = nil) {
         self.onNavigateToHome = onNavigateToHome
     }
+    
     @State private var signalQualityThreshold: Double = 75
     @State private var leadOffDetection = true
     @State private var autoReconnection = true
     @State private var defaultMode: ContentMode = .reading
-    @State private var showSubtitles = true
-    @State private var audioQuality: AudioQuality = .high
-    @State private var autoPlayNextChapter = false
-    @State private var storeBiometricData = true
-    @State private var shareAnalyticsData = true
-    @State private var dataRetentionPeriod: DataRetention = .oneYear
     @State private var pushNotifications = true
     @State private var backgroundAudio = true
     @State private var appearance: AppearanceMode = .light
@@ -28,20 +23,7 @@ struct SettingsView: View {
         case reading = "Reading"
         case listening = "Listening"
     }
-    
-    enum AudioQuality: String, CaseIterable {
-        case high = "High (320kbps)"
-        case standard = "Standard (192kbps)"
-        case low = "Low (128kbps)"
-    }
-    
-    enum DataRetention: String, CaseIterable {
-        case thirtyDays = "30 days"
-        case ninetyDays = "90 days"
-        case oneYear = "1 year"
-        case forever = "Forever"
-    }
-    
+        
     enum AppearanceMode: String, CaseIterable {
         case light = "Light"
         case dark = "Dark"
@@ -52,7 +34,6 @@ struct SettingsView: View {
         ScrollView {
             VStack(spacing: 20) {
                 contentPreferencesSection
-                privacyDataSection
                 appBehaviorSection
                 supportInformationSection
                 appVersionSection
@@ -116,91 +97,6 @@ extension SettingsView {
                         }
                     }
                     Spacer()
-                }
-            }
-            
-            // Show Subtitles Toggle
-            SettingsToggleRow(
-                title: "Show Subtitles",
-                subtitle: "Display text during audio playback",
-                isOn: $showSubtitles
-            )
-            
-            // Audio Quality
-            SettingsPickerRow(
-                title: "Audio Quality",
-                selection: audioQuality.rawValue
-            ) {
-                // Audio quality picker action
-            }
-            
-            // Auto-play Next Chapter Toggle
-            SettingsToggleRow(
-                title: "Auto-play Next Chapter",
-                subtitle: "Continue to next chapter automatically",
-                isOn: $autoPlayNextChapter
-            )
-        }
-    }
-}
-
-// MARK: - Privacy & Data Section
-extension SettingsView {
-    private var privacyDataSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            SectionHeader(
-                icon: "hand.raised.fill",
-                title: "Privacy & Data",
-                iconColor: .purple
-            )
-            
-            // Store Biometric Data Toggle
-            SettingsToggleRow(
-                title: "Store Biometric Data",
-                subtitle: "Save EEG data for analysis",
-                isOn: $storeBiometricData
-            )
-            
-            // Share Analytics Data Toggle
-            SettingsToggleRow(
-                title: "Share Analytics Data",
-                subtitle: "Help improve the app experience",
-                isOn: $shareAnalyticsData
-            )
-            
-            // Export Performance Data
-            ActionRow(
-                icon: "square.and.arrow.down",
-                title: "Export Performance Data",
-                subtitle: "Download your data as CSV",
-                iconColor: .blue
-            ) {
-                exportPerformanceData()
-            }
-            
-            // Data Retention Period
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Data Retention Period")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.primary)
-                
-                VStack(spacing: 8) {
-                    ForEach(DataRetention.allCases, id: \.self) { period in
-                        HStack {
-                            Button(action: {
-                                dataRetentionPeriod = period
-                            }) {
-                                HStack {
-                                    Image(systemName: dataRetentionPeriod == period ? "largecircle.fill.circle" : "circle")
-                                        .foregroundColor(.blue)
-                                    Text(period.rawValue)
-                                        .font(.system(size: 15))
-                                        .foregroundColor(.primary)
-                                    Spacer()
-                                }
-                            }
-                        }
-                    }
                 }
             }
         }
@@ -273,7 +169,7 @@ extension SettingsView {
 // MARK: - Support & Information Section
 extension SettingsView {
     private var supportInformationSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 12) {
             SectionHeader(
                 icon: "info.circle.fill",
                 title: "Support & Information",
@@ -281,28 +177,32 @@ extension SettingsView {
             )
             
             ActionRow(
-                icon: "questionmark.circle",
-                title: "Help & Documentation",
+                icon: "doc.text",
+                title: "Terms of Service",
+                subtitle: "Read our terms and conditions",
                 iconColor: .blue
             ) {
-                openURL("https://neocore.com/help")
+                openURL("https://neocore.com/terms")
+            }
+
+            ActionRow(
+                icon: "shield",
+                title: "Privacy Policy",
+                subtitle: "How we protect your data",
+                iconColor: .green
+            ) {
+                openURL("https://neocore.com/privacy")
             }
             
             ActionRow(
-                icon: "message.circle",
+                icon: "message",
                 title: "Contact Support",
-                iconColor: .green
+                subtitle: "Contant us via email",
+                iconColor: .purple
             ) {
                 openURL("mailto:support@neocore.com")
             }
             
-            ActionRow(
-                icon: "doc.text",
-                title: "Terms & Privacy",
-                iconColor: .purple
-            ) {
-                openURL("https://neocore.com/terms")
-            }
         }
     }
 }
@@ -377,43 +277,11 @@ struct SettingsToggleRow: View {
     }
 }
 
-struct SettingsPickerRow: View {
-    let title: String
-    let selection: String
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            HStack {
-                Text(title)
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.primary)
-                
-                Spacer()
-                
-                Text(selection)
-                    .font(.system(size: 15))
-                    .foregroundColor(.secondary)
-                
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.secondary)
-            }
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-}
-
 // MARK: - Helper Functions
 extension SettingsView {
     private func openURL(_ urlString: String) {
         guard let url = URL(string: urlString) else { return }
         UIApplication.shared.open(url)
-    }
-    
-    private func exportPerformanceData() {
-        // Implement CSV export functionality
-        print("Exporting performance data...")
     }
 }
 

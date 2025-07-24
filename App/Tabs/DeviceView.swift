@@ -2,6 +2,13 @@ import SwiftUI
 
 struct DeviceView: View {
     @Environment(\.dismiss) private var dismiss
+    
+    let onNavigateToHome: (() -> Void)?
+    
+    init(onNavigateToHome: (() -> Void)? = nil) {
+        self.onNavigateToHome = onNavigateToHome
+    }
+    
     @EnvironmentObject var bluetoothService: MockBluetoothService
     @State private var showTestSignalView = false
     @State private var showDeviceScanner = false
@@ -42,7 +49,7 @@ struct DeviceView: View {
             title: "Device Setup",
             subtitle: "Connect your headset",
             onBackTap: {
-                dismiss()
+                onNavigateToHome?() ?? dismiss()
             }
         ) {
             // Skip button in navigation

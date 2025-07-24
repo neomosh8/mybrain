@@ -65,7 +65,12 @@ struct MainTabView: View {
             }
         case 2:
             NavigationStack {
-                DeviceView()
+                DeviceView(
+                    onNavigateToHome: {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            selectedTab = 0
+                        }
+                    })
                     .transition(.asymmetric(
                         insertion: .move(edge: .leading).combined(with: .opacity),
                         removal: .move(edge: .trailing).combined(with: .opacity)
@@ -73,7 +78,12 @@ struct MainTabView: View {
             }
         case 3:
             NavigationStack {
-                SettingsView()
+                SettingsView(
+                    onNavigateToHome: {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            selectedTab = 0
+                        }
+                    })
                     .transition(.asymmetric(
                         insertion: .move(edge: .leading).combined(with: .opacity),
                         removal: .move(edge: .trailing).combined(with: .opacity)
