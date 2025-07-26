@@ -77,13 +77,15 @@ struct ChapterInfo {
     let duration: TimeInterval?
     let startTime: TimeInterval
     let isComplete: Bool
+    let generationTime: Double?
     
-    init(number: Int, title: String? = nil, duration: TimeInterval? = nil, startTime: TimeInterval = 0, isComplete: Bool = false) {
+    init(number: Int, title: String? = nil, duration: TimeInterval? = nil, startTime: TimeInterval = 0, isComplete: Bool = false, generationTime: Double? = nil) {
         self.number = number
         self.title = title
         self.duration = duration
         self.startTime = startTime
         self.isComplete = isComplete
+        self.generationTime = generationTime
     }
 }
 
