@@ -6,31 +6,59 @@ import Combine
 /// and logic to highlight the current word based on playback time.
 class SubtitleViewModel: ObservableObject {
     @Published var segments: [SubtitleSegmentLink] = []
+    @Published var loadedSegmentData: [SubtitleSegmentData] = []
     @Published var currentSegment: SubtitleSegmentData?
     @Published var currentSegmentIndex: Int = 0
     
     /// We'll track the global player time directly.
     @Published var currentGlobalTime: Double = 0
     
-    // load the .vtt file at a given index, parse it, and set `currentSegment`.
-    func loadSegment(at index: Int) {
-        guard index >= 0, index < segments.count else {
-            print("🎵 loadSegment => index \(index) out of range (total: \(segments.count))")
-            return
-        }
-        currentSegmentIndex = index
+    func preloadNextSegmentIfNeeded(currentTime: Double) {
+        guard !segments.isEmpty else { return }
         
-        let link = segments[index]
-        print("🎵 Loading segment \(index): \(link.urlString)")
-        fetchAndParseVTT(from: link.urlString) { [weak self] segmentData in
-            DispatchQueue.main.async {
-                print("🎵 Loaded segment with \(segmentData.words.count) words")
-                if segmentData.words.count > 0 {
-                    print("🎵 First few words: \(Array(segmentData.words.prefix(5)).map { $0.text })")
-                }
-                self?.currentSegment = segmentData
+        let bufferTime: Double = 5.0 // Start loading 5 seconds before segment ends
+        
+        for (index, segment) in segments.enumerated() {
+            // If we're within buffer time of segment end and next segment isn't loaded
+            if currentTime >= (segment.maxEnd - bufferTime) &&
+               index + 1 < segments.count &&
+               !isSegmentLoaded(at: index + 1) {
+                loadSegment(at: index + 1, preload: true)
             }
         }
+    }
+    
+    // load the .vtt file at a given index, parse it, and set `currentSegment`.
+    func loadSegment(at index: Int, preload: Bool = false) {
+        guard index >= 0, index < segments.count else { return }
+        
+        // Don't reload if already loaded
+        if isSegmentLoaded(at: index) { return }
+        
+        if !preload {
+            currentSegmentIndex = index
+        }
+        
+        let link = segments[index]
+        fetchAndParseVTT(from: link.urlString) { [weak self] segmentData in
+            DispatchQueue.main.async {
+                self?.addLoadedSegment(segmentData, at: index)
+            }
+        }
+    }
+    
+    
+    private func addLoadedSegment(_ data: SubtitleSegmentData, at index: Int) {
+        // Insert in correct chronological order
+        if let insertIndex = loadedSegmentData.firstIndex(where: { $0.minStart > data.minStart }) {
+            loadedSegmentData.insert(data, at: insertIndex)
+        } else {
+            loadedSegmentData.append(data)
+        }
+    }
+    
+    private func isSegmentLoaded(at index: Int) -> Bool {
+        return loadedSegmentData.contains { $0.minStart == segments[index].minStart }
     }
     
     /// Directly store the player's global time.

@@ -211,10 +211,17 @@ struct SubtitleSegment {
     }
 }
 
-struct SubtitleSegmentLink {
+struct SubtitleSegmentLink: Equatable {
     let urlString: String
     let minStart: Double
     let maxEnd: Double
+    
+    
+    static func == (lhs: SubtitleSegmentLink, rhs: SubtitleSegmentLink) -> Bool {
+        return lhs.urlString == rhs.urlString &&
+        lhs.minStart == rhs.minStart &&
+        lhs.maxEnd == rhs.maxEnd
+    }
 }
 
 struct SubtitlePlaylist {

@@ -87,6 +87,7 @@
 		74D58B352E151AB7008B62DC /* AppStateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74D58B342E151AB3008B62DC /* AppStateManager.swift */; };
 		74D58B382E152780008B62DC /* AppNavigationBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74D58B372E152776008B62DC /* AppNavigationBar.swift */; };
 		74EC8AA52DCE6590008DE8A9 /* BackgroundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74EC8AA42DCE6588008DE8A9 /* BackgroundManager.swift */; };
+		74F16AE62E3537F6006B51F7 /* AnimatedSubtitleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74F16AE52E3537F5006B51F7 /* AnimatedSubtitleView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -196,6 +197,7 @@
 		74D58B342E151AB3008B62DC /* AppStateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStateManager.swift; sourceTree = "<group>"; };
 		74D58B372E152776008B62DC /* AppNavigationBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppNavigationBar.swift; sourceTree = "<group>"; };
 		74EC8AA42DCE6588008DE8A9 /* BackgroundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundManager.swift; sourceTree = "<group>"; };
+		74F16AE52E3537F5006B51F7 /* AnimatedSubtitleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedSubtitleView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -406,6 +408,7 @@
 		74263C652DDADE2300953598 /* Misc */ = {
 			isa = PBXGroup;
 			children = (
+				74F16AE52E3537F5006B51F7 /* AnimatedSubtitleView.swift */,
 				74263C0A2DDADAE800953598 /* AnimatedParagraphView.swift */,
 			);
 			path = Misc;
@@ -826,6 +829,7 @@
 				7468256F2DDCE58B0089AE37 /* ImageLoader.swift in Sources */,
 				748DF72C2E1BA17600FD4080 /* CachedAvatarView.swift in Sources */,
 				74BC7E642E000DF900A9C2F4 /* NetworkModels.swift in Sources */,
+				74F16AE62E3537F6006B51F7 /* AnimatedSubtitleView.swift in Sources */,
 				7499D9082E02A652007E8C92 /* Thought+URLProcessing.swift in Sources */,
 				74263C382DDADAE800953598 /* OnboardingViewModel.swift in Sources */,
 				74263C3B2DDADAE800953598 /* InsightCard.swift in Sources */,

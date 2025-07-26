@@ -22,7 +22,6 @@ struct ListeningView: View {
     @State private var showFocusChart = true
     @State private var showDurationTimer = true
     @State private var showMenuPopup = false
-    @State private var currentWordIndex: Int = 0
     @State private var previousWordIndex: Int = -1
     
     private var canTogglePlayback: Bool {
@@ -185,8 +184,13 @@ struct ListeningView: View {
     
     private var listeningContent: some View {
         VStack(spacing: 20) {
-            if let currentSegment = subtitleViewModel.currentSegment, !currentSegment.words.isEmpty {
-                subtitleScrollContent(for: currentSegment.words)
+            if !subtitleViewModel.segments.isEmpty {
+                AnimatedSubtitleView(
+                    subtitleViewModel: subtitleViewModel,
+                    currentTime: audioViewModel.currentTime,
+                    thoughtId: thought.id,
+                    chapterNumber: audioViewModel.chapterManager.currentChapter?.number ?? 1
+                )
             } else {
                 emptySubtitleView
             }
@@ -200,51 +204,6 @@ struct ListeningView: View {
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("UpdateSubtitleTime"))) { notification in
             handleTimeUpdate(notification)
         }
-    }
-
-    private func subtitleScrollContent(for words: [WordTimestamp]) -> some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 12) {
-                    let wordGroups = words.createWordGroups(wordsPerGroup: 15)
-                    ForEach(wordGroups, id: \.id) { group in
-                        subtitleGroupView(group: group)
-                    }
-                }
-                .padding(.vertical, 12)
-            }
-            .frame(maxHeight: 200)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(.systemGray6))
-            )
-            .onChange(of: currentWordIndex) { _, newIndex in
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    proxy.scrollTo(newIndex, anchor: .center)
-                }
-            }
-        }
-    }
-
-    private func subtitleGroupView(group: WordGroup) -> some View {
-        HStack(alignment: .top, spacing: 0) {
-            ForEach(Array(group.words.enumerated()), id: \.offset) { wordIndex, word in
-                let globalIndex = group.startIndex + wordIndex
-                
-                Text(word.text + " ")
-                    .font(.body)
-                    .foregroundColor(globalIndex == currentWordIndex ? .blue : .primary)
-                    .fontWeight(globalIndex == currentWordIndex ? .semibold : .regular)
-                    .background(
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(globalIndex == currentWordIndex ? Color.blue.opacity(0.2) : Color.clear)
-                            .padding(.horizontal, -2)
-                    )
-                    .id(globalIndex)
-            }
-            Spacer()
-        }
-        .padding(.horizontal, 16)
     }
 
     private var emptySubtitleView: some View {
@@ -695,6 +654,8 @@ struct ListeningView: View {
     
     private func handleTimeUpdate(_ notification: Notification) {
         if let globalTime = notification.object as? Double {
+            subtitleViewModel.preloadNextSegmentIfNeeded(currentTime: globalTime)
+
             // Find correct segment for this time
             if let correctSegmentIndex = subtitleViewModel.segments.firstIndex(where: {
                 globalTime >= $0.minStart && globalTime <= $0.maxEnd
@@ -702,45 +663,9 @@ struct ListeningView: View {
                 if correctSegmentIndex != subtitleViewModel.currentSegmentIndex {
                     subtitleViewModel.loadSegment(at: correctSegmentIndex)
                 }
-                
-                if let currentSegment = subtitleViewModel.currentSegment {
-                    updateCurrentWordIndex(for: globalTime, words: currentSegment.words)
-                }
             }
             
             subtitleViewModel.updateCurrentTime(globalTime)
-        }
-    }
-
-    private func updateCurrentWordIndex(for time: Double, words: [WordTimestamp]) {
-        guard !words.isEmpty else { return }
-        
-        let newIndex = words.lastIndex { $0.start <= time } ?? 0
-        
-        if newIndex != currentWordIndex {
-            currentWordIndex = newIndex
-            
-            // Send feedback when word changes
-            if newIndex < words.count {
-                let currentWord = words[newIndex]
-                Task {
-                    // Get chapter number from ChapterManager
-                    let chapterNumber = audioViewModel.chapterManager.currentChapter?.number ?? 1
-                    
-                    let result = await feedbackService.submitFeedback(
-                        thoughtId: thought.id,
-                        chapterNumber: chapterNumber,
-                        word: currentWord.text
-                    )
-                    
-                    switch result {
-                    case .success(_):
-                        print("Feedback sent: \(currentWord.text)")
-                    case .failure(let error):
-                        print("❌ Failed to send feedback: \(error)")
-                    }
-                }
-            }
         }
     }
 }
