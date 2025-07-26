@@ -107,10 +107,13 @@ class ChapterManager: ObservableObject {
     func updateCurrentChapter(for currentTime: TimeInterval) {
         let activeChapter = chapters.first { chapter in
             let endTime = chapter.startTime + (chapter.duration ?? 0)
-            return currentTime >= chapter.startTime && currentTime < endTime
+            let isInRange = currentTime >= chapter.startTime && currentTime < endTime
+            print("🎵 Checking chapter \(chapter.number): start=\(chapter.startTime), end=\(endTime), current=\(currentTime), inRange=\(isInRange)")
+            return isInRange
         }
         
         if currentChapter?.number != activeChapter?.number {
+            print("🎵 ChapterManager: Updating current chapter from \(currentChapter?.number ?? 0) to \(activeChapter?.number ?? 0)")
             currentChapter = activeChapter
         }
     }
