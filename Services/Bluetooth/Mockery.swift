@@ -350,6 +350,9 @@ class MockBluetoothService: NSObject, ObservableObject {
         dataGenerationTimer?.invalidate()
         dataGenerationTimer = nil
         
+        isTestSignalEnabled = false
+        isStreamingEnabled = false
+        
         enableDataStreaming(false)
         
         if isTestSignalEnabled {
@@ -555,18 +558,29 @@ class MockBluetoothService: NSObject, ObservableObject {
     // MARK: - Data Generation for Mock
     
     private func startDataGeneration(useTestSignal: Bool) {
-        dataGenerationTimer = Timer.scheduledTimer(withTimeInterval: 0.04, repeats: true) { [weak self] _ in
-            guard let self = self, self.isReceivingTestData else { return }
+        // Make sure we clean up any existing timer first
+        dataGenerationTimer?.invalidate()
+        dataGenerationTimer = nil
+        
+        // Use a longer interval to prevent UI freezing (reduced frequency)
+        dataGenerationTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            guard let self = self, self.isReceivingTestData else {
+                // Clean up timer if not receiving data
+                self?.dataGenerationTimer?.invalidate()
+                self?.dataGenerationTimer = nil
+                return
+            }
             
             let sampleCount = 10
             var ch1Samples: [Int32] = []
             var ch2Samples: [Int32] = []
             
-            for _ in 0..<sampleCount {
+            for i in 0..<sampleCount {
                 if useTestSignal {
-                    let time = Date().timeIntervalSince1970
-                    let ch1Value = Int32(sin(time * 2.0 * .pi * 10.0) * 1000 + 2000)
-                    let ch2Value = Int32(cos(time * 2.0 * .pi * 8.0) * 800 + 1800)
+                    // Use simulation phase instead of Date() for better performance
+                    let phaseOffset = Double(i) * 0.1
+                    let ch1Value = Int32(sin((self.simPhase + phaseOffset) * 2.0 * .pi) * 1000 + 2000)
+                    let ch2Value = Int32(cos((self.simPhase + phaseOffset) * 1.5 * .pi) * 800 + 1800)
                     ch1Samples.append(ch1Value)
                     ch2Samples.append(ch2Value)
                 } else {
@@ -574,10 +588,16 @@ class MockBluetoothService: NSObject, ObservableObject {
                     let ch2Value = Int32.random(in: -400...400) + Int32(cos(self.simPhase) * 150)
                     ch1Samples.append(ch1Value)
                     ch2Samples.append(ch2Value)
-                    self.simPhase += 0.1
                 }
             }
             
+            // Increment simulation phase after generating all samples
+            self.simPhase += self.simStep
+            if self.simPhase > 2.0 * .pi {
+                self.simPhase -= 2.0 * .pi
+            }
+            
+            // Update on main queue but don't block it
             DispatchQueue.main.async {
                 self.eegChannel1.append(contentsOf: ch1Samples)
                 self.eegChannel2.append(contentsOf: ch2Samples)
