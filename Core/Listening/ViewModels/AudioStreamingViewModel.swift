@@ -61,13 +61,11 @@ class AudioStreamingViewModel: ObservableObject {
     func pausePlayback() {
         player?.pause()
         isPlaying = false
-        updateNowPlayingInfo()
     }
     
     func resumePlayback() {
         player?.play()
         isPlaying = true
-        updateNowPlayingInfo()
     }
     
     func togglePlayback() {
@@ -232,7 +230,7 @@ class AudioStreamingViewModel: ObservableObject {
                 case .failed:
                     self?.playerError = player.currentItem?.error
                 case .readyToPlay:
-                    self?.updateNowPlayingInfo()
+                    break
                 default:
                     break
                 }
@@ -271,9 +269,6 @@ class AudioStreamingViewModel: ObservableObject {
             self.duration = totalDuration.isFinite ? totalDuration : 0.0
         }
         
-        // Update now playing info
-        updateNowPlayingInfo()
-        
         // Send CURRENT chapter time, not global time
         NotificationCenter.default.post(
             name: Notification.Name("UpdateSubtitleTime"),
@@ -308,7 +303,7 @@ class AudioStreamingViewModel: ObservableObject {
         let generationTime = data["generation_time"] as? Double ?? 0.0
         let isComplete = data["complete"] as? Bool ?? false
         
-//        currentChapterNumber = chapterNumber
+        currentChapterNumber = chapterNumber
                 
         let playableDuration = audioDuration - generationTime
         nextChapterTime = durationsSoFar + (playableDuration * (1 - chapterBuffer))
@@ -338,14 +333,6 @@ class AudioStreamingViewModel: ObservableObject {
                 self.isPlaying = false
             }
         }
-    }
-    
-    private func updateNowPlayingInfo() {
-        guard let player = player,
-              let currentItem = player.currentItem else { return }
-        
-        let currentTime = player.currentTime().seconds
-        let duration = currentItem.duration.seconds
     }
     
     private func setupRemoteControlHandlers() {
