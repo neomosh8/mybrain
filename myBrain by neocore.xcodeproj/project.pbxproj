@@ -28,7 +28,6 @@
 		74263C382DDADAE800953598 /* OnboardingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C162DDADAE800953598 /* OnboardingViewModel.swift */; };
 		74263C3B2DDADAE800953598 /* InsightCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C122DDADAE800953598 /* InsightCard.swift */; };
 		74263C3C2DDADAE800953598 /* LoginScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C132DDADAE800953598 /* LoginScreen.swift */; };
-		74263C3E2DDADAE800953598 /* TestSignalViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C1F2DDADAE800953598 /* TestSignalViewModel.swift */; };
 		74263C402DDADAE800953598 /* ChapterCompletionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C0D2DDADAE800953598 /* ChapterCompletionView.swift */; };
 		74263C4D2DDADAE800953598 /* LottieView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C462DDADAE800953598 /* LottieView.swift */; };
 		74263C4E2DDADAE800953598 /* ShareExtensionProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C4A2DDADAE800953598 /* ShareExtensionProgressView.swift */; };
@@ -138,7 +137,6 @@
 		74263C152DDADAE800953598 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		74263C162DDADAE800953598 /* OnboardingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingViewModel.swift; sourceTree = "<group>"; };
 		74263C1A2DDADAE800953598 /* SignalProcessing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalProcessing.swift; sourceTree = "<group>"; };
-		74263C1F2DDADAE800953598 /* TestSignalViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestSignalViewModel.swift; sourceTree = "<group>"; };
 		74263C442DDADAE800953598 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		74263C452DDADAE800953598 /* loadingAnimation.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = loadingAnimation.json; sourceTree = "<group>"; };
 		74263C462DDADAE800953598 /* LottieView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LottieView.swift; sourceTree = "<group>"; };
@@ -419,7 +417,6 @@
 			isa = PBXGroup;
 			children = (
 				74263C162DDADAE800953598 /* OnboardingViewModel.swift */,
-				74263C1F2DDADAE800953598 /* TestSignalViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -847,7 +844,6 @@
 				745BE7A82E23D03F00FA1CC1 /* AudioSessionManager.swift in Sources */,
 				747E83BF2E31E3AF00F28F50 /* Mockery.swift in Sources */,
 				74263C892DDAF66400953598 /* Constants.swift in Sources */,
-				74263C3E2DDADAE800953598 /* TestSignalViewModel.swift in Sources */,
 				74BC7E722E0010D200A9C2F4 /* ProfileAPI+Implementation.swift in Sources */,
 				745BE7AA2E23D05C00FA1CC1 /* AudioStreamingModels.swift in Sources */,
 				74263C402DDADAE800953598 /* ChapterCompletionView.swift in Sources */,
