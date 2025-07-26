@@ -5,7 +5,7 @@ import Combine
 struct HomeView: View {
     @EnvironmentObject var bluetoothService: MockBluetoothService
     @ObservedObject var thoughtsViewModel: ThoughtsViewModel
-
+    
     @State private var selectedMode: ContentMode = .reading
     @State private var showDeviceCard = true
     @State private var selectedThought: Thought?
@@ -24,7 +24,7 @@ struct HomeView: View {
     
     
     @State private var cancellables = Set<AnyCancellable>()
-        
+    
     // Timer for battery level
     private var batteryLevelTimer: Timer.TimerPublisher = Timer.publish(
         every: 300, // seconds
@@ -426,9 +426,11 @@ struct DeviceStatusCard: View {
                     BatteryIndicator(level: bluetoothService.batteryLevel ?? 0)
                 }
             }
-            .padding(20)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 16)
+            .padding(.top, 12)
             .background(
-                RoundedRectangle(cornerRadius: 16)
+                MessageBubble()
                     .fill(Color(.systemBackground))
                     .shadow(color: Color.black.opacity(0.15), radius: 12, x: 0, y: 4)
             )
@@ -484,6 +486,40 @@ struct BatteryIndicator: View {
         case 26...75: return .orange
         default: return .red
         }
+    }
+}
+
+// MARK: – MessageBubble Shape
+struct MessageBubble: Shape {
+    var cornerRadius: CGFloat = 16
+    var tailWidth: CGFloat = 18
+    var tailHeight: CGFloat = 12
+    var tailOffset: CGFloat = 30
+    
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        
+        let bubbleRect = CGRect(
+            x: rect.minX,
+            y: rect.minY + tailHeight,
+            width: rect.width,
+            height: rect.height - tailHeight
+        )
+        path.addRoundedRect(
+            in: bubbleRect,
+            cornerSize: CGSize(width: cornerRadius, height: cornerRadius)
+        )
+        
+        let tailStartX = rect.maxX - tailOffset - tailWidth
+        let tailEndX = rect.maxX - tailOffset
+        let tailMidX = rect.maxX - tailOffset - (tailWidth / 2)
+        
+        path.move(to: CGPoint(x: tailStartX, y: tailHeight))
+        path.addLine(to: CGPoint(x: tailMidX, y: 0))
+        path.addLine(to: CGPoint(x: tailEndX, y: tailHeight))
+        path.closeSubpath()
+        
+        return path
     }
 }
 
