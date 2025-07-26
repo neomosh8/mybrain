@@ -37,7 +37,6 @@ class AudioStreamingViewModel: ObservableObject {
     // MARK: - Dependencies
     private let networkService = NetworkServiceManager.shared
     private let backgroundManager = BackgroundManager.shared
-    private let audioSessionManager = AudioSessionManager.shared
     
     // MARK: - Private State
     private var cancellables = Set<AnyCancellable>()
@@ -209,8 +208,6 @@ class AudioStreamingViewModel: ObservableObject {
     }
     
     private func configurePlayerForBackground() {
-        audioSessionManager.activateAudioSession()
-        
         // Enable background playback
         do {
             try AVAudioSession.sharedInstance().setCategory(
@@ -311,8 +308,8 @@ class AudioStreamingViewModel: ObservableObject {
         let generationTime = data["generation_time"] as? Double ?? 0.0
         let isComplete = data["complete"] as? Bool ?? false
         
-        currentChapterNumber = chapterNumber
-        
+//        currentChapterNumber = chapterNumber
+                
         let playableDuration = audioDuration - generationTime
         nextChapterTime = durationsSoFar + (playableDuration * (1 - chapterBuffer))
         
@@ -339,7 +336,6 @@ class AudioStreamingViewModel: ObservableObject {
             if self.lastChapterComplete {
                 self.hasCompletedPlayback = true
                 self.isPlaying = false
-                self.audioSessionManager.deactivateAudioSession()
             }
         }
     }
@@ -350,14 +346,6 @@ class AudioStreamingViewModel: ObservableObject {
         
         let currentTime = player.currentTime().seconds
         let duration = currentItem.duration.seconds
-        
-        audioSessionManager.updateNowPlayingInfo(
-            title: currentThought?.name ?? "myBrain Audio",
-            artist: "myBrain",
-            duration: duration.isFinite ? duration : 0,
-            elapsedTime: currentTime.isFinite ? currentTime : 0,
-            playbackRate: isPlaying ? 1.0 : 0.0
-        )
     }
     
     private func setupRemoteControlHandlers() {

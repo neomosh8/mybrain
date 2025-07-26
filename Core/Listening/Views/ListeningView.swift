@@ -620,11 +620,6 @@ struct ListeningView: View {
         
         subtitleViewModel.segments.append(contentsOf: sortedNew)
         
-        print("🎵 Segment ranges:")
-        for (i, segment) in subtitleViewModel.segments.enumerated() {
-            print("🎵 Segment \(i): \(segment.minStart) - \(segment.maxEnd)")
-        }
-        
         if subtitleViewModel.currentSegment == nil, !subtitleViewModel.segments.isEmpty {
             subtitleViewModel.loadSegment(at: 0)
         }
