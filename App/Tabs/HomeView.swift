@@ -3,7 +3,7 @@ import SwiftData
 import Combine
 
 struct HomeView: View {
-    @EnvironmentObject var bluetoothService: MockBluetoothService
+    @EnvironmentObject var bluetoothService: BTService
     @ObservedObject var thoughtsViewModel: ThoughtsViewModel
     
     @State private var selectedMode: ContentMode = .reading
@@ -134,9 +134,8 @@ struct HomeView: View {
             }
         }
         .onAppear {
-            if bluetoothService.isConnected {
+            if bluetoothService.isConnected  && batteryCancellable == nil {
                 startBatteryLevelTimer()
-                fetchBatteryLevel()
                 
                 bluetoothService.isDevelopmentMode = false
                 bluetoothService.isConnected = true
@@ -362,7 +361,7 @@ struct TopAppBar: View {
 
 // MARK: - Connection Status Indicator
 struct ConnectionStatusIndicator: View {
-    @EnvironmentObject var bluetoothService: MockBluetoothService
+    @EnvironmentObject var bluetoothService: BTService
     let onTapped: () -> Void
     
     var body: some View {
@@ -390,7 +389,7 @@ struct ConnectionStatusIndicator: View {
 
 // MARK: - Device Status Card
 struct DeviceStatusCard: View {
-    @EnvironmentObject var bluetoothService: MockBluetoothService
+    @EnvironmentObject var bluetoothService: BTService
     let onCardTapped: () -> Void
     
     var body: some View {

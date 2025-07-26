@@ -8,12 +8,12 @@ class FeedbackService: FeedbackServiceProtocol {
         
     // MARK: - Private Properties
     private let webSocketService: WebSocketAPI
-    private let bluetoothService: MockBluetoothService
+    private let bluetoothService: BTService
     
     // MARK: - Initialization
     private init(
         webSocketService: WebSocketAPI = NetworkServiceManager.shared.webSocket,
-        bluetoothService: MockBluetoothService = MockBluetoothService.shared
+        bluetoothService: BTService = BTService.shared
     ) {
         self.webSocketService = webSocketService
         self.bluetoothService = bluetoothService

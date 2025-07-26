@@ -2,7 +2,7 @@ import SwiftUI
 
 struct OnboardingView: View {
     @ObservedObject var viewModel: OnboardingViewModel
-    @ObservedObject var bluetoothService: MockBluetoothService
+    @ObservedObject var bluetoothService: BTService
     @Environment(\.colorScheme) var colorScheme
     
     var body: some View {

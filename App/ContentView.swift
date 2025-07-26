@@ -8,7 +8,7 @@ struct ContentView: View {
     @EnvironmentObject var authVM: AuthViewModel
     
     // Added for BLE onboarding
-    @StateObject private var bluetoothService = MockBluetoothService()
+    @StateObject private var bluetoothService = BTService()
     @StateObject private var onboardingViewModel: OnboardingViewModel
     @State private var showOnboarding = false
     @State private var hasCheckedBLEStatus = false
@@ -16,11 +16,11 @@ struct ContentView: View {
     
     init() {
         // Initialize BluetoothService
-        _bluetoothService = StateObject(wrappedValue: MockBluetoothService.shared)
+        _bluetoothService = StateObject(wrappedValue: BTService.shared)
         
         // Initialize OnboardingViewModel
         let viewModel = OnboardingViewModel(
-            bluetoothService: MockBluetoothService.shared
+            bluetoothService: BTService.shared
         )
         _onboardingViewModel = StateObject(wrappedValue: viewModel)
     }

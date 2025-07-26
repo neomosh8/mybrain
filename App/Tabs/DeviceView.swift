@@ -9,7 +9,7 @@ struct DeviceView: View {
         self.onNavigateToHome = onNavigateToHome
     }
     
-    @EnvironmentObject var bluetoothService: MockBluetoothService
+    @EnvironmentObject var bluetoothService: BTService
     @State private var showTestSignalView = false
     @State private var showDeviceDetails = false
     

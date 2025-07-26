@@ -2,6 +2,9 @@ import Foundation
 import CoreBluetooth
 import Combine
 
+//typealias BTService = BluetoothService
+ typealias BTService = MockBluetoothService
+
 class BluetoothService: NSObject, ObservableObject {
     // MARK: - Published Properties
     

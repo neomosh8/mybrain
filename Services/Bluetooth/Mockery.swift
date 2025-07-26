@@ -117,11 +117,15 @@ class MockBluetoothService: NSObject, ObservableObject {
     }
     
     // MARK: - Public Methods for Device Discovery and Connection
+
     func startScanning() {
         print("Mock: Starting scan")
         isScanning = true
         discoveredDevices = []
-        scanDeviceIndex = 0  // Reset the index
+        scanDeviceIndex = 0
+        
+        // Cancel any existing timer first
+        scanTimer?.invalidate()
         
         scanTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             guard let self = self, self.scanDeviceIndex < self.mockDevices.count else {
@@ -136,13 +140,18 @@ class MockBluetoothService: NSObject, ObservableObject {
             }
         }
         
-        // Auto-stop scanning after 15 seconds
+        // Auto-stop scanning after 15 seconds - but only if still scanning
         DispatchQueue.main.asyncAfter(deadline: .now() + 15) { [weak self] in
-            self?.stopScanning()
+            if self?.isScanning == true {
+                self?.stopScanning()
+            }
         }
     }
     
+    
     func stopScanning() {
+        guard isScanning else { return }
+        
         print("Mock: Stopping scan")
         scanTimer?.invalidate()
         scanTimer = nil
