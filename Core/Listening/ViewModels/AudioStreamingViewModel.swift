@@ -18,7 +18,6 @@ class AudioStreamingViewModel: ObservableObject {
     @Published var duration: Double = 0.0
 
     // MARK: - Chapter Progress State
-    @Published var currentChapterNumber: Int = 1
     @Published var nextChapterRequested = false
     @Published var lastChapterComplete = false
     @Published var hasCompletedPlayback = false
@@ -84,7 +83,6 @@ class AudioStreamingViewModel: ObservableObject {
     // MARK: - Private Methods
     
     private func resetState() {
-        currentChapterNumber = 1
         nextChapterRequested = false
         lastChapterComplete = false
         hasCompletedPlayback = false
@@ -92,6 +90,8 @@ class AudioStreamingViewModel: ObservableObject {
         durationsSoFar = 0.0
         subtitlesURL = nil
         playerError = nil
+        chapterManager.chapters.removeAll()
+        chapterManager.currentChapter = nil
     }
     
     private func fetchStreamingLinks(for thought: Thought) {
@@ -269,19 +269,27 @@ class AudioStreamingViewModel: ObservableObject {
             self.duration = totalDuration.isFinite ? totalDuration : 0.0
         }
         
+        // Use currentSeconds directly (not globalTime) for chapter detection
+        chapterManager.updateCurrentChapter(for: currentSeconds)
+        
+        // Debug print to verify chapter detection
+        print("🎵 Current time: \(currentSeconds), Current chapter: \(chapterManager.currentChapter?.number ?? 0)")
+        
         // Send CURRENT chapter time, not global time
         NotificationCenter.default.post(
             name: Notification.Name("UpdateSubtitleTime"),
             object: currentSeconds
         )
         
-        // Check if we need to request next chapter using global time
+        // For next chapter requests, still use the accumulated logic
         let globalTime = currentSeconds + durationsSoFar
         guard let nextChapterTime = nextChapterTime,
-              globalTime >= (nextChapterTime - chapterBuffer),
-              !nextChapterRequested else { return }
-        
+              globalTime >= nextChapterTime,
+              !nextChapterRequested,
+              !lastChapterComplete else { return }
+
         nextChapterRequested = true
+        print("🎵 Requesting next chapter at global time: \(globalTime), threshold: \(nextChapterTime)")
         requestNextChapter()
     }
     
@@ -295,24 +303,33 @@ class AudioStreamingViewModel: ObservableObject {
             print("🎵 No chapter data received")
             return
         }
-        print("❌❌❌❌ handleChapterAudioResponse")
-        print(data)
         
         let chapterNumber = data["chapter_number"] as? Int ?? 0
         let audioDuration = data["audio_duration"] as? Double ?? 0.0
         let generationTime = data["generation_time"] as? Double ?? 0.0
         let isComplete = data["complete"] as? Bool ?? false
-        
-        currentChapterNumber = chapterNumber
                 
-        let playableDuration = audioDuration - generationTime
-        nextChapterTime = durationsSoFar + (playableDuration * (1 - chapterBuffer))
+        // Add chapter to manager
+        let chapterInfo = ChapterInfo(
+            number: chapterNumber,
+            title: data["title"] as? String,
+            duration: audioDuration,
+            startTime: durationsSoFar,
+            isComplete: isComplete
+        )
+        chapterManager.addChapter(chapterInfo)
+        
+        // Calculate when to request next chapter:
+        // Wait until (audio_duration - generation_time) seconds into this chapter
+        let requestDelay = audioDuration - generationTime
+        nextChapterTime = durationsSoFar + requestDelay
         
         nextChapterRequested = false
         durationsSoFar += audioDuration
         lastChapterComplete = isComplete
         
         print("🎵 Chapter \(chapterNumber) completed. Total duration so far: \(durationsSoFar)")
+        print("🎵 Next chapter request time: \(nextChapterTime ?? 0)")
         
         // Refresh subtitles for new chapter if subtitle URL exists
         if let subtitleURL = subtitlesURL {
