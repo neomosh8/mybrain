@@ -22,10 +22,8 @@ struct ListeningView: View {
     @State private var showFocusChart = true
     @State private var showDurationTimer = true
     @State private var showMenuPopup = false
-    @State private var currentTime: Double = 0
     @State private var currentWordIndex: Int = 0
     @State private var previousWordIndex: Int = -1
-    @State private var timeUpdateTimer: Timer?
     
     private var canTogglePlayback: Bool {
         return !audioViewModel.isFetchingLinks &&
@@ -90,7 +88,6 @@ struct ListeningView: View {
         }
         .onDisappear {
             audioViewModel.cleanup()
-            timeUpdateTimer?.invalidate()
             
             NotificationCenter.default.post(
                 name: .thoughtProgressUpdated,
@@ -200,12 +197,6 @@ struct ListeningView: View {
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("UpdateSubtitleTime"))) { notification in
             handleTimeUpdate(notification)
         }
-        .onReceive(Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()) { _ in
-            if let player = audioViewModel.player {
-                updateCurrentTime(from: player)
-            }
-        }
-
     }
 
     private func subtitleScrollContent(for words: [WordTimestamp]) -> some View {
@@ -273,7 +264,7 @@ struct ListeningView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                Text("Duration: \(formatDuration(audioViewModel.durationsSoFar))")
+                Text("Duration: \(formatDuration(audioViewModel.currentTime))")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -288,9 +279,6 @@ struct ListeningView: View {
                     .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 2)
             )
             .padding(.bottom, 24)
-        }
-        .onReceive(Timer.publish(every: 1.0, on: .main, in: .common).autoconnect()) { _ in
-            // Timer to update duration every second
         }
     }
     
@@ -709,8 +697,6 @@ struct ListeningView: View {
     
     private func handleTimeUpdate(_ notification: Notification) {
         if let globalTime = notification.object as? Double {
-            currentTime = globalTime
-            
             // Find correct segment for this time
             if let correctSegmentIndex = subtitleViewModel.segments.firstIndex(where: {
                 globalTime >= $0.minStart && globalTime <= $0.maxEnd
@@ -727,21 +713,6 @@ struct ListeningView: View {
             subtitleViewModel.updateCurrentTime(globalTime)
         }
     }
-
-    private func updateCurrentTime(from player: AVPlayer) {
-        let current = player.currentTime().seconds
-        if current.isFinite {
-            currentTime = current
-            let globalTime = current + audioViewModel.durationsSoFar
-            subtitleViewModel.updateCurrentTime(globalTime)
-            
-            // Update current word index for feedback
-            if let currentSegment = subtitleViewModel.currentSegment {
-                updateCurrentWordIndex(for: globalTime, words: currentSegment.words)
-            }
-        }
-    }
-    
 
     private func updateCurrentWordIndex(for time: Double, words: [WordTimestamp]) {
         guard !words.isEmpty else { return }
