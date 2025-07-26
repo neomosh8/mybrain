@@ -120,7 +120,7 @@ class AudioStreamingViewModel: ObservableObject {
             if status.isSuccess {
                 handleStreamingLinksResponse(data: data)
             } else {
-                print("🎵 Streaming links error: \(message)")
+                print("❌ Streaming links error: \(message)")
                 isFetchingLinks = false
                 streamingState = .error(playerError ?? NSError(domain: "StreamingError", code: -1))
                 playerError = NSError(domain: "StreamingError", code: -1, userInfo: [NSLocalizedDescriptionKey: message])
@@ -132,7 +132,7 @@ class AudioStreamingViewModel: ObservableObject {
             if status.isSuccess {
                 handleChapterAudioResponse(data: data)
             } else {
-                print("🎵 Chapter audio error: \(message)")
+                print("❌ Chapter audio error: \(message)")
             }
             
         case .chapterComplete(_, let message, let data):
@@ -155,19 +155,13 @@ class AudioStreamingViewModel: ObservableObject {
     private func handleStreamingLinksResponse(data: [String: Any]?) {
         isFetchingLinks = false
         
-        // Debug: Print the actual data received
-        print("🎵 Raw streaming data received: \(String(describing: data))")
-        
         guard let data = data else {
-            print("🎵 No data in streaming response")
             streamingState = .error(NSError(domain: "StreamingError", code: -1))
             return
         }
         
-        // Try direct access first (without using the struct)
         if let masterPlaylist = data["master_playlist"] as? String {
             let fullURL = "\(NetworkConstants.baseURL)\(masterPlaylist)"
-            print("🎵 Direct access - Master playlist: \(fullURL)")
             
             if let subtitlesPlaylist = data["subtitles_playlist"] as? String {
                 let subtitlesURL = "\(NetworkConstants.baseURL)\(subtitlesPlaylist)"
@@ -176,7 +170,6 @@ class AudioStreamingViewModel: ObservableObject {
             
             setupAudioPlayer(with: fullURL)
         } else {
-            print("🎵 No master_playlist found in data keys: \(data.keys)")
             streamingState = .error(NSError(domain: "StreamingError", code: -1))
         }
     }
@@ -310,6 +303,8 @@ class AudioStreamingViewModel: ObservableObject {
             print("🎵 No chapter data received")
             return
         }
+        print("❌❌❌❌ handleChapterAudioResponse")
+        print(data)
         
         let chapterNumber = data["chapter_number"] as? Int ?? 0
         let audioDuration = data["audio_duration"] as? Double ?? 0.0
