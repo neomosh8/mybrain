@@ -109,14 +109,17 @@ struct ListeningView: View {
             return "Loading..."
         }
         
-        let currentChapterNum = audioViewModel.currentChapterNumber
-        let totalChapters = status.progress.total
-        
-        if currentChapterNum > 0 {
-            return "Chapter \(currentChapterNum) of \(totalChapters)"
+        if let currentChapter = audioViewModel.chapterManager.currentChapter {
+            let totalChapters = status.progress.total
+            return "Chapter \(currentChapter.number) of \(totalChapters)"
         }
         
-        return "Preparing audio..."
+        let totalChapters = status.progress.total
+        if audioViewModel.chapterManager.chapters.isEmpty {
+            return "Preparing audio..."
+        } else {
+            return "Chapter 1 of \(totalChapters)"
+        }
     }
     
     private var loadingStatusView: some View {
@@ -721,9 +724,12 @@ struct ListeningView: View {
             if newIndex < words.count {
                 let currentWord = words[newIndex]
                 Task {
+                    // Get chapter number from ChapterManager
+                    let chapterNumber = audioViewModel.chapterManager.currentChapter?.number ?? 1
+                    
                     let result = await feedbackService.submitFeedback(
                         thoughtId: thought.id,
-                        chapterNumber: audioViewModel.currentChapterNumber,
+                        chapterNumber: chapterNumber,
                         word: currentWord.text
                     )
                     
