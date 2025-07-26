@@ -31,11 +31,11 @@ struct ListeningView: View {
         !audioViewModel.hasCompletedPlayback
     }
     
-
+    
     private var playPauseIcon: String {
         return audioViewModel.isPlaying ? "pause.fill" : "play.fill"
     }
-
+    
     private var playPauseText: String {
         return audioViewModel.isPlaying ? "Pause" : "Play"
     }
@@ -191,8 +191,6 @@ struct ListeningView: View {
                     thoughtId: thought.id,
                     chapterNumber: audioViewModel.chapterManager.currentChapter?.number ?? 1
                 )
-            } else {
-                emptySubtitleView
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("InitialSubtitleLoad"))) { notification in
@@ -204,17 +202,6 @@ struct ListeningView: View {
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("UpdateSubtitleTime"))) { notification in
             handleTimeUpdate(notification)
         }
-    }
-
-    private var emptySubtitleView: some View {
-        RoundedRectangle(cornerRadius: 12)
-            .fill(Color(.systemGray6))
-            .frame(height: 200)
-            .overlay(
-                Text("No subtitles available")
-                    .foregroundColor(.secondary)
-                    .font(.subheadline)
-            )
     }
     
     private var durationTimerControl: some View {
@@ -331,7 +318,7 @@ struct ListeningView: View {
                 .ignoresSafeArea(edges: .bottom)
         )
     }
-
+    
     private var statusPickerOverlay: some View {
         BottomSheetPicker(
             title: "Listening Options",
@@ -548,13 +535,13 @@ struct ListeningView: View {
         
         return vttFiles
     }
-
+    
     private func processVTTFiles(_ vttFiles: [String]) {
         print("🎵 Processing \(vttFiles.count) VTT files")
         
         processVTTFile(at: 0, from: vttFiles, accumulated: [])
     }
-
+    
     private func processVTTFile(at index: Int, from vttFiles: [String], accumulated: [SubtitleSegmentLink]) {
         guard index < vttFiles.count else {
             appendSegments(accumulated)
@@ -574,7 +561,7 @@ struct ListeningView: View {
             }
         }
     }
-
+    
     private func appendSegments(_ newSegments: [SubtitleSegmentLink]) {
         let existingURLs = Set(subtitleViewModel.segments.map { $0.urlString })
         let trulyNew = newSegments.filter { !existingURLs.contains($0.urlString) }
@@ -586,7 +573,7 @@ struct ListeningView: View {
             subtitleViewModel.loadSegment(at: 0)
         }
     }
-
+    
     private func determineSegmentTimes(vttURL: String, completion: @escaping (SubtitleSegmentLink?) -> Void) {
         guard let url = URL(string: vttURL) else {
             completion(nil)
@@ -637,7 +624,7 @@ struct ListeningView: View {
             }
         }.resume()
     }
-
+    
     private func parseVTTTime(_ timeString: String) -> Double {
         let components = timeString.components(separatedBy: ":")
         guard components.count == 3 else { return 0 }
@@ -650,12 +637,12 @@ struct ListeningView: View {
         
         return hours * 3600 + minutes * 60 + seconds + milliseconds
     }
-
+    
     
     private func handleTimeUpdate(_ notification: Notification) {
         if let globalTime = notification.object as? Double {
             subtitleViewModel.preloadNextSegmentIfNeeded(currentTime: globalTime)
-
+            
             // Find correct segment for this time
             if let correctSegmentIndex = subtitleViewModel.segments.firstIndex(where: {
                 globalTime >= $0.minStart && globalTime <= $0.maxEnd
