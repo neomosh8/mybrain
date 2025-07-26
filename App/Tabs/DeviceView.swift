@@ -11,7 +11,6 @@ struct DeviceView: View {
     
     @EnvironmentObject var bluetoothService: MockBluetoothService
     @State private var showTestSignalView = false
-    @State private var showDeviceScanner = false
     @State private var showDeviceDetails = false
     
     // Test Signal states (moved from TestSignalView)
@@ -76,9 +75,6 @@ struct DeviceView: View {
         }
         .sheet(isPresented: $showTestSignalView) {
 //            TestSignalView(bluetoothService: bluetoothService)
-        }
-        .sheet(isPresented: $showDeviceScanner) {
-//            DeviceDetailsView(bluetoothService: bluetoothService)
         }
         .onDisappear {
             stopRecordingIfNeeded()
@@ -1243,24 +1239,8 @@ extension DeviceView {
                 }
             }
             
-            // here instead of this button, we should show the scan device part that already have.
-
-            Button(action: {
-                showDeviceScanner = true
-            }) {
-                HStack(spacing: 8) {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 16, weight: .medium))
-                    Text("Find Device")
-                        .font(.system(size: 16, weight: .semibold))
-                }
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 50)
-                .background(Color.blue)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-            }
-            .padding(.horizontal, 40)
+            availableDevicesView
+                .padding(.horizontal, 20)
             
             Spacer()
         }
