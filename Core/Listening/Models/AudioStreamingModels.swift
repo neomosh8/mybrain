@@ -248,3 +248,23 @@ struct SubtitleSegmentData {
         maxEnd - minStart
     }
 }
+
+struct WordGroup: Identifiable {
+    let id = UUID()
+    let words: [WordTimestamp]
+    let startIndex: Int
+}
+
+extension Array where Element == WordTimestamp {
+    func createWordGroups(wordsPerGroup: Int = 15) -> [WordGroup] {
+        var groups: [WordGroup] = []
+        
+        for i in stride(from: 0, to: self.count, by: wordsPerGroup) {
+            let endIndex = Swift.min(i + wordsPerGroup, self.count)
+            let groupWords = Array(self[i..<endIndex])
+            groups.append(WordGroup(words: groupWords, startIndex: i))
+        }
+        
+        return groups
+    }
+}
