@@ -14,6 +14,9 @@ class AudioStreamingViewModel: ObservableObject {
     @Published var streamingState: AudioStreamingState = .idle
     @Published var chapterManager = ChapterManager()
     
+    @Published var currentTime: Double = 0.0
+    @Published var duration: Double = 0.0
+
     // MARK: - Chapter Progress State
     @Published var currentChapterNumber: Int = 1
     @Published var nextChapterRequested = false
@@ -270,6 +273,13 @@ class AudioStreamingViewModel: ObservableObject {
     
     private func monitorPlaybackProgress(currentTime: CMTime) {
         let currentSeconds = currentTime.seconds
+        self.currentTime = currentSeconds.isFinite ? currentSeconds : 0.0
+        
+        // Update duration if available
+        if let currentItem = player?.currentItem {
+            let totalDuration = currentItem.duration.seconds
+            self.duration = totalDuration.isFinite ? totalDuration : 0.0
+        }
         
         // Update now playing info
         updateNowPlayingInfo()
@@ -277,7 +287,7 @@ class AudioStreamingViewModel: ObservableObject {
         // Send CURRENT chapter time, not global time
         NotificationCenter.default.post(
             name: Notification.Name("UpdateSubtitleTime"),
-            object: currentSeconds  // Remove the + durationsSoFar here
+            object: currentSeconds
         )
         
         // Check if we need to request next chapter using global time
