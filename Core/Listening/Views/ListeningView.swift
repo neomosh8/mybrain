@@ -113,8 +113,8 @@ struct ListeningView: View {
                 .multilineTextAlignment(.center)
                 .foregroundColor(.primary)
             
-            if audioViewModel.currentChapterNumber > 0 {
-                Text("Chapter \(audioViewModel.currentChapterNumber)")
+            if let currentChapter = audioViewModel.chapterManager.currentChapter {
+                Text("Chapter \(currentChapter.number)")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
@@ -158,19 +158,75 @@ struct ListeningView: View {
     // MARK: - Subtitle View
     
     private var subtitleView: some View {
-        VStack(spacing: 20) {
-            let subtitles = subtitleViewModel.currentSegment?.words ?? []
+        VStack(spacing: 12) {
+            Text("Subtitles")
+                .font(.headline)
+                .foregroundColor(.primary)
             
-            if !subtitles.isEmpty {
-                currentSubtitleView(subtitles: subtitles)
+            if let currentSegment = subtitleViewModel.currentSegment, !currentSegment.words.isEmpty {
+                subtitleScrollContent(for: currentSegment.words)
             } else {
-                Text("No subtitles available")
-                    .foregroundColor(.white.opacity(0.6))
-                    .font(.system(size: 16))
+                emptySubtitleView
             }
         }
-        .padding(.horizontal, 20)
     }
+
+    private func subtitleScrollContent(for words: [WordTimestamp]) -> some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 12) {
+                    let wordGroups = words.createWordGroups(wordsPerGroup: 15)
+                    ForEach(wordGroups, id: \.id) { group in
+                        subtitleGroupView(group: group)
+                    }
+                }
+                .padding(.vertical, 12)
+            }
+            .frame(maxHeight: 200)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(.systemGray6))
+            )
+            .onChange(of: currentWordIndex) { _, newIndex in
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    proxy.scrollTo(newIndex, anchor: .center)
+                }
+            }
+        }
+    }
+
+    private func subtitleGroupView(group: WordGroup) -> some View {
+        HStack(alignment: .top, spacing: 0) {
+            ForEach(Array(group.words.enumerated()), id: \.offset) { wordIndex, word in
+                let globalIndex = group.startIndex + wordIndex
+                
+                Text(word.text + " ")
+                    .font(.body)
+                    .foregroundColor(globalIndex == currentWordIndex ? .blue : .primary)
+                    .fontWeight(globalIndex == currentWordIndex ? .semibold : .regular)
+                    .background(
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(globalIndex == currentWordIndex ? Color.blue.opacity(0.2) : Color.clear)
+                            .padding(.horizontal, -2)
+                    )
+                    .id(globalIndex)
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+    }
+
+    private var emptySubtitleView: some View {
+        RoundedRectangle(cornerRadius: 12)
+            .fill(Color(.systemGray6))
+            .frame(height: 200)
+            .overlay(
+                Text("No subtitles available")
+                    .foregroundColor(.secondary)
+                    .font(.subheadline)
+            )
+    }
+
     
     private func currentSubtitleView(subtitles: [WordTimestamp]) -> some View {
         VStack(spacing: 8) {
