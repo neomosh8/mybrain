@@ -110,7 +110,6 @@ class ChapterManager: ObservableObject {
         let activeChapter = chapters.first { chapter in
             let endTime = chapter.startTime + (chapter.duration ?? 0)
             let isInRange = currentTime >= chapter.startTime && currentTime < endTime
-            print("🎵 Checking chapter \(chapter.number): start=\(chapter.startTime), end=\(endTime), current=\(currentTime), inRange=\(isInRange)")
             return isInRange
         }
         
