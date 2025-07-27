@@ -8,19 +8,19 @@ class MockBluetoothService: NSObject, ObservableObject {
     static let shared = MockBluetoothService()
     
     @Published var isDevelopmentMode = false
-
+    
     private let feedbackSubject = PassthroughSubject<Double, Never>()
     
     var feedbackPublisher: AnyPublisher<Double, Never> {
         feedbackSubject.eraseToAnyPublisher()
     }
-
+    
     // MARK: - Simulation state
     private var simPhase: Double = 0.0
     private let simStep: Double = 0.15
     
     private var scanDeviceIndex = 0
-
+    
     @Published var isScanning = false
     @Published var isConnected = false
     @Published var discoveredDevices: [DiscoveredDevice] = []
@@ -117,7 +117,7 @@ class MockBluetoothService: NSObject, ObservableObject {
     }
     
     // MARK: - Public Methods for Device Discovery and Connection
-
+    
     func startScanning() {
         print("Mock: Starting scan")
         isScanning = true
@@ -175,7 +175,7 @@ class MockBluetoothService: NSObject, ObservableObject {
         stopScanning()
         
         // Simulate connection delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
             self.isConnected = true
             self.connectedDevice = BLEDevice(id: device.id, name: device.name, peripheral: nil)
             self.batteryLevel = Int.random(in: 60...95)
@@ -195,6 +195,7 @@ class MockBluetoothService: NSObject, ObservableObject {
     func disconnect() {
         print("Mock: Disconnecting device")
         stopRecording()
+        removeSavedDevice()
         
         DispatchQueue.main.async {
             self.isConnected = false
@@ -213,6 +214,10 @@ class MockBluetoothService: NSObject, ObservableObject {
         guard let device = connectedDevice else { return }
         UserDefaults.standard.set(device.id, forKey: savedDeviceKey)
         print("Mock: Saved device ID: \(device.id)")
+    }
+    
+    func removeSavedDevice() {
+        UserDefaults.standard.removeObject(forKey: savedDeviceKey)
     }
     
     private func enableLeadOffDetection(_ enable: Bool) {
