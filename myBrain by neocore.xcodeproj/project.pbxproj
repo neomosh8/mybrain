@@ -45,6 +45,7 @@
 		745BE7AA2E23D05C00FA1CC1 /* AudioStreamingModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 745BE7A92E23D04100FA1CC1 /* AudioStreamingModels.swift */; };
 		746822642E2F75D3007AB029 /* ListeningView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 746822632E2F75D2007AB029 /* ListeningView.swift */; };
 		7468256F2DDCE58B0089AE37 /* ImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7468256E2DDCE5880089AE37 /* ImageLoader.swift */; };
+		746FB2E12E369C4600204028 /* ToggleRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 746FB2E02E369C4500204028 /* ToggleRow.swift */; };
 		747377F72E26CC2100C50D04 /* ReadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747377F62E26CC1F00C50D04 /* ReadingView.swift */; };
 		747A2D9B2E2BCD2F00CE9B80 /* FeedbackServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747A2D9A2E2BCD2C00CE9B80 /* FeedbackServiceProtocol.swift */; };
 		747A2D9D2E2BCD3400CE9B80 /* FeedbackService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747A2D9C2E2BCD3100CE9B80 /* FeedbackService.swift */; };
@@ -151,6 +152,7 @@
 		745BE7A92E23D04100FA1CC1 /* AudioStreamingModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioStreamingModels.swift; sourceTree = "<group>"; };
 		746822632E2F75D2007AB029 /* ListeningView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListeningView.swift; sourceTree = "<group>"; };
 		7468256E2DDCE5880089AE37 /* ImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageLoader.swift; sourceTree = "<group>"; };
+		746FB2E02E369C4500204028 /* ToggleRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToggleRow.swift; sourceTree = "<group>"; };
 		747377F62E26CC1F00C50D04 /* ReadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingView.swift; sourceTree = "<group>"; };
 		7479BFD92E1263F100F18A48 /* ServerAPI.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ServerAPI.md; sourceTree = "<group>"; };
 		747A2D9A2E2BCD2C00CE9B80 /* FeedbackServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackServiceProtocol.swift; sourceTree = "<group>"; };
@@ -624,6 +626,7 @@
 		74D58B362E15276C008B62DC /* UI */ = {
 			isa = PBXGroup;
 			children = (
+				746FB2E02E369C4500204028 /* ToggleRow.swift */,
 				748C65832E27684700C912FB /* ActionButtons.swift */,
 				74AA48062E221C3600B6D017 /* ActionRow.swift */,
 				74D58B372E152776008B62DC /* AppNavigationBar.swift */,
@@ -785,6 +788,7 @@
 				74F16AE62E3537F6006B51F7 /* AnimatedSubtitleView.swift in Sources */,
 				7499D9082E02A652007E8C92 /* Thought+URLProcessing.swift in Sources */,
 				74263C3B2DDADAE800953598 /* InsightCard.swift in Sources */,
+				746FB2E12E369C4600204028 /* ToggleRow.swift in Sources */,
 				74263C3C2DDADAE800953598 /* LoginScreen.swift in Sources */,
 				747E83BF2E31E3AF00F28F50 /* Mockery.swift in Sources */,
 				74263C892DDAF66400953598 /* Constants.swift in Sources */,
