@@ -183,26 +183,39 @@ struct ListeningView: View {
     
     private var listeningContent: some View {
         VStack(spacing: 20) {
-            if !subtitleViewModel.segments.isEmpty {
-                AnimatedSubtitleView(
-                    subtitleViewModel: subtitleViewModel,
-                    currentTime: audioViewModel.currentTime,
-                    thoughtId: thought.id,
-                    chapterNumber: audioViewModel.chapterManager.currentChapter?.number ?? 1
-                )
-            }
+            AnimatedSubtitleView(
+                subtitleViewModel: subtitleViewModel,
+                currentTime: audioViewModel.currentTime,
+                thoughtId: thought.id,
+                chapterNumber: audioViewModel.chapterManager.currentChapter?.number ?? 1
+            )
         }
-        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("InitialSubtitleLoad"))) { notification in
-            handleSubtitleNotification(notification)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("RefreshSubtitles"))) { notification in
-            handleSubtitleNotification(notification)
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("NewChapterSubtitles"))) { notification in
+            handleNewChapterSubtitles(notification)
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("UpdateSubtitleTime"))) { notification in
             handleTimeUpdate(notification)
         }
     }
     
+    
+    private func handleNewChapterSubtitles(_ notification: Notification) {
+        if let userInfo = notification.userInfo,
+           let subtitlesURL = userInfo["url"] as? String,
+           let chapterOffset = userInfo["chapterOffset"] as? Double {
+            print("🎵 Loading subtitles for chapter with offset: \(chapterOffset)")
+            subtitleViewModel.loadChapterSubtitles(playlistURL: subtitlesURL, chapterOffset: chapterOffset)
+        }
+    }
+    
+    
+    private func handleTimeUpdate(_ notification: Notification) {
+        if let globalTime = notification.object as? Double {
+            subtitleViewModel.updateCurrentTime(globalTime)
+        }
+    }
+    
+
     private var durationTimerControl: some View {
         VStack {
             Spacer()
@@ -481,177 +494,6 @@ struct ListeningView: View {
             return String(format: "%d:%02d:%02d", hours, minutes, secs)
         } else {
             return String(format: "%d:%02d", minutes, secs)
-        }
-    }
-    
-    private func handleSubtitleNotification(_ notification: Notification) {
-        if let data = notification.object as? [String: Any],
-           let subtitlesURL = data["url"] as? String {
-            print("Processing subtitle load: \(subtitlesURL)")
-            fetchSubtitlePlaylist(playlistURL: subtitlesURL)
-        }
-    }
-    
-    private func fetchSubtitlePlaylist(playlistURL: String) {
-        print("🎵 Starting subtitle fetch for: \(playlistURL)")
-        
-        guard let url = URL(string: playlistURL) else { return }
-        
-        URLSession.shared.dataTask(with: url) { data, _, error in
-            if let error = error {
-                print("Subtitle playlist fetch error: \(error.localizedDescription)")
-                return
-            }
-            
-            guard let data = data,
-                  let content = String(data: data, encoding: .utf8) else { return }
-            
-            let vttFiles = self.extractVTTFiles(from: content, baseURL: playlistURL)
-            
-            DispatchQueue.main.async {
-                self.processVTTFiles(vttFiles)
-            }
-        }.resume()
-    }
-    
-    
-    private func extractVTTFiles(from content: String, baseURL: String) -> [String] {
-        let lines = content.components(separatedBy: .newlines)
-        var vttFiles: [String] = []
-        
-        for line in lines {
-            if line.hasSuffix(".vtt") {
-                if line.hasPrefix("http") {
-                    vttFiles.append(line)
-                } else {
-                    if let baseURL = URL(string: baseURL) {
-                        let fullURL = baseURL.deletingLastPathComponent().appendingPathComponent(line).absoluteString
-                        vttFiles.append(fullURL)
-                    }
-                }
-            }
-        }
-        
-        return vttFiles
-    }
-    
-    private func processVTTFiles(_ vttFiles: [String]) {
-        print("🎵 Processing \(vttFiles.count) VTT files")
-        
-        processVTTFile(at: 0, from: vttFiles, accumulated: [])
-    }
-    
-    private func processVTTFile(at index: Int, from vttFiles: [String], accumulated: [SubtitleSegmentLink]) {
-        guard index < vttFiles.count else {
-            appendSegments(accumulated)
-            return
-        }
-        
-        let vttURL = vttFiles[index]
-        
-        determineSegmentTimes(vttURL: vttURL) { maybeLink in
-            DispatchQueue.main.async {
-                var newAccumulated = accumulated
-                if let link = maybeLink {
-                    newAccumulated.append(link)
-                }
-                
-                self.processVTTFile(at: index + 1, from: vttFiles, accumulated: newAccumulated)
-            }
-        }
-    }
-    
-    private func appendSegments(_ newSegments: [SubtitleSegmentLink]) {
-        let existingURLs = Set(subtitleViewModel.segments.map { $0.urlString })
-        let trulyNew = newSegments.filter { !existingURLs.contains($0.urlString) }
-        let sortedNew = trulyNew.sorted { $0.minStart < $1.minStart }
-        
-        subtitleViewModel.segments.append(contentsOf: sortedNew)
-        
-        if subtitleViewModel.currentSegment == nil, !subtitleViewModel.segments.isEmpty {
-            subtitleViewModel.loadSegment(at: 0)
-        }
-    }
-    
-    private func determineSegmentTimes(vttURL: String, completion: @escaping (SubtitleSegmentLink?) -> Void) {
-        guard let url = URL(string: vttURL) else {
-            completion(nil)
-            return
-        }
-        
-        URLSession.shared.dataTask(with: url) { data, _, error in
-            if let error = error {
-                print("VTT fetch error: \(error.localizedDescription)")
-                completion(nil)
-                return
-            }
-            
-            guard let data = data,
-                  let content = String(data: data, encoding: .utf8) else {
-                completion(nil)
-                return
-            }
-            
-            let timeRegex = try! NSRegularExpression(pattern: #"(\d{2}):(\d{2}):(\d{2})\.(\d{3})"#)
-            let lines = content.components(separatedBy: .newlines)
-            
-            var minStart: Double?
-            var maxEnd: Double?
-            
-            for line in lines {
-                let range = NSRange(location: 0, length: line.utf16.count)
-                let matches = timeRegex.matches(in: line, range: range)
-                
-                for match in matches {
-                    let timeString = String(line[Range(match.range, in: line)!])
-                    let time = self.parseVTTTime(timeString)
-                    
-                    if minStart == nil || time < minStart! {
-                        minStart = time
-                    }
-                    if maxEnd == nil || time > maxEnd! {
-                        maxEnd = time
-                    }
-                }
-            }
-            
-            if let start = minStart, let end = maxEnd {
-                let link = SubtitleSegmentLink(urlString: vttURL, minStart: start, maxEnd: end)
-                completion(link)
-            } else {
-                completion(nil)
-            }
-        }.resume()
-    }
-    
-    private func parseVTTTime(_ timeString: String) -> Double {
-        let components = timeString.components(separatedBy: ":")
-        guard components.count == 3 else { return 0 }
-        
-        let hours = Double(components[0]) ?? 0
-        let minutes = Double(components[1]) ?? 0
-        let secondsAndMs = components[2].components(separatedBy: ".")
-        let seconds = Double(secondsAndMs[0]) ?? 0
-        let milliseconds = secondsAndMs.count > 1 ? (Double(secondsAndMs[1]) ?? 0) / 1000.0 : 0
-        
-        return hours * 3600 + minutes * 60 + seconds + milliseconds
-    }
-    
-    
-    private func handleTimeUpdate(_ notification: Notification) {
-        if let globalTime = notification.object as? Double {
-            subtitleViewModel.preloadNextSegmentIfNeeded(currentTime: globalTime)
-            
-            // Find correct segment for this time
-            if let correctSegmentIndex = subtitleViewModel.segments.firstIndex(where: {
-                globalTime >= $0.minStart && globalTime <= $0.maxEnd
-            }) {
-                if correctSegmentIndex != subtitleViewModel.currentSegmentIndex {
-                    subtitleViewModel.loadSegment(at: correctSegmentIndex)
-                }
-            }
-            
-            subtitleViewModel.updateCurrentTime(globalTime)
         }
     }
 }
