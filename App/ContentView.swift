@@ -9,20 +9,12 @@ struct ContentView: View {
     
     // Added for BLE onboarding
     @StateObject private var bluetoothService = BTService()
-    @StateObject private var onboardingViewModel: OnboardingViewModel
     @State private var showOnboarding = false
     @State private var hasCheckedBLEStatus = false
     @State private var isLoadingAuthState = true
     
     init() {
-        // Initialize BluetoothService
         _bluetoothService = StateObject(wrappedValue: BTService.shared)
-        
-        // Initialize OnboardingViewModel
-        let viewModel = OnboardingViewModel(
-            bluetoothService: BTService.shared
-        )
-        _onboardingViewModel = StateObject(wrappedValue: viewModel)
     }
     
     var body: some View {
@@ -49,16 +41,6 @@ struct ContentView: View {
                     MainTabView()
                         .environmentObject(bluetoothService)
                 }
-                .overlay {
-                    if showOnboarding {
-                        OnboardingView(
-                            viewModel: onboardingViewModel,
-                            bluetoothService: bluetoothService
-                        )
-                        .transition(.opacity)
-                        .animation(.easeInOut, value: showOnboarding)
-                    }
-                }
             } else {
                 NavigationStack {
                     LoginScreen()
@@ -77,15 +59,6 @@ struct ContentView: View {
         .onChange(of: authVM.isProfileComplete) { _, newValue in
             if newValue && authVM.isAuthenticated && !hasCheckedBLEStatus {
                 checkBLEStatus()
-            }
-        }
-        .onChange(
-            of: onboardingViewModel.hasCompletedOnboarding
-        ) { _, completed in
-            if completed {
-                withAnimation {
-                    showOnboarding = false
-                }
             }
         }
     }
@@ -109,12 +82,5 @@ struct ContentView: View {
     
     private func checkBLEStatus() {
         hasCheckedBLEStatus = true
-        
-        if !bluetoothService.isConnected {
-            withAnimation {
-                showOnboarding = true
-                onboardingViewModel.checkForPreviousDevice()
-            }
-        }
     }
 }
