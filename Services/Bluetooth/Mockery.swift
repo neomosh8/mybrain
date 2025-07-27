@@ -175,7 +175,7 @@ class MockBluetoothService: NSObject, ObservableObject {
         stopScanning()
         
         // Simulate connection delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 14) {
             self.isConnected = true
             self.connectedDevice = BLEDevice(id: device.id, name: device.name, peripheral: nil)
             self.batteryLevel = Int.random(in: 60...95)
@@ -229,9 +229,9 @@ class MockBluetoothService: NSObject, ObservableObject {
         guard let savedID = UserDefaults.standard.string(forKey: savedDeviceKey) else { return }
         
         startScanning()
-        
+                
         // Simulate finding the saved device
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) {
             if let device = self.mockDevices.first(where: { $0.id == savedID }) {
                 self.connect(to: device)
             }
