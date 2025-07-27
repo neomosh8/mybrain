@@ -13,7 +13,8 @@ struct HomeView: View {
     @State private var cardScale: CGFloat = 1.0
     @State private var cardOpacity: Double = 1.0
     @State private var cardOffset: CGSize = .zero
-    
+    @State private var deviceStatusCard: DeviceStatusCard?
+
     // Search/Filter states
     @State private var showSearchField = false
     @State private var searchText = ""
@@ -21,7 +22,6 @@ struct HomeView: View {
     // Battery related states
     @State private var batteryLevel: Int?
     @State private var batteryCancellable: AnyCancellable?
-    
     
     @State private var cancellables = Set<AnyCancellable>()
     
@@ -387,12 +387,65 @@ struct ConnectionStatusIndicator: View {
     }
 }
 
-// MARK: - Device Status Card
+// MARK: - Enhanced Device Status Card with Auto-Connect States
 struct DeviceStatusCard: View {
     @EnvironmentObject var bluetoothService: BTService
     let onCardTapped: () -> Void
     
+    @State private var isVisible = true
+    @State private var cardOpacity: Double = 1.0
+    @State private var cardOffset: CGSize = .zero
+    @State private var autoConnectAttempted = false
+    @State private var connectionTimer: Timer?
+    @State private var hideTimer: Timer?
+    
+    enum CardState {
+        case connectingToSaved(deviceName: String)
+        case tapToConnect
+        case connected(deviceInfo: DeviceInfo)
+        case connectionFailed
+    }
+    
+    struct DeviceInfo {
+        let name: String
+        let serialNumber: String?
+        let batteryLevel: Int?
+    }
+    
+    private var currentState: CardState {
+        let hasSavedDevice = UserDefaults.standard.string(forKey: "savedBluetoothDeviceID") != nil
+        
+        if bluetoothService.isConnected, let device = bluetoothService.connectedDevice {
+            return .connected(deviceInfo: DeviceInfo(
+                name: device.name,
+                serialNumber: bluetoothService.serialNumber,
+                batteryLevel: bluetoothService.batteryLevel
+            ))
+        } else if hasSavedDevice && !autoConnectAttempted {
+            let deviceName = bluetoothService.connectedDevice?.name ?? "NeuroLink"
+            return .connectingToSaved(deviceName: deviceName)
+        } else if hasSavedDevice && autoConnectAttempted && !bluetoothService.isConnected {
+            return .connectionFailed
+        } else {
+            return .tapToConnect
+        }
+    }
+    
     var body: some View {
+        if isVisible {
+            cardContent
+                .opacity(cardOpacity)
+                .offset(cardOffset)
+                .onAppear {
+                    handleInitialState()
+                }
+                .onChange(of: bluetoothService.isConnected) { _, isConnected in
+                    handleConnectionChange(isConnected)
+                }
+        }
+    }
+    
+    private var cardContent: some View {
         Button(action: onCardTapped) {
             HStack(spacing: 16) {
                 RoundedRectangle(cornerRadius: 10)
@@ -407,23 +460,11 @@ struct DeviceStatusCard: View {
                             .foregroundColor(.blue)
                     )
                 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(bluetoothService.isConnected ?
-                         (bluetoothService.connectedDevice?.name ?? "Unknown Device") :
-                            "Not Connected")
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                    
-                    Text("Model: NL-2024")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
+                cardTextContent
                 
                 Spacer()
                 
-                if bluetoothService.isConnected {
-                    BatteryIndicator(level: bluetoothService.batteryLevel ?? 0)
-                }
+                cardRightContent
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 16)
@@ -436,11 +477,138 @@ struct DeviceStatusCard: View {
         }
         .buttonStyle(PlainButtonStyle())
     }
+    
+    @ViewBuilder
+    private var cardTextContent: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            switch currentState {
+            case .connectingToSaved(let deviceName):
+                Text("Connecting to \(deviceName)...")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                
+                HStack(spacing: 4) {
+                    ProgressView()
+                        .scaleEffect(0.7)
+                    Text("Please wait")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                
+            case .tapToConnect:
+                Text("Tap to Connect")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                
+                Text("Connect your NeuroLink device")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                
+            case .connected(let deviceInfo):
+                Text(deviceInfo.name)
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                
+                Text("Serial: \(deviceInfo.serialNumber ?? "Loading...")")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                
+            case .connectionFailed:
+                Text("Connection Failed")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.red)
+                
+                Text("Tap to connect")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var cardRightContent: some View {
+        switch currentState {
+        case .connectingToSaved:
+            EmptyView()
+            
+        case .tapToConnect, .connectionFailed:
+            EmptyView()
+            
+        case .connected(let deviceInfo):
+            if let batteryLevel = deviceInfo.batteryLevel {
+                BatteryIndicator(level: batteryLevel)
+            }
+        }
+    }
+    
+    // MARK: - State Handling Methods
+    
+    private func handleInitialState() {
+        // Auto-connect if we have a saved device
+        if UserDefaults.standard.string(forKey: "savedBluetoothDeviceID") != nil && !bluetoothService.isConnected {
+            triggerAutoConnect()
+        }
+    }
+    
+    private func triggerAutoConnect() {
+        autoConnectAttempted = true
+        bluetoothService.autoConnect()
+        
+        // Set a timeout for connection attempt (10 seconds)
+        connectionTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: false) { _ in
+            if !bluetoothService.isConnected {
+                // Connection failed, state will update automatically
+                print("Auto-connection timeout")
+            }
+        }
+    }
+    
+    private func handleConnectionChange(_ isConnected: Bool) {
+        connectionTimer?.invalidate()
+        
+        if isConnected {
+            // Device connected successfully, show for 2 seconds then hide
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                hideCardWithAnimation()
+            }
+        }
+    }
+    
+    private func hideCardWithAnimation() {
+        withAnimation(.easeInOut(duration: 0.3)) {
+            cardOpacity = 0.0
+            cardOffset = CGSize(width: 0, height: -50)
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            isVisible = false
+        }
+    }
+    
+    // Method to show card again (can be called from parent)
+    func showCard() {
+        isVisible = true
+        withAnimation(.easeInOut(duration: 0.3)) {
+            cardOpacity = 1.0
+            cardOffset = .zero
+        }
+    }
 }
 
-// MARK: - Battery Indicator
+// MARK: - Battery Indicator Component
 struct BatteryIndicator: View {
     let level: Int
+    
+    private var batteryColor: Color {
+        switch level {
+        case 75...100: return .green
+        case 25...74: return .yellow
+        default: return .red
+        }
+    }
     
     var body: some View {
         VStack(alignment: .trailing, spacing: 4) {
@@ -476,14 +644,6 @@ struct BatteryIndicator: View {
             Text("3h 24m left")
                 .font(.caption2)
                 .foregroundColor(.secondary)
-        }
-    }
-    
-    private var batteryColor: Color {
-        switch level {
-        case 76...100: return .green
-        case 26...75: return .orange
-        default: return .red
         }
     }
 }
