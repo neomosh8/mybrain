@@ -84,7 +84,6 @@
 		74C286102DB4D0E900CF836B /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 74C2860F2DB4D0E900CF836B /* GoogleSignIn */; };
 		74C286122DB4D0E900CF836B /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 74C286112DB4D0E900CF836B /* GoogleSignInSwift */; };
 		74C286142DB4D5EB00CF836B /* client_312380135422-bko7g13qv6ggt7e5cc7dlt6lsquq7qi4.apps.googleusercontent.com.plist in Resources */ = {isa = PBXBuildFile; fileRef = 74C286132DB4D5EB00CF836B /* client_312380135422-bko7g13qv6ggt7e5cc7dlt6lsquq7qi4.apps.googleusercontent.com.plist */; };
-		74D58B352E151AB7008B62DC /* AppStateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74D58B342E151AB3008B62DC /* AppStateManager.swift */; };
 		74D58B382E152780008B62DC /* AppNavigationBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74D58B372E152776008B62DC /* AppNavigationBar.swift */; };
 		74EC8AA52DCE6590008DE8A9 /* BackgroundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74EC8AA42DCE6588008DE8A9 /* BackgroundManager.swift */; };
 		74F16AE62E3537F6006B51F7 /* AnimatedSubtitleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74F16AE52E3537F5006B51F7 /* AnimatedSubtitleView.swift */; };
@@ -194,7 +193,6 @@
 		74C2860A2DB4C30E00CF836B /* AppleAuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleAuthManager.swift; sourceTree = "<group>"; };
 		74C2860C2DB4C32100CF836B /* GoogleAuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleAuthManager.swift; sourceTree = "<group>"; };
 		74C286132DB4D5EB00CF836B /* client_312380135422-bko7g13qv6ggt7e5cc7dlt6lsquq7qi4.apps.googleusercontent.com.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "client_312380135422-bko7g13qv6ggt7e5cc7dlt6lsquq7qi4.apps.googleusercontent.com.plist"; sourceTree = "<group>"; };
-		74D58B342E151AB3008B62DC /* AppStateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStateManager.swift; sourceTree = "<group>"; };
 		74D58B372E152776008B62DC /* AppNavigationBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppNavigationBar.swift; sourceTree = "<group>"; };
 		74EC8AA42DCE6588008DE8A9 /* BackgroundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundManager.swift; sourceTree = "<group>"; };
 		74F16AE52E3537F5006B51F7 /* AnimatedSubtitleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedSubtitleView.swift; sourceTree = "<group>"; };
@@ -262,7 +260,6 @@
 				743D5BB72DFC464000C4F71E /* MainTabView.swift */,
 				742DCF802DDD8C3500B17443 /* Models */,
 				684426FE2D13D580002E9BC6 /* myBrainApp.swift */,
-				74D58B332E151AA7008B62DC /* Shared */,
 				743D5BB32DFC460700C4F71E /* Tabs */,
 				74263C712DDADEBA00953598 /* ViewModels */,
 			);
@@ -657,14 +654,6 @@
 			path = Utilities;
 			sourceTree = "<group>";
 		};
-		74D58B332E151AA7008B62DC /* Shared */ = {
-			isa = PBXGroup;
-			children = (
-				74D58B342E151AB3008B62DC /* AppStateManager.swift */,
-			);
-			path = Shared;
-			sourceTree = "<group>";
-		};
 		74D58B362E15276C008B62DC /* UI */ = {
 			isa = PBXGroup;
 			children = (
@@ -814,7 +803,6 @@
 				74263C292DDADAE800953598 /* AnimatedParagraphView.swift in Sources */,
 				74BC7E702E00109800A9C2F4 /* AuthenticationAPI+Implementation.swift in Sources */,
 				745BE7A62E23D03A00FA1CC1 /* AudioStreamingViewModel.swift in Sources */,
-				74D58B352E151AB7008B62DC /* AppStateManager.swift in Sources */,
 				74263C2B2DDADAE800953598 /* SignalProcessing.swift in Sources */,
 				74BC7E5E2E000DCB00A9C2F4 /* TokenStorage.swift in Sources */,
 				74BC7E682E000E0700A9C2F4 /* ResponseModels.swift in Sources */,
