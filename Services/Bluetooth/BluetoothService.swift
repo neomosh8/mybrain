@@ -3,7 +3,7 @@ import CoreBluetooth
 import Combine
 
 //typealias BTService = BluetoothService
- typealias BTService = MockBluetoothService
+typealias BTService = MockBluetoothService
 
 class BluetoothService: NSObject, ObservableObject {
     // MARK: - Published Properties
@@ -11,13 +11,13 @@ class BluetoothService: NSObject, ObservableObject {
     static let shared = BluetoothService()
     
     @Published var isDevelopmentMode = false
-
+    
     private let feedbackSubject = PassthroughSubject<Double, Never>()
     
     var feedbackPublisher: AnyPublisher<Double, Never> {
         feedbackSubject.eraseToAnyPublisher()
     }
-
+    
     // MARK: - Simulation state
     private var simPhase: Double = 0.0
     private let simStep:  Double = 0.15
@@ -137,11 +137,16 @@ class BluetoothService: NSObject, ObservableObject {
     func disconnect() {
         guard let peripheral = peripheral else { return }
         centralManager.cancelPeripheralConnection(peripheral)
+        removeSavedDevice() 
     }
     
     func saveConnectedDevice() {
         guard let device = connectedDevice else { return }
         UserDefaults.standard.set(device.id, forKey: savedDeviceKey)
+    }
+    
+    func removeSavedDevice() {
+        UserDefaults.standard.removeObject(forKey: savedDeviceKey)
     }
     
     private func enableLeadOffDetection(_ enable: Bool) {
@@ -561,7 +566,7 @@ class BluetoothService: NSObject, ObservableObject {
         }
         
         feedbackSubject.send(value)
-
+        
         return value
     }
     
