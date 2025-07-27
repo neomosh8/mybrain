@@ -314,10 +314,8 @@ class AudioStreamingViewModel: ObservableObject {
         
         print("🎵 Received chapter \(chapterNumber): duration=\(audioDuration)s, generation=\(generationTime)s")
         
-        // FIXED: Update current chapter number
         currentChapterNumber = chapterNumber
-                
-        // Add chapter to manager
+        
         let chapterInfo = ChapterInfo(
             number: chapterNumber,
             title: data["title"] as? String,
@@ -327,19 +325,15 @@ class AudioStreamingViewModel: ObservableObject {
         )
         chapterManager.addChapter(chapterInfo)
         
-        // FIXED: Calculate when to request next chapter using generation_time (restored from old approach)
-        // Request next chapter at: (current_chapter_duration - generation_time) seconds into current chapter
         let requestDelay = audioDuration - generationTime
         nextChapterRequestTime = durationsSoFar + requestDelay
         
-        // Update accumulated durations
         durationsSoFar += audioDuration
         lastChapterComplete = isComplete
         
         print("🎵 Next chapter request time set to: \(nextChapterRequestTime ?? 0)")
         print("🎵 Total duration so far: \(durationsSoFar)")
         
-        // Refresh subtitles for new chapter if subtitle URL exists
         if let subtitleURL = subtitlesURL {
             DispatchQueue.main.async {
                 NotificationCenter.default.post(
