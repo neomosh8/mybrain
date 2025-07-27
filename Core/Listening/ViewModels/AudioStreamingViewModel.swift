@@ -18,20 +18,20 @@ class AudioStreamingViewModel: ObservableObject {
     @Published var duration: Double = 0.0
 
     // MARK: - Chapter Progress State
-    @Published var nextChapterRequested = false
     @Published var lastChapterComplete = false
     @Published var hasCompletedPlayback = false
-    @Published var nextChapterTime: Double?
+    @Published var nextChapterRequestTime: Double?
     @Published var durationsSoFar: Double = 0.0
+    
+    // MARK: - Request Deduplication
+    private var requestedChapters: Set<Int> = [] // Track requested chapters
+    @Published var currentChapterNumber: Int = 1 // Track current chapter
     
     // MARK: - Subtitle State
     @Published var subtitlesURL: String?
     
     // MARK: - Thought Context
     private var currentThought: Thought?
-    
-    // MARK: - Constants
-    private let chapterBuffer: Double = 0.60 // Request next chapter 60s before current ends
     
     // MARK: - Dependencies
     private let networkService = NetworkServiceManager.shared
@@ -83,10 +83,11 @@ class AudioStreamingViewModel: ObservableObject {
     // MARK: - Private Methods
     
     private func resetState() {
-        nextChapterRequested = false
+        requestedChapters.removeAll()
+        currentChapterNumber = 1
         lastChapterComplete = false
         hasCompletedPlayback = false
-        nextChapterTime = nil
+        nextChapterRequestTime = nil
         durationsSoFar = 0.0
         subtitlesURL = nil
         playerError = nil
@@ -176,7 +177,7 @@ class AudioStreamingViewModel: ObservableObject {
         player = AVPlayer(playerItem: playerItem)
         streamingState = .ready
         setupPlayerObservations()
-        configurePlayerForBackground() 
+        configurePlayerForBackground()
     }
     
     private func setupAudioPlayer(with url: String) {
@@ -238,7 +239,7 @@ class AudioStreamingViewModel: ObservableObject {
         
         // Monitor playback progress
         let timeObserver = player.addPeriodicTimeObserver(
-            forInterval: CMTime(seconds: 1.0, preferredTimescale: 1),
+            forInterval: CMTime(seconds: 1.0, preferredTimescale: CMTimeScale(NSEC_PER_SEC)),
             queue: .main
         ) { [weak self] currentTime in
             Task { @MainActor in
@@ -272,25 +273,27 @@ class AudioStreamingViewModel: ObservableObject {
         // Use currentSeconds directly (not globalTime) for chapter detection
         chapterManager.updateCurrentChapter(for: currentSeconds)
         
-        // Debug print to verify chapter detection
-        print("🎵 Current time: \(currentSeconds), Current chapter: \(chapterManager.currentChapter?.number ?? 0)")
-        
         // Send CURRENT chapter time, not global time
         NotificationCenter.default.post(
             name: Notification.Name("UpdateSubtitleTime"),
             object: currentSeconds
         )
         
-        // For next chapter requests, still use the accumulated logic
-        let globalTime = currentSeconds + durationsSoFar
-        guard let nextChapterTime = nextChapterTime,
-              globalTime >= nextChapterTime,
-              !nextChapterRequested,
-              !lastChapterComplete else { return }
-
-        nextChapterRequested = true
-        print("🎵 Requesting next chapter at global time: \(globalTime), threshold: \(nextChapterTime)")
-        requestNextChapter()
+        checkForNextChapterRequest(currentTime: currentSeconds)
+    }
+    
+    private func checkForNextChapterRequest(currentTime: Double) {
+        guard let requestTime = nextChapterRequestTime else { return }
+        
+        let nextChapterNumber = currentChapterNumber + 1
+        
+        // FIXED: Check if we should request the next chapter
+        // Only request if: currentTime >= requestTime AND we haven't requested this chapter yet
+        if currentTime >= requestTime && !requestedChapters.contains(nextChapterNumber) && !lastChapterComplete {
+            requestedChapters.insert(nextChapterNumber)
+            requestNextChapter()
+            print("🎵 ✅ Requesting chapter \(nextChapterNumber) at time \(currentTime) (threshold: \(requestTime))")
+        }
     }
     
     private func requestNextChapter() {
@@ -308,6 +311,11 @@ class AudioStreamingViewModel: ObservableObject {
         let audioDuration = data["audio_duration"] as? Double ?? 0.0
         let generationTime = data["generation_time"] as? Double ?? 0.0
         let isComplete = data["complete"] as? Bool ?? false
+        
+        print("🎵 Received chapter \(chapterNumber): duration=\(audioDuration)s, generation=\(generationTime)s")
+        
+        // FIXED: Update current chapter number
+        currentChapterNumber = chapterNumber
                 
         // Add chapter to manager
         let chapterInfo = ChapterInfo(
@@ -319,17 +327,17 @@ class AudioStreamingViewModel: ObservableObject {
         )
         chapterManager.addChapter(chapterInfo)
         
-        // Calculate when to request next chapter:
-        // Wait until (audio_duration - generation_time) seconds into this chapter
+        // FIXED: Calculate when to request next chapter using generation_time (restored from old approach)
+        // Request next chapter at: (current_chapter_duration - generation_time) seconds into current chapter
         let requestDelay = audioDuration - generationTime
-        nextChapterTime = durationsSoFar + requestDelay
+        nextChapterRequestTime = durationsSoFar + requestDelay
         
-        nextChapterRequested = false
+        // Update accumulated durations
         durationsSoFar += audioDuration
         lastChapterComplete = isComplete
         
-        print("🎵 Chapter \(chapterNumber) completed. Total duration so far: \(durationsSoFar)")
-        print("🎵 Next chapter request time: \(nextChapterTime ?? 0)")
+        print("🎵 Next chapter request time set to: \(nextChapterRequestTime ?? 0)")
+        print("🎵 Total duration so far: \(durationsSoFar)")
         
         // Refresh subtitles for new chapter if subtitle URL exists
         if let subtitleURL = subtitlesURL {
