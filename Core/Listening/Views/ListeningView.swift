@@ -8,7 +8,6 @@ struct ListeningView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var audioViewModel = AudioStreamingViewModel()
     @StateObject private var subtitleViewModel = SubtitleViewModel()
-    @StateObject private var statusViewModel = ListeningStatusViewModel()
     @StateObject private var statusPickerController = BottomSheetPickerController()
     
     private let networkService = NetworkServiceManager.shared
