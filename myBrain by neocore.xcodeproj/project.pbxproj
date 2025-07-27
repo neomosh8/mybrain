@@ -23,9 +23,7 @@
 		74263C292DDADAE800953598 /* AnimatedParagraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C0A2DDADAE800953598 /* AnimatedParagraphView.swift */; };
 		74263C2B2DDADAE800953598 /* SignalProcessing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C1A2DDADAE800953598 /* SignalProcessing.swift */; };
 		74263C2D2DDADAE800953598 /* FeedbackPlotView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C0F2DDADAE800953598 /* FeedbackPlotView.swift */; };
-		74263C312DDADAE800953598 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C152DDADAE800953598 /* OnboardingView.swift */; };
 		74263C362DDADAE800953598 /* BluetoothService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C0B2DDADAE800953598 /* BluetoothService.swift */; };
-		74263C382DDADAE800953598 /* OnboardingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C162DDADAE800953598 /* OnboardingViewModel.swift */; };
 		74263C3B2DDADAE800953598 /* InsightCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C122DDADAE800953598 /* InsightCard.swift */; };
 		74263C3C2DDADAE800953598 /* LoginScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C132DDADAE800953598 /* LoginScreen.swift */; };
 		74263C402DDADAE800953598 /* ChapterCompletionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C0D2DDADAE800953598 /* ChapterCompletionView.swift */; };
@@ -133,8 +131,6 @@
 		74263C0F2DDADAE800953598 /* FeedbackPlotView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackPlotView.swift; sourceTree = "<group>"; };
 		74263C122DDADAE800953598 /* InsightCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightCard.swift; sourceTree = "<group>"; };
 		74263C132DDADAE800953598 /* LoginScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginScreen.swift; sourceTree = "<group>"; };
-		74263C152DDADAE800953598 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
-		74263C162DDADAE800953598 /* OnboardingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingViewModel.swift; sourceTree = "<group>"; };
 		74263C1A2DDADAE800953598 /* SignalProcessing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalProcessing.swift; sourceTree = "<group>"; };
 		74263C442DDADAE800953598 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		74263C452DDADAE800953598 /* loadingAnimation.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = loadingAnimation.json; sourceTree = "<group>"; };
@@ -273,7 +269,6 @@
 				745BE7982E23CFEE00FA1CC1 /* Listening */,
 				748932FF2E238960007A5340 /* Reading */,
 				74263C5A2DDADDAE00953598 /* Authentication */,
-				74263C5E2DDADDD900953598 /* Bluetooth */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -333,15 +328,6 @@
 				74263C742DDADEC900953598 /* ViewModels */,
 			);
 			path = Authentication;
-			sourceTree = "<group>";
-		};
-		74263C5E2DDADDD900953598 /* Bluetooth */ = {
-			isa = PBXGroup;
-			children = (
-				74263C692DDADEA800953598 /* Views */,
-				74263C682DDADEA200953598 /* ViewModels */,
-			);
-			path = Bluetooth;
 			sourceTree = "<group>";
 		};
 		74263C5F2DDADDE300953598 /* Network */ = {
@@ -409,22 +395,6 @@
 				74263C0A2DDADAE800953598 /* AnimatedParagraphView.swift */,
 			);
 			path = Misc;
-			sourceTree = "<group>";
-		};
-		74263C682DDADEA200953598 /* ViewModels */ = {
-			isa = PBXGroup;
-			children = (
-				74263C162DDADAE800953598 /* OnboardingViewModel.swift */,
-			);
-			path = ViewModels;
-			sourceTree = "<group>";
-		};
-		74263C692DDADEA800953598 /* Views */ = {
-			isa = PBXGroup;
-			children = (
-				74263C152DDADAE800953598 /* OnboardingView.swift */,
-			);
-			path = Views;
 			sourceTree = "<group>";
 		};
 		74263C712DDADEBA00953598 /* ViewModels */ = {
@@ -808,7 +778,6 @@
 				74BC7E682E000E0700A9C2F4 /* ResponseModels.swift in Sources */,
 				74BC7E6A2E000E0E00A9C2F4 /* WebSocketModels.swift in Sources */,
 				74263C2D2DDADAE800953598 /* FeedbackPlotView.swift in Sources */,
-				74263C312DDADAE800953598 /* OnboardingView.swift in Sources */,
 				746822662E2F75F4007AB029 /* ListeningStatusViewModel.swift in Sources */,
 				74BC7E5C2E000DC100A9C2F4 /* WebSocketNetworkService.swift in Sources */,
 				74BC7E5A2E000DB900A9C2F4 /* HTTPNetworkService.swift in Sources */,
@@ -819,7 +788,6 @@
 				74BC7E642E000DF900A9C2F4 /* NetworkModels.swift in Sources */,
 				74F16AE62E3537F6006B51F7 /* AnimatedSubtitleView.swift in Sources */,
 				7499D9082E02A652007E8C92 /* Thought+URLProcessing.swift in Sources */,
-				74263C382DDADAE800953598 /* OnboardingViewModel.swift in Sources */,
 				74263C3B2DDADAE800953598 /* InsightCard.swift in Sources */,
 				74263C3C2DDADAE800953598 /* LoginScreen.swift in Sources */,
 				747E83BF2E31E3AF00F28F50 /* Mockery.swift in Sources */,
