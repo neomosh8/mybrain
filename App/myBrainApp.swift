@@ -19,7 +19,6 @@ struct myBrainApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .environmentObject(AppStateManager.shared)
                 .environmentObject(authVM)
                 .environmentObject(backgroundManager)
                 .modelContainer(for: [AuthData.self, UserProfileData.self])
