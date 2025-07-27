@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 struct DeviceView: View {
     @Environment(\.dismiss) private var dismiss
@@ -23,6 +24,12 @@ struct DeviceView: View {
     @State private var selectedChannel = 0 // 0 = both, 1 = channel1, 2 = channel2
     @State private var useTestSignal = true // Toggle between test signal and normal mode
     @State private var enableLeadOffDetection = false // Toggle for lead-off detection
+    
+    // Onboarding states (integrated from OnboardingViewModel)
+    @State private var onboardingState: OnboardingState = .welcome
+    @State private var isReconnecting = false
+    
+    @State private var cancellables = Set<AnyCancellable>()
     
     var body: some View {
         ScrollView {
@@ -76,8 +83,401 @@ struct DeviceView: View {
         .sheet(isPresented: $showTestSignalView) {
 //            TestSignalView(bluetoothService: bluetoothService)
         }
+        .onAppear {
+            setupBluetoothObservers()
+            checkForPreviousDevice()
+        }
         .onDisappear {
             stopRecordingIfNeeded()
+        }
+    }
+}
+
+// MARK: - Onboarding States
+enum OnboardingState {
+    case welcome
+    case scanning
+    case connecting
+    case connected
+    case permissionIssue
+}
+
+// MARK: - No Device Connected View with Integrated Onboarding
+extension DeviceView {
+    private var noDeviceConnectedView: some View {
+        VStack(spacing: 24) {
+            Spacer()
+            
+            if isReconnecting {
+                reconnectingView
+            } else {
+                switch onboardingState {
+                case .welcome:
+                    welcomeConnectionView
+                case .scanning:
+                    deviceScanningView
+                case .connecting:
+                    connectingView
+                case .connected:
+                    connectedView
+                case .permissionIssue:
+                    permissionIssueView
+                }
+            }
+            
+            Spacer()
+        }
+    }
+    
+    // MARK: - Reconnecting View
+    private var reconnectingView: some View {
+        VStack(spacing: 24) {
+            Text("Connecting to Your Headset")
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(.primary)
+            
+            ProgressView()
+                .scaleEffect(1.5)
+                .padding()
+            
+            Button(action: {
+                bluetoothService.stopScanning()
+                isReconnecting = false
+                onboardingState = .welcome
+            }) {
+                Text("Cancel")
+                    .foregroundColor(.blue)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(
+                        Capsule()
+                            .stroke(Color.blue, lineWidth: 1.5)
+                    )
+            }
+        }
+    }
+    
+    // MARK: - Welcome View
+    private var welcomeConnectionView: some View {
+        VStack(spacing: 24) {
+            VStack(spacing: 16) {
+                // Device Icon
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.blue)
+                    .frame(width: 80, height: 80)
+                    .overlay(
+                        Image("Neurolink")
+                            .renderingMode(.template)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 40, height: 40)
+                            .foregroundColor(.white)
+                    )
+                
+                VStack(spacing: 8) {
+                    Text("Connect Your Headset")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                    
+                    Text("To use all features of the app, you'll need to connect your Neocore headset.")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 20)
+                }
+            }
+            
+            VStack(spacing: 12) {
+                Button(action: nextStep) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 16, weight: .medium))
+                        Text("Let's Connect")
+                            .font(.system(size: 16, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(Color.blue)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+                .padding(.horizontal, 40)
+                
+                Button(action: skipOnboarding) {
+                    Text("Skip for now")
+                        .foregroundColor(.gray)
+                        .font(.system(size: 14, weight: .medium))
+                }
+            }
+        }
+    }
+    
+    // MARK: - Device Scanning View
+    private var deviceScanningView: some View {
+        VStack(spacing: 20) {
+            Text("Select Your Headset")
+                .font(.title2)
+                .fontWeight(.bold)
+            
+            if bluetoothService.isScanning && bluetoothService.discoveredDevices.isEmpty {
+                VStack(spacing: 16) {
+                    ProgressView("Scanning...")
+                        .padding()
+                    
+                    Text("Looking for nearby devices...")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            } else if bluetoothService.discoveredDevices.isEmpty {
+                VStack(spacing: 16) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 32))
+                        .foregroundColor(.orange)
+                    
+                    Text("No devices found")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    Text("Make sure your headset is turned on and in pairing mode")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 20)
+                }
+            } else {
+                VStack(spacing: 12) {
+                    ForEach(bluetoothService.discoveredDevices) { device in
+                        deviceRow(device)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                selectDevice(device)
+                            }
+                    }
+                }
+            }
+            
+            HStack(spacing: 16) {
+                Button(action: {
+                    if bluetoothService.isScanning {
+                        bluetoothService.stopScanning()
+                    } else {
+                        bluetoothService.startScanning()
+                    }
+                }) {
+                    Text(bluetoothService.isScanning ? "Stop Scan" : "Scan Again")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.blue)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.blue, lineWidth: 1)
+                        )
+                }
+                
+                Button(action: {
+                    onboardingState = .welcome
+                }) {
+                    Text("Back")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.gray)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.gray, lineWidth: 1)
+                        )
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+    }
+    
+    // MARK: - Connecting View
+    private var connectingView: some View {
+        VStack(spacing: 24) {
+            Text("Connecting...")
+                .font(.title2)
+                .fontWeight(.bold)
+            
+            ProgressView()
+                .scaleEffect(1.5)
+                .padding()
+            
+            Text("Please wait while we connect to your headset")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+        }
+    }
+    
+    // MARK: - Connected View
+    private var connectedView: some View {
+        VStack(spacing: 24) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 64))
+                .foregroundColor(.green)
+            
+            VStack(spacing: 8) {
+                Text("Connected!")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+                
+                Text("Your headset is ready to use")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+    
+    // MARK: - Permission Issue View
+    private var permissionIssueView: some View {
+        VStack(spacing: 24) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 64))
+                .foregroundColor(.orange)
+            
+            VStack(spacing: 12) {
+                Text("Bluetooth Issue")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
+                
+                Text(bluetoothPermissionMessage)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 20)
+            }
+            
+            Button(action: {
+                if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(settingsUrl)
+                }
+            }) {
+                Text("Open Settings")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(Color.blue)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+            }
+            .padding(.horizontal, 40)
+        }
+    }
+    
+    // MARK: - Device Row
+    private func deviceRow(_ device: DiscoveredDevice) -> some View {
+        HStack {
+            Image("Neurolink")
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 32, height: 32)
+                .foregroundColor(device.isPriority ? .blue : .secondary)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(device.name)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                
+                Text("Signal: \(device.rssi) dBm")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+            
+            if device.isPriority {
+                Text("Neocore Device")
+                    .font(.caption)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.blue)
+                    .cornerRadius(4)
+            }
+            
+            Image(systemName: "chevron.right")
+                .foregroundColor(.gray)
+        }
+        .padding(.vertical, 12)
+        .padding(.horizontal, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(device.isPriority ? Color.blue.opacity(0.1) : Color(.systemGray6))
+        )
+    }
+    
+    // MARK: - Onboarding Helper Methods
+    private func nextStep() {
+        switch onboardingState {
+        case .welcome:
+            onboardingState = .scanning
+            bluetoothService.startScanning()
+        case .scanning, .connecting, .connected, .permissionIssue:
+            break
+        }
+    }
+    
+    private func selectDevice(_ device: DiscoveredDevice) {
+        onboardingState = .connecting
+        bluetoothService.connect(to: device)
+    }
+    
+    private func skipOnboarding() {
+        bluetoothService.isDevelopmentMode = true
+        // Navigate away or handle skip appropriately
+        onNavigateToHome?() ?? dismiss()
+    }
+    
+    private func checkForPreviousDevice() {
+        isReconnecting = true
+        bluetoothService.reconnectToPreviousDevice()
+        
+        // Set timeout for auto-reconnection
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+            if !bluetoothService.isConnected {
+                self.isReconnecting = false
+                self.onboardingState = .welcome
+            }
+        }
+    }
+    
+    private func setupBluetoothObservers() {
+        // Monitor connection status
+        bluetoothService.objectWillChange
+            .sink {
+                DispatchQueue.main.async {
+                    if bluetoothService.isConnected {
+                        onboardingState = .connected
+                        isReconnecting = false
+                    }
+                    
+                    // Handle permission issues
+                    let status = bluetoothService.permissionStatus
+                    if status == .poweredOff || status == .denied || status == .unsupported {
+                        onboardingState = .permissionIssue
+                    }
+                }
+            }
+            .store(in: &cancellables)
+    }
+    
+    private var bluetoothPermissionMessage: String {
+        switch bluetoothService.permissionStatus {
+        case .poweredOff:
+            return "Bluetooth is turned off. Please enable Bluetooth in your device settings."
+        case .denied:
+            return "Bluetooth permission is denied. Please allow Bluetooth access in Settings to connect to your Neocore headset."
+        case .unsupported:
+            return "Bluetooth is not supported on this device."
+        default:
+            return "There's an issue with Bluetooth. Please check your settings."
         }
     }
 }
@@ -1201,48 +1601,6 @@ extension DeviceView {
     private func stopRecordingIfNeeded() {
         if isRecording {
             stopRecording()
-        }
-    }
-}
-
-// MARK: - No Device Connected
-extension DeviceView {
-    private var noDeviceConnectedView: some View {
-        VStack(spacing: 24) {
-            Spacer()
-            
-            VStack(spacing: 16) {
-                // Device Icon
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.blue)
-                    .frame(width: 80, height: 80)
-                    .overlay(
-                        Image("Neurolink")
-                            .renderingMode(.template)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 40, height: 40)
-                            .foregroundColor(.white)
-                    )
-                
-                VStack(spacing: 8) {
-                    Text("No Device Connected")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.primary)
-                    
-                    Text("Connect your NeuroLink Pro to get started with brain monitoring")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 20)
-                }
-            }
-            
-            availableDevicesView
-                .padding(.horizontal, 20)
-            
-            Spacer()
         }
     }
 }
