@@ -1,123 +1,146 @@
-//SubtitleViewModel.swift
 import SwiftUI
 import Combine
 
-/// ViewModel that holds an array of .vtt segments, the current active segment,
-/// and logic to highlight the current word based on playback time.
 class SubtitleViewModel: ObservableObject {
-    @Published var segments: [SubtitleSegmentLink] = []
-    @Published var loadedSegmentData: [SubtitleSegmentData] = []
-    @Published var currentSegment: SubtitleSegmentData?
-    @Published var currentSegmentIndex: Int = 0
+    @Published var allWords: [WordTimestamp] = []
+    @Published var currentWordIndex: Int = -1
+    @Published var isLoading: Bool = false
     
-    /// We'll track the global player time directly.
-    @Published var currentGlobalTime: Double = 0
-    
-    func preloadNextSegmentIfNeeded(currentTime: Double) {
-        guard !segments.isEmpty else { return }
+    func loadChapterSubtitles(playlistURL: String, chapterOffset: Double) {
+        self.isLoading = true
         
-        let bufferTime: Double = 5.0 // Start loading 5 seconds before segment ends
+        print("🎵 Loading chapter subtitles from: \(playlistURL) with offset: \(chapterOffset)")
         
-        for (index, segment) in segments.enumerated() {
-            // If we're within buffer time of segment end and next segment isn't loaded
-            if currentTime >= (segment.maxEnd - bufferTime) &&
-               index + 1 < segments.count &&
-               !isSegmentLoaded(at: index + 1) {
-                loadSegment(at: index + 1, preload: true)
-            }
-        }
-    }
-    
-    // load the .vtt file at a given index, parse it, and set `currentSegment`.
-    func loadSegment(at index: Int, preload: Bool = false) {
-        guard index >= 0, index < segments.count else { return }
-        
-        // Don't reload if already loaded
-        if isSegmentLoaded(at: index) { return }
-        
-        if !preload {
-            currentSegmentIndex = index
-        }
-        
-        let link = segments[index]
-        fetchAndParseVTT(from: link.urlString) { [weak self] segmentData in
+        fetchAllVTTFiles(playlistURL: playlistURL) { [weak self] words in
             DispatchQueue.main.async {
-                self?.addLoadedSegment(segmentData, at: index)
+                self?.appendWords(words, chapterOffset: chapterOffset)
+                self?.isLoading = false
             }
         }
     }
     
-    
-    private func addLoadedSegment(_ data: SubtitleSegmentData, at index: Int) {
-        // Insert in correct chronological order
-        if let insertIndex = loadedSegmentData.firstIndex(where: { $0.minStart > data.minStart }) {
-            loadedSegmentData.insert(data, at: insertIndex)
-        } else {
-            loadedSegmentData.append(data)
+    private func appendWords(_ newWords: [WordTimestamp], chapterOffset: Double) {
+        // Adjust word timestamps with chapter offset
+        let adjustedWords = newWords.map { word in
+            WordTimestamp(
+                start: word.start + chapterOffset,
+                end: word.end + chapterOffset,
+                text: word.text
+            )
         }
-    }
-    
-    private func isSegmentLoaded(at index: Int) -> Bool {
-        return loadedSegmentData.contains { $0.minStart == segments[index].minStart }
-    }
-    
-    /// Directly store the player's global time.
-    func updateCurrentTime(_ globalPlayerTime: Double) {
-        self.currentGlobalTime = globalPlayerTime
-    }
-    
-    /// If you want to auto-switch segments once we pass the last cue of the current segment:
-    /// We can see if the global time surpasses the maxEnd of the currentSegment,
-    /// then load the next segment. But only if each .vtt truly ends and the next .vtt picks up later.
-    func checkSegmentBoundary(onNextSegment: (Int) -> Void) {
-        guard !segments.isEmpty else { return }
         
-        // Figure out which segment truly matches the current global time
-        if let newIndex = findSegmentIndex(for: currentGlobalTime),
-           newIndex != currentSegmentIndex {
-            onNextSegment(newIndex)  // Tells the caller: "Load segment at newIndex"
+        // Append to existing words and sort by time
+        allWords.append(contentsOf: adjustedWords)
+        allWords.sort { $0.start < $1.start }
+        
+        print("🎵 Total words loaded: \(allWords.count)")
+    }
+    
+    func updateCurrentTime(_ globalTime: Double) {
+        // Find current word based on global time
+        let newIndex = allWords.firstIndex { word in
+            globalTime >= word.start && globalTime <= word.end
+        } ?? -1
+        
+        if newIndex != currentWordIndex {
+            currentWordIndex = newIndex
         }
     }
     
-    /// Finds the segment whose [minStart, maxEnd) range contains `time`.
-    /// If none match exactly, returns nil or the last if you want a fallback.
-    private func findSegmentIndex(for time: Double) -> Int? {
-        for (i, seg) in segments.enumerated() {
-            if time >= seg.minStart && time < seg.maxEnd {
-                return i
-            }
+    private func fetchAllVTTFiles(playlistURL: String, completion: @escaping ([WordTimestamp]) -> Void) {
+        guard let url = URL(string: playlistURL) else {
+            completion([])
+            return
         }
-        // If time goes beyond the last segment’s maxEnd, you can decide:
-        // return segments.count - 1 to stick on the last segment
-        return nil
-    }
-    
-    
-    /// Download and parse the .vtt file
-    private func fetchAndParseVTT(from urlString: String, completion: @escaping (SubtitleSegmentData) -> Void) {
-        guard let url = URL(string: urlString) else { return }
+        
         URLSession.shared.dataTask(with: url) { data, _, error in
-            if let e = error {
-                print("fetchAndParseVTT => error: \(e.localizedDescription)")
+            if let error = error {
+                print("VTT playlist error: \(error)")
+                completion([])
                 return
             }
+            
             guard let data = data,
-                  let content = String(data: data, encoding: .utf8)
-            else {
-                print("fetchAndParseVTT => invalid data")
+                  let content = String(data: data, encoding: .utf8) else {
+                completion([])
                 return
             }
-            let parsed = self.parseVTT(content: content)
-            completion(parsed)
+            
+            let vttFiles = self.extractVTTFiles(from: content, baseURL: playlistURL)
+            self.loadAllVTTFiles(vttFiles) { allWords in
+                completion(allWords)
+            }
+            
         }.resume()
     }
     
-    /// Very naive .vtt parser that lumps all text lines into one paragraph
-    /// and sets each line's start/end time. Then we break it into words.
-    private func parseVTT(content: String) -> SubtitleSegmentData {
-        var words: [WordTimestamp] = []
-        var paragraphBuilder = ""
+    private func extractVTTFiles(from content: String, baseURL: String) -> [String] {
+        let lines = content.components(separatedBy: .newlines)
+        var vttFiles: [String] = []
         
+        for line in lines {
+            if line.hasSuffix(".vtt") {
+                if line.hasPrefix("http") {
+                    vttFiles.append(line)
+                } else if let baseURL = URL(string: baseURL) {
+                    let fullURL = baseURL.deletingLastPathComponent().appendingPathComponent(line).absoluteString
+                    vttFiles.append(fullURL)
+                }
+            }
+        }
+        
+        return vttFiles
+    }
+    
+    private func loadAllVTTFiles(_ vttFiles: [String], completion: @escaping ([WordTimestamp]) -> Void) {
+        let group = DispatchGroup()
+        var allWords: [WordTimestamp] = []
+        let lock = NSLock()
+        
+        for vttFile in vttFiles {
+            group.enter()
+            fetchVTTContent(vttFile) { words in
+                lock.lock()
+                allWords.append(contentsOf: words)
+                lock.unlock()
+                group.leave()
+            }
+        }
+        
+        group.notify(queue: .main) {
+            // Sort by start time
+            allWords.sort { $0.start < $1.start }
+            completion(allWords)
+        }
+    }
+    
+    private func fetchVTTContent(_ vttURL: String, completion: @escaping ([WordTimestamp]) -> Void) {
+        guard let url = URL(string: vttURL) else {
+            completion([])
+            return
+        }
+        
+        URLSession.shared.dataTask(with: url) { data, _, error in
+            if let error = error {
+                print("VTT fetch error: \(error)")
+                completion([])
+                return
+            }
+            
+            guard let data = data,
+                  let content = String(data: data, encoding: .utf8) else {
+                completion([])
+                return
+            }
+            
+            let words = self.parseVTT(content: content)
+            completion(words)
+            
+        }.resume()
+    }
+    
+    private func parseVTT(content: String) -> [WordTimestamp] {
+        var words: [WordTimestamp] = []
         let lines = content.components(separatedBy: .newlines)
         let timeRegex = try! NSRegularExpression(
             pattern: #"(\d+):(\d+):(\d+\.\d+)\s-->\s(\d+):(\d+):(\d+\.\d+)"#,
@@ -132,64 +155,46 @@ class SubtitleViewModel: ObservableObject {
                 range: NSRange(location: 0, length: line.utf16.count)) {
                 
                 guard let startTime = parseTime(from: line, match: match, isStart: true),
-                      let endTime   = parseTime(from: line, match: match, isStart: false)
+                      let endTime = parseTime(from: line, match: match, isStart: false)
                 else { continue }
                 
-                // Next line(s) are the text
+                // Get text from next lines
                 var j = i + 1
                 var cueTextLines: [String] = []
                 while j < lines.count,
                       !lines[j].isEmpty,
-                      timeRegex.firstMatch(in: lines[j],
-                                           options: [],
-                                           range: NSRange(location: 0, length: lines[j].utf16.count)) == nil {
+                      timeRegex.firstMatch(in: lines[j], options: [], range: NSRange(location: 0, length: lines[j].utf16.count)) == nil {
                     cueTextLines.append(lines[j])
                     j += 1
                 }
                 
-                let combinedCueText = cueTextLines.joined(separator: " ")
-                paragraphBuilder.append(combinedCueText + " ")
+                let combinedText = cueTextLines.joined(separator: " ")
+                let wordTexts = combinedText.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
                 
-                let splitted = combinedCueText
-                    .components(separatedBy: .whitespaces)
-                    .filter { !$0.isEmpty }
-                
-                for w in splitted {
-                    words.append(WordTimestamp(start: startTime, end: endTime, text: w))
+                for wordText in wordTexts {
+                    words.append(WordTimestamp(start: startTime, end: endTime, text: wordText))
                 }
             }
         }
         
-        let allStarts = words.map(\.start)
-        let allEnds   = words.map(\.end)
-        let minStart = allStarts.min() ?? 0
-        let maxEnd   = allEnds.max()   ?? 0
-        
-        return SubtitleSegmentData(
-            paragraph: paragraphBuilder.trimmingCharacters(in: .whitespacesAndNewlines),
-            words: words.sorted { $0.start < $1.start },
-            minStart: minStart,
-            maxEnd:   maxEnd
-        )
+        return words
     }
     
-    private func parseTime(from line: String,
-                           match: NSTextCheckingResult,
-                           isStart: Bool) -> Double? {
-        let hourIndex   = isStart ? 1 : 4
+    private func parseTime(from line: String, match: NSTextCheckingResult, isStart: Bool) -> Double? {
+        let hourIndex = isStart ? 1 : 4
         let minuteIndex = isStart ? 2 : 5
         let secondIndex = isStart ? 3 : 6
         
-        func groupString(_ idx: Int) -> String {
-            let range = match.range(at: idx)
-            return (line as NSString).substring(with: range)
+        guard let hourRange = Range(match.range(at: hourIndex), in: line),
+              let minuteRange = Range(match.range(at: minuteIndex), in: line),
+              let secondRange = Range(match.range(at: secondIndex), in: line) else {
+            return nil
         }
         
-        guard let hh = Double(groupString(hourIndex)),
-              let mm = Double(groupString(minuteIndex)),
-              let ss = Double(groupString(secondIndex))
-        else { return nil }
+        let hours = Double(String(line[hourRange])) ?? 0
+        let minutes = Double(String(line[minuteRange])) ?? 0
+        let seconds = Double(String(line[secondRange])) ?? 0
         
-        return hh * 3600 + mm * 60 + ss
+        return hours * 3600 + minutes * 60 + seconds
     }
 }
