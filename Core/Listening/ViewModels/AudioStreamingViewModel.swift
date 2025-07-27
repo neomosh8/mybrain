@@ -16,7 +16,7 @@ class AudioStreamingViewModel: ObservableObject {
     
     @Published var currentTime: Double = 0.0
     @Published var duration: Double = 0.0
-
+    
     // MARK: - Chapter Progress State
     @Published var lastChapterComplete = false
     @Published var hasCompletedPlayback = false
@@ -24,8 +24,8 @@ class AudioStreamingViewModel: ObservableObject {
     @Published var durationsSoFar: Double = 0.0
     
     // MARK: - Request Deduplication
-    private var requestedChapters: Set<Int> = [] // Track requested chapters
-    @Published var currentChapterNumber: Int = 1 // Track current chapter
+    private var requestedChapters: Set<Int> = []
+    @Published var currentChapterNumber: Int = 1
     
     // MARK: - Subtitle State
     @Published var subtitlesURL: String?
@@ -195,7 +195,6 @@ class AudioStreamingViewModel: ObservableObject {
         
         setupPlayerObservations()
         
-        // Send subtitle notification AFTER player setup
         if let subtitleURL = subtitlesURL {
             DispatchQueue.main.async {
                 NotificationCenter.default.post(
@@ -207,7 +206,6 @@ class AudioStreamingViewModel: ObservableObject {
     }
     
     private func configurePlayerForBackground() {
-        // Enable background playback
         do {
             try AVAudioSession.sharedInstance().setCategory(
                 .playback,
@@ -223,7 +221,6 @@ class AudioStreamingViewModel: ObservableObject {
     private func setupPlayerObservations() {
         guard let player = player else { return }
         
-        // Observe player item status
         playerItemObservation = player.currentItem?.publisher(for: \.status)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] status in
@@ -237,7 +234,6 @@ class AudioStreamingViewModel: ObservableObject {
                 }
             }
         
-        // Monitor playback progress
         let timeObserver = player.addPeriodicTimeObserver(
             forInterval: CMTime(seconds: 1.0, preferredTimescale: CMTimeScale(NSEC_PER_SEC)),
             queue: .main
@@ -248,7 +244,6 @@ class AudioStreamingViewModel: ObservableObject {
         }
         playbackProgressObserver = timeObserver
         
-        // Observe playback end
         NotificationCenter.default.addObserver(
             forName: .AVPlayerItemDidPlayToEndTime,
             object: player.currentItem,
@@ -258,22 +253,60 @@ class AudioStreamingViewModel: ObservableObject {
                 self?.handlePlaybackCompletion()
             }
         }
+//        
+//        
+//        // NEW: Observe player status and errors
+//        playerItemObservation = player.currentItem?.publisher(for: \.status)
+//            .receive(on: DispatchQueue.main)
+//            .sink { [weak self] status in
+//                print("🎵 Player item status: \(status.rawValue)")
+//                switch status {
+//                case .failed:
+//                    if let error = player.currentItem?.error {
+//                        print("❌ Player failed: \(error.localizedDescription)")
+//                        self?.playerError = error
+//                    }
+//                case .readyToPlay:
+//                    print("✅ Player ready to play")
+//                case .unknown:
+//                    print("⚠️ Player status unknown")
+//                @unknown default:
+//                    print("🤔 Unknown player status")
+//                }
+//            }
+//        
+//        // NEW: Observe timeControlStatus changes
+//        player.publisher(for: \.timeControlStatus)
+//            .receive(on: DispatchQueue.main)
+//            .sink { status in
+//                print("🎵 TimeControlStatus: \(status.rawValue)")
+//                switch status {
+//                case .paused:
+//                    print("⏸️ Player paused")
+//                case .playing:
+//                    print("▶️ Player playing")
+//                case .waitingToPlayAtSpecifiedRate:
+//                    if let reason = player.reasonForWaitingToPlay {
+//                        print("⏳ Player waiting: \(reason.rawValue)")
+//                    }
+//                @unknown default:
+//                    print("🤔 Unknown time control status")
+//                }
+//            }
+//            .store(in: &cancellables)
     }
     
     private func monitorPlaybackProgress(currentTime: CMTime) {
         let currentSeconds = currentTime.seconds
         self.currentTime = currentSeconds.isFinite ? currentSeconds : 0.0
         
-        // Update duration if available
         if let currentItem = player?.currentItem {
             let totalDuration = currentItem.duration.seconds
             self.duration = totalDuration.isFinite ? totalDuration : 0.0
         }
         
-        // Use currentSeconds directly (not globalTime) for chapter detection
         chapterManager.updateCurrentChapter(for: currentSeconds)
         
-        // Send CURRENT chapter time, not global time
         NotificationCenter.default.post(
             name: Notification.Name("UpdateSubtitleTime"),
             object: currentSeconds
@@ -287,8 +320,6 @@ class AudioStreamingViewModel: ObservableObject {
         
         let nextChapterNumber = currentChapterNumber + 1
         
-        // FIXED: Check if we should request the next chapter
-        // Only request if: currentTime >= requestTime AND we haven't requested this chapter yet
         if currentTime >= requestTime && !requestedChapters.contains(nextChapterNumber) && !lastChapterComplete {
             requestedChapters.insert(nextChapterNumber)
             requestNextChapter()
@@ -343,7 +374,6 @@ class AudioStreamingViewModel: ObservableObject {
             }
         }
     }
-    
     
     private func handlePlaybackCompletion() {
         DispatchQueue.main.async {
