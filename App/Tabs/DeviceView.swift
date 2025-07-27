@@ -11,10 +11,14 @@ struct DeviceView: View {
     }
     
     @EnvironmentObject var bluetoothService: BTService
-    @State private var showTestSignalView = false
     @State private var showDeviceDetails = false
     
-    // Test Signal states (moved from TestSignalView)
+    
+    @State private var leadoffDetection = true
+    @State private var autoReconnection = true
+    
+    // Test Signal states
+    @State private var showTestSignalOverlay = false
     @State private var isRecording = false
     @State private var showDebugInfo = false
     @State private var startTime: Date?
@@ -25,7 +29,7 @@ struct DeviceView: View {
     @State private var useTestSignal = true // Toggle between test signal and normal mode
     @State private var enableLeadOffDetection = false // Toggle for lead-off detection
     
-    // Onboarding states (integrated from OnboardingViewModel)
+    // Onboarding states
     @State private var onboardingState: OnboardingState = .welcome
     @State private var isReconnecting = false
     
@@ -41,24 +45,13 @@ struct DeviceView: View {
                     signalQualityView
                     
                     deviceSettingsView
-                    
-                    deviceTestingView
-                    
+                                        
                     liveEEGSignalsView
                     
-                    electrodeStatusView
-                    
-                    deviceActionsView
-                    
                     troubleshootingView
-                    
-                    availableDevicesView
-                    
-                    // Test Signal Section (moved from TestSignalView)
-                    testSignalSection
-                    
+                                        
+                    deviceActionsView
                 } else {
-                    // No Device Connected
                     noDeviceConnectedView
                 }
             }
@@ -72,23 +65,13 @@ struct DeviceView: View {
             onBackTap: {
                 onNavigateToHome?() ?? dismiss()
             }
-        ) {
-            // Skip button in navigation
-            Button("Skip") {
-                dismiss()
-            }
-            .font(.system(size: 16, weight: .medium))
-            .foregroundColor(.blue)
-        }
-        .sheet(isPresented: $showTestSignalView) {
-            //            TestSignalView(bluetoothService: bluetoothService)
-        }
+        )
         .onAppear {
             setupBluetoothObservers()
             checkForPreviousDevice()
         }
-        .onDisappear {
-            stopRecordingIfNeeded()
+        .fullScreenCover(isPresented: $showTestSignalOverlay) {
+            TestSignalOverlayView()
         }
     }
 }
@@ -480,6 +463,129 @@ extension DeviceView {
             return "There's an issue with Bluetooth. Please check your settings."
         }
     }
+    
+//    
+//    VStack(spacing: 16) {
+//        HStack {
+//            Text("Available Devices")
+//                .font(.headline)
+//                .foregroundColor(.primary)
+//            
+//            Spacer()
+//            
+//            Button("Scan") {
+//                bluetoothService.startScanning()
+//            }
+//            .font(.system(size: 16, weight: .medium))
+//            .foregroundColor(.blue)
+//        }
+//        
+//        VStack(spacing: 12) {
+//            // Connected device
+//            HStack(spacing: 12) {
+//                Image("Neurolink")
+//                    .renderingMode(.template)
+//                    .resizable()
+//                    .scaledToFit()
+//                    .frame(width: 32, height: 32)
+//                    .foregroundColor(.blue)
+//                
+//                VStack(alignment: .leading, spacing: 2) {
+//                    Text("NeuroLink Pro")
+//                        .font(.subheadline)
+//                        .fontWeight(.medium)
+//                        .foregroundColor(.primary)
+//                    
+//                    HStack(spacing: 4) {
+//                        Text("Connected")
+//                            .font(.caption)
+//                            .foregroundColor(.green)
+//                        
+//                        Text("•")
+//                            .font(.caption)
+//                            .foregroundColor(.secondary)
+//                        
+//                        Text("\(bluetoothService.batteryLevel ?? 78)% battery")
+//                            .font(.caption)
+//                            .foregroundColor(.secondary)
+//                    }
+//                }
+//                
+//                Spacer()
+//                
+//                Circle()
+//                    .fill(Color.blue)
+//                    .frame(width: 8, height: 8)
+//            }
+//            .padding(16)
+//            .background(
+//                RoundedRectangle(cornerRadius: 12)
+//                    .fill(Color(.systemBackground))
+//                    .overlay(
+//                        RoundedRectangle(cornerRadius: 12)
+//                            .stroke(Color(.systemGray5), lineWidth: 1)
+//                    )
+//            )
+//            
+//            // Other available devices (if any)
+//            if bluetoothService.discoveredDevices.count > 1 {
+//                ForEach(bluetoothService.discoveredDevices.filter { $0.id != bluetoothService.connectedDevice?.id }, id: \.id) { device in
+//                    HStack(spacing: 12) {
+//                        Image("Neurolink")
+//                            .renderingMode(.template)
+//                            .resizable()
+//                            .scaledToFit()
+//                            .frame(width: 32, height: 32)
+//                            .foregroundColor(.secondary)
+//                        
+//                        VStack(alignment: .leading, spacing: 2) {
+//                            Text(device.name)
+//                                .font(.subheadline)
+//                                .fontWeight(.medium)
+//                                .foregroundColor(.primary)
+//                            
+//                            Text("Available")
+//                                .font(.caption)
+//                                .foregroundColor(.secondary)
+//                        }
+//                        
+//                        Spacer()
+//                        
+//                        Button("Connect") {
+//                            bluetoothService.connect(to: device)
+//                        }
+//                        .font(.caption)
+//                        .fontWeight(.medium)
+//                        .foregroundColor(.blue)
+//                        .padding(.horizontal, 12)
+//                        .padding(.vertical, 6)
+//                        .background(
+//                            RoundedRectangle(cornerRadius: 6)
+//                                .fill(Color.blue.opacity(0.1))
+//                        )
+//                    }
+//                    .padding(16)
+//                    .background(
+//                        RoundedRectangle(cornerRadius: 12)
+//                            .fill(Color(.systemBackground))
+//                            .overlay(
+//                                RoundedRectangle(cornerRadius: 12)
+//                                    .stroke(Color(.systemGray5), lineWidth: 1)
+//                            )
+//                    )
+//                }
+//            }
+//        }
+//    }
+//    .padding(20)
+//    .background(
+//        RoundedRectangle(cornerRadius: 12)
+//            .fill(Color(.systemBackground))
+//            .overlay(
+//                RoundedRectangle(cornerRadius: 12)
+//                    .stroke(Color(.systemGray5), lineWidth: 1)
+//            )
+//    )
 }
 
 // MARK: - Device Setup Header
@@ -682,7 +788,6 @@ extension DeviceView {
         }
     }
     
-    
     private func formatConnectionTime() -> String {
         // This would ideally track actual connection time
         // For now, return a placeholder or calculate from connection timestamp
@@ -698,6 +803,28 @@ extension DeviceView {
             signalQualityHeader
             signalBarsVisualization
             channelQualityIndicators
+            
+            Button(action: {
+                withAnimation(.easeInOut(duration: 0.4)) {
+                    showTestSignalOverlay = true
+                }
+            }) {
+                Text("Test Drive")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .frame(width: 120)
+                    .background(
+                        Capsule()
+                            .fill(Color.white)
+                            .overlay(
+                                Capsule()
+                                    .stroke(Color.green.opacity(0.3), lineWidth: 0.5)
+                            )
+                    )
+            }
         }
         .padding(20)
         .background(
@@ -765,8 +892,18 @@ extension DeviceView {
     private var deviceSettingsView: some View {
         VStack(spacing: 20) {
             signalQualityThresholdView
-            leadOffDetectionView
-            autoReconnectionView
+            
+            ToggleRow(
+                title: "Lead-off Detection",
+                subtitle: "Alert when electrodes disconnect",
+                isOn: $leadoffDetection
+            )
+            
+            ToggleRow(
+                title: "Auto Reconnection",
+                subtitle: "Automatically reconnect when in range",
+                isOn: $autoReconnection
+            )
         }
         .padding(20)
         .background(
@@ -832,119 +969,6 @@ extension DeviceView {
             }
             .frame(maxWidth: .infinity)
         }
-    }
-    
-    private var leadOffDetectionView: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Lead-off Detection")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundColor(.primary)
-                
-                Text("Alert when electrodes disconnect")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            
-            Spacer()
-            
-            // Toggle switch
-            ZStack {
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.blue)
-                    .frame(width: 50, height: 30)
-                
-                Circle()
-                    .fill(Color.white)
-                    .frame(width: 26, height: 26)
-                    .offset(x: 10) // Positioned to the right (on state)
-            }
-        }
-    }
-    
-    private var autoReconnectionView: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Auto Reconnection")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundColor(.primary)
-                
-                Text("Automatically reconnect when in range")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            
-            Spacer()
-            
-            // Toggle switch
-            ZStack {
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.blue)
-                    .frame(width: 50, height: 30)
-                
-                Circle()
-                    .fill(Color.white)
-                    .frame(width: 26, height: 26)
-                    .offset(x: 10) // Positioned to the right (on state)
-            }
-        }
-    }
-}
-
-
-// MARK: - Device Testing
-extension DeviceView {
-    private var deviceTestingView: some View {
-        VStack(spacing: 16) {
-            HStack {
-                Text("Device Testing")
-                    .font(.headline)
-                    .foregroundColor(.primary)
-                Spacer()
-            }
-            
-            HStack(spacing: 12) {
-                // Test Drive Button
-                Button(action: {
-                    showTestSignalView = true
-                }) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "play.fill")
-                            .font(.system(size: 16, weight: .medium))
-                        Text("Test Drive")
-                            .font(.system(size: 16, weight: .semibold))
-                    }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background(Color.blue)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                }
-                
-                // View Signals Button
-                Button(action: {
-                    // Handle view signals action
-                }) {
-                    Image(systemName: "chart.line.uptrend.xyaxis")
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundColor(.primary)
-                        .frame(width: 60, height: 50)
-                        .background(Color(.systemGray6))
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                }
-            }
-        }
-        .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemBackground))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color(.systemGray5), lineWidth: 1)
-                )
-        )
     }
 }
 
@@ -1026,39 +1050,9 @@ extension DeviceView {
     }
 }
 
-// MARK: - Electrode Status
-extension DeviceView {
-    private var electrodeStatusView: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 20))
-                .foregroundColor(.green)
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text("All Electrodes Connected")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundColor(.primary)
-                
-                Text("No lead-off detected")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            
-            Spacer()
-        }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.green.opacity(0.1))
-        )
-    }
-}
-
 // MARK: - Device Actions
 extension DeviceView {
     private var deviceActionsView: some View {
-        VStack(spacing: 12) {
             Button(action: {
                 bluetoothService.disconnect()
             }) {
@@ -1074,16 +1068,6 @@ extension DeviceView {
                 .background(Color.red)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
             }
-        }
-        .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemBackground))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color(.systemGray5), lineWidth: 1)
-                )
-        )
     }
 }
 
@@ -1091,7 +1075,7 @@ extension DeviceView {
 extension DeviceView {
     private var troubleshootingView: some View {
         Button(action: {
-            // Handle troubleshooting guide
+            openURL("https://neocore.com/troubleshooting")
         }) {
             HStack(spacing: 12) {
                 Image(systemName: "questionmark.circle")
@@ -1120,155 +1104,100 @@ extension DeviceView {
             )
         }
     }
+    
+    private func openURL(_ urlString: String) {
+        guard let url = URL(string: urlString) else { return }
+        UIApplication.shared.open(url)
+    }
 }
 
-// MARK: - Available Devices
-extension DeviceView {
-    private var availableDevicesView: some View {
-        VStack(spacing: 16) {
-            HStack {
-                Text("Available Devices")
-                    .font(.headline)
-                    .foregroundColor(.primary)
-                
-                Spacer()
-                
-                Button("Scan") {
-                    bluetoothService.startScanning()
-                }
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.blue)
-            }
-            
-            VStack(spacing: 12) {
-                // Connected device
-                HStack(spacing: 12) {
-                    Image("Neurolink")
-                        .renderingMode(.template)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 32, height: 32)
-                        .foregroundColor(.blue)
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("NeuroLink Pro")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
+
+// MARK: - Test Signal Overlay View
+
+struct TestSignalOverlayView: View {
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var bluetoothService: BTService
+    
+    // Test Signal states (moved from DeviceView)
+    @State private var isRecording = false
+    @State private var showDebugInfo = false
+    @State private var startTime: Date?
+    @State private var recordingDuration: TimeInterval = 0
+    @State private var timer: Timer?
+    @State private var normalized = true
+    @State private var selectedChannel = 0 // 0 = both, 1 = channel1, 2 = channel2
+    @State private var useTestSignal = true // Toggle between test signal and normal mode
+    @State private var enableLeadOffDetection = false // Toggle for lead-off detection
+    
+    var body: some View {
+        NavigationView {
+            ZStack {
+                VStack(spacing: 0) {
+                    HStack {
+                        Button("Close") {
+                            dismiss()
+                        }
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.secondary)
+                        
+                        Spacer()
+                        
+                        Text("Test Signal")
+                            .font(.system(size: 18, weight: .semibold))
                             .foregroundColor(.primary)
                         
-                        HStack(spacing: 4) {
-                            Text("Connected")
-                                .font(.caption)
-                                .foregroundColor(.green)
-                            
-                            Text("•")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            
-                            Text("\(bluetoothService.batteryLevel ?? 78)% battery")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
+                        Spacer()
+                        
+                        // Empty space to balance the header
+                        Text("Close")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.clear)
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
                     
-                    Spacer()
+                    Divider()
+                        .background(Color.secondary.opacity(0.3))
                     
-                    Circle()
-                        .fill(Color.blue)
-                        .frame(width: 8, height: 8)
-                }
-                .padding(16)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(.systemBackground))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color(.systemGray5), lineWidth: 1)
-                        )
-                )
-                
-                // Other available devices (if any)
-                if bluetoothService.discoveredDevices.count > 1 {
-                    ForEach(bluetoothService.discoveredDevices.filter { $0.id != bluetoothService.connectedDevice?.id }, id: \.id) { device in
-                        HStack(spacing: 12) {
-                            Image("Neurolink")
-                                .renderingMode(.template)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 32, height: 32)
-                                .foregroundColor(.secondary)
-                            
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(device.name)
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                                    .foregroundColor(.primary)
-                                
-                                Text("Available")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                            
-                            Spacer()
-                            
-                            Button("Connect") {
-                                bluetoothService.connect(to: device)
-                            }
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(.blue)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .fill(Color.blue.opacity(0.1))
-                            )
+                    ScrollView {
+                        VStack(spacing: 24) {
+                            testSignalContent
                         }
-                        .padding(16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color(.systemBackground))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color(.systemGray5), lineWidth: 1)
-                                )
-                        )
+                        .padding(.horizontal, 20)
+                        .padding(.top, 20)
                     }
                 }
             }
         }
-        .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemBackground))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color(.systemGray5), lineWidth: 1)
-                )
-        )
+        .onDisappear {
+            stopRecording()
+        }
     }
-}
-
-// MARK: - Test Signal Section (Moved from TestSignalView)
-extension DeviceView {
-    private var testSignalSection: some View {
+    
+    // MARK: - Test Signal Content
+    private var testSignalContent: some View {
         VStack(spacing: 20) {
-            // Header
-            HStack {
-                Text(useTestSignal ? "Test Signal" : "EEG Recording")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .foregroundColor(.primary)
-                Spacer()
-            }
-            
             // Mode toggles
             VStack(alignment: .leading, spacing: 12) {
-                Toggle("Use Test Signal", isOn: $useTestSignal)
-                    .disabled(isRecording)
+                ToggleRow(
+                    title: "Use Test Signal",
+                    subtitle: "Generate a known waveform",
+                    isOn: $useTestSignal
+                )
+                .disabled(isRecording)
                 
-                Toggle("Enable Lead-Off Detection", isOn: $enableLeadOffDetection)
-                    .disabled(isRecording)
+                ToggleRow(
+                    title: "Enable Lead-Off Detection",
+                    subtitle: "Monitor electrode connection quality",
+                    isOn: $enableLeadOffDetection
+                )
+                .disabled(isRecording)
+                
+                ToggleRow(
+                    title: "Normalize Signal",
+                    subtitle: "Scale signal amplitude",
+                    isOn: $normalized
+                )
             }
             
             // Channel selection
@@ -1288,28 +1217,29 @@ extension DeviceView {
                 .foregroundColor(isRecording ? .green : .secondary)
             
             // Recording controls
-            recordingControlsView
+            Button(action: toggleRecording) {
+                HStack {
+                    Image(systemName: isRecording ? "stop.fill" : "play.fill")
+                    Text(isRecording ? "Stop Recording" : "Start Recording")
+                }
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(isRecording ? Color.red : Color.blue)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+            }
+            
             
             // Connection quality indicators
             connectionQualityView
             
-            // Normalization toggle
-            Toggle("Normalize Signal", isOn: $normalized)
-            
             // Signal statistics
             signalStatisticsView
         }
-        .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemBackground))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color(.systemGray5), lineWidth: 1)
-                )
-        )
     }
     
+    // MARK: - Signal Plot View
     private var signalPlotView: some View {
         ZStack {
             Rectangle()
@@ -1359,152 +1289,86 @@ extension DeviceView {
         }
         .frame(height: 260)
     }
-    
-    private var recordingControlsView: some View {
-        HStack(spacing: 30) {
-            Button(action: toggleRecording) {
-                HStack {
-                    Image(systemName: isRecording ? "stop.fill" : "play.fill")
-                    Text(isRecording ? "Stop Recording" : "Start Recording")
-                }
-                .font(.headline)
-                .foregroundColor(.white)
-                .padding()
-                .frame(minWidth: 200)
-                .background(isRecording ? Color.red : Color.green)
-                .cornerRadius(10)
-            }
-        }
-    }
-    
+        
+    // MARK: - Connection Quality
     private var connectionQualityView: some View {
-        VStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Connection Quality")
+                .font(.headline)
+                .foregroundColor(.primary)
+            
             if bluetoothService.isLeadOffDetectionEnabled {
-                Text("Connection Quality")
-                    .font(.headline)
-                    .padding(.top, 4)
-                
-                // Channel 1 quality
-                HStack {
-                    Text("Channel 1:")
-                        .foregroundColor(.blue)
-                        .font(.subheadline)
-                        .frame(width: 80, alignment: .leading)
-                    
-                    connectionQualityBar(
-                        quality: bluetoothService.ch1ConnectionStatus.quality,
-                        isConnected: bluetoothService.ch1ConnectionStatus.connected
-                    )
-                    
-                    let qualityText = getQualityText(
-                        quality: bluetoothService.ch1ConnectionStatus.quality,
-                        isConnected: bluetoothService.ch1ConnectionStatus.connected
-                    )
-                    
-                    Text(qualityText)
-                        .font(.caption)
-                        .foregroundColor(getQualityColor(
+                VStack {
+                    // Channel 1 quality
+                    HStack {
+                        Text("Channel 1:")
+                            .foregroundColor(.blue)
+                            .font(.subheadline)
+                            .frame(width: 80, alignment: .leading)
+                        
+                        connectionQualityBar(
                             quality: bluetoothService.ch1ConnectionStatus.quality,
                             isConnected: bluetoothService.ch1ConnectionStatus.connected
-                        ))
-                        .frame(width: 80, alignment: .leading)
-                }
-                
-                // Channel 2 quality
-                HStack {
-                    Text("Channel 2:")
-                        .foregroundColor(.green)
-                        .font(.subheadline)
-                        .frame(width: 80, alignment: .leading)
-                    
-                    connectionQualityBar(
-                        quality: bluetoothService.ch2ConnectionStatus.quality,
-                        isConnected: bluetoothService.ch2ConnectionStatus.connected
-                    )
-                    
-                    let qualityText = getQualityText(
-                        quality: bluetoothService.ch2ConnectionStatus.quality,
-                        isConnected: bluetoothService.ch2ConnectionStatus.connected
-                    )
-                    
-                    Text(qualityText)
-                        .font(.caption)
-                        .foregroundColor(getQualityColor(
+                        )
+                        
+                        let qualityText = getQualityText(
+                            quality: bluetoothService.ch1ConnectionStatus.quality,
+                            isConnected: bluetoothService.ch1ConnectionStatus.connected
+                        )
+                        
+                        Text(qualityText)
+                            .font(.caption)
+                            .foregroundColor(getQualityColor(
+                                quality: bluetoothService.ch1ConnectionStatus.quality,
+                                isConnected: bluetoothService.ch1ConnectionStatus.connected
+                            ))
+                            .frame(width: 80, alignment: .leading)
+                    }
+                                        
+                    // Channel 2 quality
+                    HStack {
+                        Text("Channel 2:")
+                            .foregroundColor(.green)
+                            .font(.subheadline)
+                            .frame(width: 80, alignment: .leading)
+                        
+                        connectionQualityBar(
                             quality: bluetoothService.ch2ConnectionStatus.quality,
                             isConnected: bluetoothService.ch2ConnectionStatus.connected
-                        ))
-                        .frame(width: 80, alignment: .leading)
+                        )
+                        
+                        let qualityText = getQualityText(
+                            quality: bluetoothService.ch2ConnectionStatus.quality,
+                            isConnected: bluetoothService.ch2ConnectionStatus.connected
+                        )
+                        
+                        Text(qualityText)
+                            .font(.caption)
+                            .foregroundColor(getQualityColor(
+                                quality: bluetoothService.ch2ConnectionStatus.quality,
+                                isConnected: bluetoothService.ch2ConnectionStatus.connected
+                            ))
+                            .frame(width: 80, alignment: .leading)
+                    }
                 }
             }
-            
-            // Debug info section
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Device Status:")
-                    .font(.subheadline)
-                    .bold()
-                
-                Text("Test Signal: \(bluetoothService.isTestSignalEnabled ? "Yes" : "No")")
-                Text("Lead-Off Active: \(bluetoothService.isLeadOffDetectionEnabled ? "Yes" : "No")")
-                Text("Streaming Enabled: \(bluetoothService.isStreamingEnabled ? "Yes" : "No")")
-                Text("Receiving Data: \(bluetoothService.isReceivingTestData ? "Yes" : "No")")
-                
-                if let device = bluetoothService.connectedDevice {
-                    Text("Device: \(device.name)")
-                }
-            }
-            .font(.caption)
-            .foregroundColor(.secondary)
-        }
-        .padding()
-        .background(Color.gray.opacity(0.1))
-        .cornerRadius(10)
-    }
-    
-    private var signalStatisticsView: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if !bluetoothService.eegChannel1.isEmpty || !bluetoothService.eegChannel2.isEmpty {
-                Text("Signal Statistics:")
-                    .font(.headline)
-                
-                // Channel 1 stats
-                if !bluetoothService.eegChannel1.isEmpty {
-                    HStack {
-                        Text("CH1:")
-                            .foregroundColor(.blue)
-                            .bold()
-                        Text("Samples: \(bluetoothService.eegChannel1.count)")
-                        Spacer()
-                        Text("Min: \(bluetoothService.eegChannel1.min() ?? 0)")
-                        Spacer()
-                        Text("Max: \(bluetoothService.eegChannel1.max() ?? 0)")
-                    }
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                }
-                
-                // Channel 2 stats
-                if !bluetoothService.eegChannel2.isEmpty {
-                    HStack {
-                        Text("CH2:")
-                            .foregroundColor(.green)
-                            .bold()
-                        Text("Samples: \(bluetoothService.eegChannel2.count)")
-                        Spacer()
-                        Text("Min: \(bluetoothService.eegChannel2.min() ?? 0)")
-                        Spacer()
-                        Text("Max: \(bluetoothService.eegChannel2.max() ?? 0)")
-                    }
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                }
+            else {
+                Text("Turn on the leadoff switch to see the connection quality.")
+                    .font(.caption)
+                    .padding(.top, 4)
             }
         }
-        .padding()
-        .background(Color.gray.opacity(0.1))
-        .cornerRadius(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(.systemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color(.systemGray5), lineWidth: 1)
+                )
+        )
     }
-    
-    // MARK: - Connection Quality Helper Views
     
     private func connectionQualityBar(quality: Double, isConnected: Bool) -> some View {
         HStack(spacing: 2) {
@@ -1562,8 +1426,46 @@ extension DeviceView {
         }
     }
     
-    // MARK: - Recording Control Methods
+    // MARK: - Signal Statistics
+    private var signalStatisticsView: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Signal Statistics")
+                .font(.headline)
+                .foregroundColor(.primary)
+            
+            HStack {
+                VStack(alignment: .leading) {
+                    Text("Channel 1")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text("\(bluetoothService.eegChannel1.count) samples")
+                        .font(.system(size: 14, weight: .medium))
+                }
+                
+                Spacer()
+                
+                VStack(alignment: .trailing) {
+                    Text("Channel 2")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text("\(bluetoothService.eegChannel2.count) samples")
+                        .font(.system(size: 14, weight: .medium))
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(.systemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color(.systemGray5), lineWidth: 1)
+                )
+        )
+    }
     
+    // MARK: - Actions
     private func toggleRecording() {
         if isRecording {
             stopRecording()
@@ -1571,39 +1473,33 @@ extension DeviceView {
             startRecording()
         }
     }
-    
+
     private func startRecording() {
         isRecording = true
         startTime = Date()
+        recordingDuration = 0
         
-        // Start the timer
-        timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
-            guard let startTime = startTime else { return }
-            recordingDuration = Date().timeIntervalSince(startTime)
-        }
-        
-        // Start recording with current mode settings
+        // Start recording with current mode settings using the public API
         bluetoothService.startRecording(
             useTestSignal: useTestSignal,
             enableLeadOff: enableLeadOffDetection
         )
+        
+        timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+            if let startTime = startTime {
+                recordingDuration = Date().timeIntervalSince(startTime)
+            }
+        }
     }
     
     private func stopRecording() {
         isRecording = false
         timer?.invalidate()
         timer = nil
-        
-        // Stop recording
         bluetoothService.stopRecording()
     }
-    
-    private func stopRecordingIfNeeded() {
-        if isRecording {
-            stopRecording()
-        }
-    }
 }
+
 
 // MARK: - Waveform View for Signal Display
 struct WaveformView: View {
