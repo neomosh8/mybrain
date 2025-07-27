@@ -1,3 +1,4 @@
+
 import Foundation
 import AVFoundation
 import Combine
@@ -149,7 +150,6 @@ class AudioStreamingViewModel: ObservableObject {
         }
     }
     
-    
     private func handleStreamingLinksResponse(data: [String: Any]?) {
         isFetchingLinks = false
         
@@ -162,57 +162,71 @@ class AudioStreamingViewModel: ObservableObject {
             let fullURL = "\(NetworkConstants.baseURL)\(masterPlaylist)"
             
             if let subtitlesPlaylist = data["subtitles_playlist"] as? String {
-                let subtitlesURL = "\(NetworkConstants.baseURL)\(subtitlesPlaylist)"
-                self.subtitlesURL = subtitlesURL
+                self.subtitlesURL = "\(NetworkConstants.baseURL)\(subtitlesPlaylist)"
+                print("🎵 Subtitles URL set: \(self.subtitlesURL!)")
             }
             
-            setupAudioPlayer(with: fullURL)
+            DispatchQueue.main.async {
+                self.setupPlayer(with: fullURL)
+            }
         } else {
-            streamingState = .error(NSError(domain: "StreamingError", code: -1))
+            streamingState = .error(NSError(domain: "StreamingError", code: -2))
         }
     }
     
-    private func setupPlayer(with url: URL) {
-        let playerItem = AVPlayerItem(url: url)
-        player = AVPlayer(playerItem: playerItem)
-        streamingState = .ready
-        setupPlayerObservations()
-        configurePlayerForBackground()
-    }
-    
-    private func setupAudioPlayer(with url: String) {
+    private func setupPlayer(with urlString: String) {
+        guard let url = URL(string: urlString) else {
+            streamingState = .error(NSError(domain: "InvalidURL", code: -1))
+            return
+        }
+        
+        masterPlaylistURL = url
+        
         cleanupPlayer()
         
-        guard let playerURL = URL(string: url) else { return }
-        let playerItem = AVPlayerItem(url: playerURL)
+        let playerItem = AVPlayerItem(url: url)
         player = AVPlayer(playerItem: playerItem)
         
-        configurePlayerForBackground()
+        setupPlayerObservations()
+        configureAudioSession()
         
-        isPlaying = true
-        player?.play()
+        streamingState = .ready
         startTime = Date()
         
-        setupPlayerObservations()
+        resumePlayback()
         
         if let subtitleURL = subtitlesURL {
             DispatchQueue.main.async {
                 NotificationCenter.default.post(
-                    name: Notification.Name("InitialSubtitleLoad"),
-                    object: ["url": subtitleURL]
+                    name: Notification.Name("NewChapterSubtitles"),
+                    object: nil,
+                    userInfo: [
+                        "url": subtitleURL,
+                        "chapterOffset": 0.0
+                    ]
                 )
             }
         }
     }
     
-    private func configurePlayerForBackground() {
+    private func cleanupPlayer() {
+        if let observer = playbackProgressObserver {
+            player?.removeTimeObserver(observer)
+            playbackProgressObserver = nil
+        }
+        
+        playerItemObservation?.cancel()
+        playerItemObservation = nil
+        
+        player?.pause()
+        player = nil
+    }
+    
+    private func configureAudioSession() {
         do {
-            try AVAudioSession.sharedInstance().setCategory(
-                .playback,
-                mode: .default,
-                options: [.allowBluetooth, .mixWithOthers]
-            )
-            try AVAudioSession.sharedInstance().setActive(true)
+            let audioSession = AVAudioSession.sharedInstance()
+            try audioSession.setCategory(.playback, mode: .default, options: [.allowAirPlay, .allowBluetooth])
+            try audioSession.setActive(true)
         } catch {
             print("Failed to configure audio session: \(error)")
         }
@@ -253,47 +267,6 @@ class AudioStreamingViewModel: ObservableObject {
                 self?.handlePlaybackCompletion()
             }
         }
-//        
-//        
-//        // NEW: Observe player status and errors
-//        playerItemObservation = player.currentItem?.publisher(for: \.status)
-//            .receive(on: DispatchQueue.main)
-//            .sink { [weak self] status in
-//                print("🎵 Player item status: \(status.rawValue)")
-//                switch status {
-//                case .failed:
-//                    if let error = player.currentItem?.error {
-//                        print("❌ Player failed: \(error.localizedDescription)")
-//                        self?.playerError = error
-//                    }
-//                case .readyToPlay:
-//                    print("✅ Player ready to play")
-//                case .unknown:
-//                    print("⚠️ Player status unknown")
-//                @unknown default:
-//                    print("🤔 Unknown player status")
-//                }
-//            }
-//        
-//        // NEW: Observe timeControlStatus changes
-//        player.publisher(for: \.timeControlStatus)
-//            .receive(on: DispatchQueue.main)
-//            .sink { status in
-//                print("🎵 TimeControlStatus: \(status.rawValue)")
-//                switch status {
-//                case .paused:
-//                    print("⏸️ Player paused")
-//                case .playing:
-//                    print("▶️ Player playing")
-//                case .waitingToPlayAtSpecifiedRate:
-//                    if let reason = player.reasonForWaitingToPlay {
-//                        print("⏳ Player waiting: \(reason.rawValue)")
-//                    }
-//                @unknown default:
-//                    print("🤔 Unknown time control status")
-//                }
-//            }
-//            .store(in: &cancellables)
     }
     
     private func monitorPlaybackProgress(currentTime: CMTime) {
@@ -307,6 +280,7 @@ class AudioStreamingViewModel: ObservableObject {
         
         chapterManager.updateCurrentChapter(for: currentSeconds)
         
+        // Post global time for subtitle sync
         NotificationCenter.default.post(
             name: Notification.Name("UpdateSubtitleTime"),
             object: currentSeconds
@@ -332,6 +306,7 @@ class AudioStreamingViewModel: ObservableObject {
         networkService.webSocket.requestNextChapter(thoughtId: thoughtId, generateAudio: true)
     }
     
+    // UPDATED: handleChapterAudioResponse with subtitle notification
     private func handleChapterAudioResponse(data: [String: Any]?) {
         guard let data = data else {
             print("🎵 No chapter data received")
@@ -347,11 +322,13 @@ class AudioStreamingViewModel: ObservableObject {
         
         currentChapterNumber = chapterNumber
         
+        let chapterStartTime = durationsSoFar
+        
         let chapterInfo = ChapterInfo(
             number: chapterNumber,
             title: data["title"] as? String,
             duration: audioDuration,
-            startTime: durationsSoFar,
+            startTime: chapterStartTime,
             isComplete: isComplete
         )
         chapterManager.addChapter(chapterInfo)
@@ -364,15 +341,7 @@ class AudioStreamingViewModel: ObservableObject {
         
         print("🎵 Next chapter request time set to: \(nextChapterRequestTime ?? 0)")
         print("🎵 Total duration so far: \(durationsSoFar)")
-        
-        if let subtitleURL = subtitlesURL {
-            DispatchQueue.main.async {
-                NotificationCenter.default.post(
-                    name: Notification.Name("RefreshSubtitles"),
-                    object: ["url": subtitleURL]
-                )
-            }
-        }
+        print("🎵 Chapter \(chapterNumber) starts at: \(chapterStartTime)")
     }
     
     private func handlePlaybackCompletion() {
@@ -406,7 +375,6 @@ class AudioStreamingViewModel: ObservableObject {
             }
         }
         
-        // Handle audio interruptions
         NotificationCenter.default.addObserver(
             forName: Notification.Name("AudioInterruptionBegan"),
             object: nil,
@@ -428,35 +396,5 @@ class AudioStreamingViewModel: ObservableObject {
                 }
             }
         }
-        
-        // Handle route changes
-        NotificationCenter.default.addObserver(
-            forName: Notification.Name("AudioRouteDeviceDisconnected"),
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in
-                self?.pausePlayback()
-            }
-        }
-    }
-    
-    private func cleanupPlayer() {
-        player?.pause()
-        
-        if let observer = playbackProgressObserver {
-            player?.removeTimeObserver(observer)
-            playbackProgressObserver = nil
-        }
-        
-        playerItemObservation?.cancel()
-        playerItemObservation = nil
-        
-        NotificationCenter.default.removeObserver(self)
-        
-        player = nil
-        masterPlaylistURL = nil
-        streamingState = .idle
     }
 }
-
