@@ -114,14 +114,14 @@ extension SettingsView {
             )
             
             // Push Notifications Toggle
-            SettingsToggleRow(
+            ToggleRow(
                 title: "Push Notifications",
                 subtitle: "Session reminders and updates",
                 isOn: $pushNotifications
             )
             
             // Background Audio Toggle
-            SettingsToggleRow(
+            ToggleRow(
                 title: "Background Audio",
                 subtitle: "Continue playback when app is closed",
                 isOn: $backgroundAudio
@@ -240,39 +240,6 @@ struct SectionHeader: View {
             Text(title)
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundColor(.primary)
-        }
-    }
-}
-
-struct SettingsToggleRow: View {
-    let title: String
-    let subtitle: String?
-    @Binding var isOn: Bool
-    
-    init(title: String, subtitle: String? = nil, isOn: Binding<Bool>) {
-        self.title = title
-        self.subtitle = subtitle
-        self._isOn = isOn
-    }
-    
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.primary)
-                
-                if let subtitle = subtitle {
-                    Text(subtitle)
-                        .font(.system(size: 14))
-                        .foregroundColor(.secondary)
-                }
-            }
-            
-            Spacer()
-            
-            Toggle("", isOn: $isOn)
-                .toggleStyle(SwitchToggleStyle(tint: .blue))
         }
     }
 }
