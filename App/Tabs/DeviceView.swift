@@ -81,7 +81,7 @@ struct DeviceView: View {
             .foregroundColor(.blue)
         }
         .sheet(isPresented: $showTestSignalView) {
-//            TestSignalView(bluetoothService: bluetoothService)
+            //            TestSignalView(bluetoothService: bluetoothService)
         }
         .onAppear {
             setupBluetoothObservers()
