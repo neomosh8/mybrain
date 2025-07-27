@@ -200,10 +200,7 @@ class AudioStreamingViewModel: ObservableObject {
                 NotificationCenter.default.post(
                     name: Notification.Name("NewChapterSubtitles"),
                     object: nil,
-                    userInfo: [
-                        "url": subtitleURL,
-                        "chapterOffset": 0.0
-                    ]
+                    userInfo: ["url": subtitleURL]
                 )
             }
         }
@@ -276,11 +273,12 @@ class AudioStreamingViewModel: ObservableObject {
         if let currentItem = player?.currentItem {
             let totalDuration = currentItem.duration.seconds
             self.duration = totalDuration.isFinite ? totalDuration : 0.0
+            
+            print("🎵 Progress: \(currentSeconds)/\(totalDuration) - Chapter \(currentChapterNumber)")
         }
         
         chapterManager.updateCurrentChapter(for: currentSeconds)
         
-        // Post global time for subtitle sync
         NotificationCenter.default.post(
             name: Notification.Name("UpdateSubtitleTime"),
             object: currentSeconds
@@ -342,13 +340,28 @@ class AudioStreamingViewModel: ObservableObject {
         print("🎵 Next chapter request time set to: \(nextChapterRequestTime ?? 0)")
         print("🎵 Total duration so far: \(durationsSoFar)")
         print("🎵 Chapter \(chapterNumber) starts at: \(chapterStartTime)")
+        
+        if let subtitleURL = subtitlesURL {
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(
+                    name: Notification.Name("NewChapterSubtitles"),
+                    object: nil,
+                    userInfo: ["url": subtitleURL]
+                )
+            }
+        }
     }
     
     private func handlePlaybackCompletion() {
+        print("🎵 Playback completed - lastChapterComplete: \(lastChapterComplete)")
+        
         DispatchQueue.main.async {
             if self.lastChapterComplete {
                 self.hasCompletedPlayback = true
                 self.isPlaying = false
+            }
+            else{
+                print("🎵 ⚠️ Playback ended but more chapters expected")
             }
         }
     }

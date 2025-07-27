@@ -6,38 +6,37 @@ class SubtitleViewModel: ObservableObject {
     @Published var currentWordIndex: Int = -1
     @Published var isLoading: Bool = false
     
+    private var loadedWordCount: Int = 0
+    
     func loadChapterSubtitles(playlistURL: String, chapterOffset: Double) {
         self.isLoading = true
+        print("🎵 Loading subtitles from: \(playlistURL)")
         
-        print("🎵 Loading chapter subtitles from: \(playlistURL) with offset: \(chapterOffset)")
-        
-        fetchAllVTTFiles(playlistURL: playlistURL) { [weak self] words in
+        fetchAllVTTFiles(playlistURL: playlistURL) { [weak self] allWordsFromPlaylist in
             DispatchQueue.main.async {
-                self?.appendWords(words, chapterOffset: chapterOffset)
+                self?.appendOnlyNewWords(allWordsFromPlaylist)
                 self?.isLoading = false
             }
         }
     }
     
-    private func appendWords(_ newWords: [WordTimestamp], chapterOffset: Double) {
-        // Adjust word timestamps with chapter offset
-        let adjustedWords = newWords.map { word in
-            WordTimestamp(
-                start: word.start + chapterOffset,
-                end: word.end + chapterOffset,
-                text: word.text
-            )
+    
+    private func appendOnlyNewWords(_ allWordsFromPlaylist: [WordTimestamp]) {
+        let sortedPlaylistWords = allWordsFromPlaylist.sorted { $0.start < $1.start }
+        let newWords = Array(sortedPlaylistWords.dropFirst(loadedWordCount))
+        
+        if !newWords.isEmpty {
+            allWords.append(contentsOf: newWords)
+            loadedWordCount = sortedPlaylistWords.count
+            
+            print("🎵 Added \(newWords.count) new words")
+            print("🎵 Total words loaded: \(allWords.count)")
+        } else {
+            print("🎵 No new words to add")
         }
-        
-        // Append to existing words and sort by time
-        allWords.append(contentsOf: adjustedWords)
-        allWords.sort { $0.start < $1.start }
-        
-        print("🎵 Total words loaded: \(allWords.count)")
     }
     
     func updateCurrentTime(_ globalTime: Double) {
-        // Find current word based on global time
         let newIndex = allWords.firstIndex { word in
             globalTime >= word.start && globalTime <= word.end
         } ?? -1

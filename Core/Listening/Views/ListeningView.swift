@@ -198,16 +198,13 @@ struct ListeningView: View {
         }
     }
     
-    
     private func handleNewChapterSubtitles(_ notification: Notification) {
         if let userInfo = notification.userInfo,
-           let subtitlesURL = userInfo["url"] as? String,
-           let chapterOffset = userInfo["chapterOffset"] as? Double {
-            print("🎵 Loading subtitles for chapter with offset: \(chapterOffset)")
-            subtitleViewModel.loadChapterSubtitles(playlistURL: subtitlesURL, chapterOffset: chapterOffset)
+           let subtitlesURL = userInfo["url"] as? String {
+            print("🎵 Loading new subtitles")
+            subtitleViewModel.loadChapterSubtitles(playlistURL: subtitlesURL, chapterOffset: 0.0)
         }
     }
-    
     
     private func handleTimeUpdate(_ notification: Notification) {
         if let globalTime = notification.object as? Double {
@@ -215,7 +212,6 @@ struct ListeningView: View {
         }
     }
     
-
     private var durationTimerControl: some View {
         VStack {
             Spacer()
