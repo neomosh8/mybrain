@@ -94,10 +94,6 @@ struct HomeView: View {
                             })
                             .environmentObject(bluetoothService)
                             .padding(.horizontal, 20)
-                            .transition(.asymmetric(
-                                insertion: .opacity.combined(with: .move(edge: .top)),
-                                removal: .opacity.combined(with: .move(edge: .top))
-                            ))
                             
                             Spacer()
                         }
@@ -128,7 +124,7 @@ struct HomeView: View {
                 fetchBatteryLevel()
                 
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                    withAnimation(.easeInOut(duration: 0.3)) {
+                    withAnimation(.easeInOut(duration: 0.4)) {
                         showDeviceCard = false
                     }
                 }
@@ -163,22 +159,11 @@ struct HomeView: View {
     // MARK: - Setup Methods
     
     private func setupView() {
-        // Load thoughts if empty
         if thoughtsViewModel.thoughts.isEmpty {
             thoughtsViewModel.fetchThoughts()
         }
         
-        // Setup battery monitoring
         setupBatteryMonitoring()
-        
-        // Auto-trigger device setup
-        triggerAutoDeviceSetup()
-    }
-    
-    private func triggerAutoDeviceSetup() {
-        // The DeviceStatusCard will handle auto-connection internally
-        // We just need to ensure it's visible initially
-        showDeviceCard = true
     }
     
     private func setupBatteryMonitoring() {
@@ -196,7 +181,7 @@ struct HomeView: View {
     // MARK: - Action Methods
     
     private func toggleDeviceCard() {
-        withAnimation(.easeInOut(duration: 0.3)) {
+        withAnimation(.easeInOut(duration: 0.4)) {
             showDeviceCard.toggle()
         }
     }
@@ -375,8 +360,6 @@ struct DeviceStatusCard: View {
     let onCardTapped: () -> Void
     
     @State private var isVisible = true
-    @State private var cardOpacity: Double = 1.0
-    @State private var cardOffset: CGSize = .zero
     @State private var autoConnectAttempted = false
     @State private var connectionTimer: Timer?
     @State private var hideTimer: Timer?
@@ -416,8 +399,6 @@ struct DeviceStatusCard: View {
     var body: some View {
         if isVisible {
             cardContent
-                .opacity(cardOpacity)
-                .offset(cardOffset)
                 .onAppear {
                     handleInitialState()
                 }
@@ -548,13 +529,8 @@ struct DeviceStatusCard: View {
         }
     }
     
-    // Method to show card again (can be called from parent)
     func showCard() {
         isVisible = true
-        withAnimation(.easeInOut(duration: 0.3)) {
-            cardOpacity = 1.0
-            cardOffset = .zero
-        }
     }
 }
 
