@@ -9,11 +9,6 @@ struct HomeView: View {
     @State private var selectedMode: ContentMode = .reading
     @State private var showDeviceCard = true
     @State private var selectedThought: Thought?
-    
-    @State private var cardScale: CGFloat = 1.0
-    @State private var cardOpacity: Double = 1.0
-    @State private var cardOffset: CGSize = .zero
-    @State private var deviceStatusCard: DeviceStatusCard?
 
     // Search/Filter states
     @State private var showSearchField = false
@@ -46,11 +41,7 @@ struct HomeView: View {
                     TopAppBar(
                         showDeviceCard: $showDeviceCard,
                         onDeviceCardTapped: {
-                            if showDeviceCard {
-                                hideDeviceCardWithAnimation()
-                            } else {
-                                showDeviceCardWithAnimation()
-                            }
+                            toggleDeviceCard()
                         }
                     )
                     
@@ -92,11 +83,6 @@ struct HomeView: View {
                         .padding(.bottom, 20)
                     }
                 }
-                .onTapGesture {
-                    if showDeviceCard {
-                        hideDeviceCardWithAnimation()
-                    }
-                }
                 
                 if showDeviceCard {
                     VStack {
@@ -107,13 +93,11 @@ struct HomeView: View {
                                 onNavigateToDevice?()
                             })
                             .environmentObject(bluetoothService)
-                            .scaleEffect(cardScale)
-                            .opacity(cardOpacity)
-                            .offset(cardOffset)
                             .padding(.horizontal, 20)
-                            .onTapGesture {
-                                // Prevent tap from propagating to background
-                            }
+                            .transition(.asymmetric(
+                                insertion: .opacity.combined(with: .move(edge: .top)),
+                                removal: .opacity.combined(with: .move(edge: .top))
+                            ))
                             
                             Spacer()
                         }
@@ -121,7 +105,6 @@ struct HomeView: View {
                         
                         Spacer()
                     }
-                    .transition(.opacity)
                 }
             }
         }
@@ -134,26 +117,7 @@ struct HomeView: View {
             }
         }
         .onAppear {
-            if bluetoothService.isConnected  && batteryCancellable == nil {
-                startBatteryLevelTimer()
-                
-                bluetoothService.isDevelopmentMode = false
-                bluetoothService.isConnected = true
-            } else{
-                bluetoothService.isDevelopmentMode = true
-                bluetoothService.isConnected = false
-                bluetoothService.batteryLevel = 0
-            }
-            
-            if !AppStateManager.shared.hasShownHomeIntro {
-                AppStateManager.shared.hasShownHomeIntro = true
-                
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                    hideDeviceCardWithAnimation()
-                }
-            } else {
-                showDeviceCard = false
-            }
+            setupView()
         }
         .onDisappear {
             stopBatteryLevelTimer()
@@ -162,6 +126,12 @@ struct HomeView: View {
             if isConnected {
                 startBatteryLevelTimer()
                 fetchBatteryLevel()
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        showDeviceCard = false
+                    }
+                }
             } else {
                 stopBatteryLevelTimer()
                 batteryLevel = nil
@@ -190,35 +160,47 @@ struct HomeView: View {
         }
     }
     
-    // MARK: - Animation Functions
+    // MARK: - Setup Methods
     
-    private func showDeviceCardWithAnimation() {
-        cardScale = 0.1
-        cardOpacity = 0.0
-        cardOffset = CGSize(width: 150, height: -80)
-        
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-            showDeviceCard = true
+    private func setupView() {
+        // Load thoughts if empty
+        if thoughtsViewModel.thoughts.isEmpty {
+            thoughtsViewModel.fetchThoughts()
         }
         
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.8).delay(0.05)) {
-            cardScale = 1.0
-            cardOpacity = 1.0
-            cardOffset = .zero
+        // Setup battery monitoring
+        setupBatteryMonitoring()
+        
+        // Auto-trigger device setup
+        triggerAutoDeviceSetup()
+    }
+    
+    private func triggerAutoDeviceSetup() {
+        // The DeviceStatusCard will handle auto-connection internally
+        // We just need to ensure it's visible initially
+        showDeviceCard = true
+    }
+    
+    private func setupBatteryMonitoring() {
+        if bluetoothService.isConnected && batteryCancellable == nil {
+            startBatteryLevelTimer()
+            bluetoothService.isDevelopmentMode = false
+            bluetoothService.isConnected = true
+        } else {
+            bluetoothService.isDevelopmentMode = true
+            bluetoothService.isConnected = false
+            bluetoothService.batteryLevel = 0
         }
     }
     
-    private func hideDeviceCardWithAnimation() {
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.9)) {
-            cardScale = 0.1
-            cardOpacity = 0.0
-            cardOffset = CGSize(width: 150, height: -80)
-        }
-        
-        withAnimation(.easeOut(duration: 0.2).delay(0.25)) {
-            showDeviceCard = false
+    // MARK: - Action Methods
+    
+    private func toggleDeviceCard() {
+        withAnimation(.easeInOut(duration: 0.3)) {
+            showDeviceCard.toggle()
         }
     }
+
     
     // MARK: - Functions
     
@@ -440,7 +422,7 @@ struct DeviceStatusCard: View {
                     handleInitialState()
                 }
                 .onChange(of: bluetoothService.isConnected) { _, isConnected in
-                    handleConnectionChange(isConnected)
+                    connectionTimer?.invalidate()
                 }
         }
     }
@@ -563,28 +545,6 @@ struct DeviceStatusCard: View {
                 // Connection failed, state will update automatically
                 print("Auto-connection timeout")
             }
-        }
-    }
-    
-    private func handleConnectionChange(_ isConnected: Bool) {
-        connectionTimer?.invalidate()
-        
-        if isConnected {
-            // Device connected successfully, show for 2 seconds then hide
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                hideCardWithAnimation()
-            }
-        }
-    }
-    
-    private func hideCardWithAnimation() {
-        withAnimation(.easeInOut(duration: 0.3)) {
-            cardOpacity = 0.0
-            cardOffset = CGSize(width: 0, height: -50)
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            isVisible = false
         }
     }
     
