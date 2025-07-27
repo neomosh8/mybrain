@@ -243,11 +243,16 @@ struct SubtitlePlaylist {
 
 
 
-struct WordTimestamp: Identifiable {
+struct WordTimestamp: Equatable {
     let id = UUID()
     let start: Double
     let end: Double
     let text: String
+    
+    
+    static func == (lhs: WordTimestamp, rhs: WordTimestamp) -> Bool {
+        return lhs.start == rhs.start && lhs.end == rhs.end && lhs.text == rhs.text
+    }
 }
 
 struct SubtitleSegmentData {
