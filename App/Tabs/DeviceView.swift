@@ -81,7 +81,6 @@ enum OnboardingState {
     case welcome
     case scanning
     case connecting
-    case connected
     case permissionIssue
 }
 
@@ -101,8 +100,6 @@ extension DeviceView {
                     deviceScanningView
                 case .connecting:
                     connectingView
-                case .connected:
-                    connectedView
                 case .permissionIssue:
                     permissionIssueView
                 }
@@ -199,45 +196,70 @@ extension DeviceView {
     
     // MARK: - Device Scanning View
     private var deviceScanningView: some View {
-        VStack(spacing: 20) {
-            Text("Select Your Headset")
+        VStack(spacing: 24) {
+            Text("Looking for your headset")
                 .font(.title2)
                 .fontWeight(.bold)
+                .foregroundColor(.primary)
             
-            if bluetoothService.isScanning && bluetoothService.discoveredDevices.isEmpty {
-                VStack(spacing: 16) {
-                    ProgressView("Scanning...")
-                        .padding()
-                    
-                    Text("Looking for nearby devices...")
+            if bluetoothService.isScanning {
+                ProgressView()
+                    .scaleEffect(1.5)
+                    .padding()
+            }
+            
+            Text("Make sure your Neocore headset is turned on and nearby")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 20)
+            
+            if bluetoothService.discoveredDevices.count > 1 {
+                ForEach(bluetoothService.discoveredDevices) { device in
+                    HStack(spacing: 12) {
+                        Image("Neurolink")
+                            .renderingMode(.template)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 32, height: 32)
+                            .foregroundColor(.secondary)
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(device.name)
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundColor(.primary)
+                            
+                            Text("Signal: \(device.rssi) dBm")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            
+                        }
+                        
+                        Spacer()
+                        
+                        Button("Connect") {
+                            selectDevice(device)
+                        }
                         .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            } else if bluetoothService.discoveredDevices.isEmpty {
-                VStack(spacing: 16) {
-                    Image(systemName: "exclamationmark.triangle")
-                        .font(.system(size: 32))
-                        .foregroundColor(.orange)
-                    
-                    Text("No devices found")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                    
-                    Text("Make sure your headset is turned on and in pairing mode")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 20)
-                }
-            } else {
-                VStack(spacing: 12) {
-                    ForEach(bluetoothService.discoveredDevices) { device in
-                        deviceRow(device)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                selectDevice(device)
-                            }
+                        .fontWeight(.medium)
+                        .foregroundColor(.blue)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(Color.blue.opacity(0.1))
+                        )
                     }
+                    .padding(16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(.systemBackground))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color(.systemGray5), lineWidth: 1)
+                            )
+                    )
                 }
             }
             
@@ -293,26 +315,6 @@ extension DeviceView {
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
-        }
-    }
-    
-    // MARK: - Connected View
-    private var connectedView: some View {
-        VStack(spacing: 24) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 64))
-                .foregroundColor(.green)
-            
-            VStack(spacing: 8) {
-                Text("Connected!")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .foregroundColor(.primary)
-                
-                Text("Your headset is ready to use")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
         }
     }
     
@@ -402,7 +404,7 @@ extension DeviceView {
         case .welcome:
             onboardingState = .scanning
             bluetoothService.startScanning()
-        case .scanning, .connecting, .connected, .permissionIssue:
+        case .scanning, .connecting, .permissionIssue:
             break
         }
     }
@@ -436,12 +438,6 @@ extension DeviceView {
         bluetoothService.objectWillChange
             .sink {
                 DispatchQueue.main.async {
-                    if bluetoothService.isConnected {
-                        onboardingState = .connected
-                        isReconnecting = false
-                    }
-                    
-                    // Handle permission issues
                     let status = bluetoothService.permissionStatus
                     if status == .poweredOff || status == .denied || status == .unsupported {
                         onboardingState = .permissionIssue
@@ -463,129 +459,6 @@ extension DeviceView {
             return "There's an issue with Bluetooth. Please check your settings."
         }
     }
-    
-//    
-//    VStack(spacing: 16) {
-//        HStack {
-//            Text("Available Devices")
-//                .font(.headline)
-//                .foregroundColor(.primary)
-//            
-//            Spacer()
-//            
-//            Button("Scan") {
-//                bluetoothService.startScanning()
-//            }
-//            .font(.system(size: 16, weight: .medium))
-//            .foregroundColor(.blue)
-//        }
-//        
-//        VStack(spacing: 12) {
-//            // Connected device
-//            HStack(spacing: 12) {
-//                Image("Neurolink")
-//                    .renderingMode(.template)
-//                    .resizable()
-//                    .scaledToFit()
-//                    .frame(width: 32, height: 32)
-//                    .foregroundColor(.blue)
-//                
-//                VStack(alignment: .leading, spacing: 2) {
-//                    Text("NeuroLink Pro")
-//                        .font(.subheadline)
-//                        .fontWeight(.medium)
-//                        .foregroundColor(.primary)
-//                    
-//                    HStack(spacing: 4) {
-//                        Text("Connected")
-//                            .font(.caption)
-//                            .foregroundColor(.green)
-//                        
-//                        Text("•")
-//                            .font(.caption)
-//                            .foregroundColor(.secondary)
-//                        
-//                        Text("\(bluetoothService.batteryLevel ?? 78)% battery")
-//                            .font(.caption)
-//                            .foregroundColor(.secondary)
-//                    }
-//                }
-//                
-//                Spacer()
-//                
-//                Circle()
-//                    .fill(Color.blue)
-//                    .frame(width: 8, height: 8)
-//            }
-//            .padding(16)
-//            .background(
-//                RoundedRectangle(cornerRadius: 12)
-//                    .fill(Color(.systemBackground))
-//                    .overlay(
-//                        RoundedRectangle(cornerRadius: 12)
-//                            .stroke(Color(.systemGray5), lineWidth: 1)
-//                    )
-//            )
-//            
-//            // Other available devices (if any)
-//            if bluetoothService.discoveredDevices.count > 1 {
-//                ForEach(bluetoothService.discoveredDevices.filter { $0.id != bluetoothService.connectedDevice?.id }, id: \.id) { device in
-//                    HStack(spacing: 12) {
-//                        Image("Neurolink")
-//                            .renderingMode(.template)
-//                            .resizable()
-//                            .scaledToFit()
-//                            .frame(width: 32, height: 32)
-//                            .foregroundColor(.secondary)
-//                        
-//                        VStack(alignment: .leading, spacing: 2) {
-//                            Text(device.name)
-//                                .font(.subheadline)
-//                                .fontWeight(.medium)
-//                                .foregroundColor(.primary)
-//                            
-//                            Text("Available")
-//                                .font(.caption)
-//                                .foregroundColor(.secondary)
-//                        }
-//                        
-//                        Spacer()
-//                        
-//                        Button("Connect") {
-//                            bluetoothService.connect(to: device)
-//                        }
-//                        .font(.caption)
-//                        .fontWeight(.medium)
-//                        .foregroundColor(.blue)
-//                        .padding(.horizontal, 12)
-//                        .padding(.vertical, 6)
-//                        .background(
-//                            RoundedRectangle(cornerRadius: 6)
-//                                .fill(Color.blue.opacity(0.1))
-//                        )
-//                    }
-//                    .padding(16)
-//                    .background(
-//                        RoundedRectangle(cornerRadius: 12)
-//                            .fill(Color(.systemBackground))
-//                            .overlay(
-//                                RoundedRectangle(cornerRadius: 12)
-//                                    .stroke(Color(.systemGray5), lineWidth: 1)
-//                            )
-//                    )
-//                }
-//            }
-//        }
-//    }
-//    .padding(20)
-//    .background(
-//        RoundedRectangle(cornerRadius: 12)
-//            .fill(Color(.systemBackground))
-//            .overlay(
-//                RoundedRectangle(cornerRadius: 12)
-//                    .stroke(Color(.systemGray5), lineWidth: 1)
-//            )
-//    )
 }
 
 // MARK: - Device Setup Header
