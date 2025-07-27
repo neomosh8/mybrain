@@ -95,21 +95,19 @@ class ChapterManager: ObservableObject {
     @Published var totalDuration: TimeInterval = 0
     
     func addChapter(_ chapter: ChapterInfo) {
-        // Remove existing chapter with same number if any
         chapters.removeAll { $0.number == chapter.number }
         
-        // Add new chapter and sort by number
         chapters.append(chapter)
         chapters.sort { $0.number < $1.number }
         
-        // Update total duration
         updateTotalDuration()
     }
     
     func updateCurrentChapter(for currentTime: TimeInterval) {
         let activeChapter = chapters.first { chapter in
-            let endTime = chapter.startTime + (chapter.duration ?? 0)
-            return currentTime >= chapter.startTime && currentTime < endTime
+            let relativeStart = chapter.startTime
+            let relativeEnd = relativeStart + (chapter.duration ?? 0)
+            return currentTime >= relativeStart && currentTime < relativeEnd
         }
         
         if let activeChapter = activeChapter {
