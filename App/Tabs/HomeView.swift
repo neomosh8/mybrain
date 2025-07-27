@@ -163,18 +163,10 @@ struct HomeView: View {
             thoughtsViewModel.fetchThoughts()
         }
         
-        setupBatteryMonitoring()
-    }
-    
-    private func setupBatteryMonitoring() {
         if bluetoothService.isConnected && batteryCancellable == nil {
             startBatteryLevelTimer()
-            bluetoothService.isDevelopmentMode = false
-            bluetoothService.isConnected = true
         } else {
             bluetoothService.isDevelopmentMode = true
-            bluetoothService.isConnected = false
-            bluetoothService.batteryLevel = 0
         }
     }
     
@@ -185,7 +177,6 @@ struct HomeView: View {
             showDeviceCard.toggle()
         }
     }
-
     
     // MARK: - Functions
     
@@ -361,6 +352,7 @@ struct DeviceStatusCard: View {
     
     @State private var isVisible = true
     @State private var autoConnectAttempted = false
+    @State private var isCurrentlyConnecting = false
     @State private var connectionTimer: Timer?
     @State private var hideTimer: Timer?
     
@@ -386,10 +378,10 @@ struct DeviceStatusCard: View {
                 serialNumber: bluetoothService.serialNumber,
                 batteryLevel: bluetoothService.batteryLevel
             ))
-        } else if hasSavedDevice && !autoConnectAttempted {
+        } else if hasSavedDevice && (isCurrentlyConnecting || !autoConnectAttempted) {
             let deviceName = bluetoothService.connectedDevice?.name ?? "NeuroLink"
             return .connectingToSaved(deviceName: deviceName)
-        } else if hasSavedDevice && autoConnectAttempted && !bluetoothService.isConnected {
+        } else if hasSavedDevice && autoConnectAttempted && !isCurrentlyConnecting && !bluetoothService.isConnected {
             return .connectionFailed
         } else {
             return .tapToConnect
@@ -404,6 +396,10 @@ struct DeviceStatusCard: View {
                 }
                 .onChange(of: bluetoothService.isConnected) { _, isConnected in
                     connectionTimer?.invalidate()
+                    
+                    if isConnected {
+                        isCurrentlyConnecting = false
+                    }
                 }
         }
     }
@@ -518,12 +514,13 @@ struct DeviceStatusCard: View {
     
     private func triggerAutoConnect() {
         autoConnectAttempted = true
+        isCurrentlyConnecting = true
         bluetoothService.autoConnect()
         
         // Set a timeout for connection attempt (10 seconds)
         connectionTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: false) { _ in
+            isCurrentlyConnecting = false
             if !bluetoothService.isConnected {
-                // Connection failed, state will update automatically
                 print("Auto-connection timeout")
             }
         }
