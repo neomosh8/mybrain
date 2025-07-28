@@ -71,27 +71,29 @@ struct AnimatedSubtitleView: View {
         let wordsPerParagraph = 15
         var currentParagraph: [SubtitleWordData] = []
         var newParagraphs: [[SubtitleWordData]] = []
-        
+
         for (index, wordTimestamp) in subtitleViewModel.allWords.enumerated() {
+            print("🕐 Word \(index): '\(wordTimestamp.text)' [\(wordTimestamp.start) - \(wordTimestamp.end)]") // 👈 Debug line
+
             let wordData = SubtitleWordData(
                 text: wordTimestamp.text,
                 startTime: wordTimestamp.start,
                 endTime: wordTimestamp.end,
                 originalIndex: index
             )
-            
+
             currentParagraph.append(wordData)
-            
+
             if currentParagraph.count >= wordsPerParagraph {
                 newParagraphs.append(currentParagraph)
                 currentParagraph = []
             }
         }
-        
+
         if !currentParagraph.isEmpty {
             newParagraphs.append(currentParagraph)
         }
-        
+
         paragraphs = newParagraphs
     }
     
