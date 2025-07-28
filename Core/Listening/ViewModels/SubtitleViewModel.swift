@@ -6,33 +6,27 @@ class SubtitleViewModel: ObservableObject {
     @Published var currentWordIndex: Int = -1
     @Published var isLoading: Bool = false
     
-    private var loadedWordCount: Int = 0
+    private var loadedVTTFiles: Set<String> = []
     private var lastUpdateTime: TimeInterval = -1
 
     func loadChapterSubtitles(playlistURL: String, chapterOffset: Double) {
         self.isLoading = true
         print("🎵 Loading subtitles from: \(playlistURL)")
         
-        fetchAllVTTFiles(playlistURL: playlistURL) { [weak self] allWordsFromPlaylist in
+        fetchOnlyNewVTTFiles(playlistURL: playlistURL) { [weak self] newWords in
             DispatchQueue.main.async {
-                self?.appendOnlyNewWords(allWordsFromPlaylist)
+                self?.appendNewWords(newWords)
                 self?.isLoading = false
             }
         }
     }
     
-    private func appendOnlyNewWords(_ allWordsFromPlaylist: [WordTimestamp]) {
-        let sortedPlaylistWords = allWordsFromPlaylist.sorted { $0.start < $1.start }
-        
-        let newWords = sortedPlaylistWords.filter { playlistWord in
-            !allWords.contains { existingWord in
-                abs(existingWord.start - playlistWord.start) < 0.01 &&
-                existingWord.text == playlistWord.text
-            }
-        }
-        
+    private func appendNewWords(_ newWords: [WordTimestamp]) {
         if !newWords.isEmpty {
             allWords.append(contentsOf: newWords)
+            // Sort to maintain chronological order
+            allWords.sort { $0.start < $1.start }
+            
             print("🎵 Added \(newWords.count) new words")
             print("🎵 Total words loaded: \(allWords.count)")
         } else {
@@ -57,7 +51,7 @@ class SubtitleViewModel: ObservableObject {
         }
     }
     
-    private func fetchAllVTTFiles(playlistURL: String, completion: @escaping ([WordTimestamp]) -> Void) {
+    private func fetchOnlyNewVTTFiles(playlistURL: String, completion: @escaping ([WordTimestamp]) -> Void) {
         guard let url = URL(string: playlistURL) else {
             completion([])
             return
@@ -76,9 +70,23 @@ class SubtitleViewModel: ObservableObject {
                 return
             }
             
-            let vttFiles = self.extractVTTFiles(from: content, baseURL: playlistURL)
-            self.loadAllVTTFiles(vttFiles) { allWords in
-                completion(allWords)
+            let allVTTFiles = self.extractVTTFiles(from: content, baseURL: playlistURL)
+            let newVTTFiles = allVTTFiles.filter { !self.loadedVTTFiles.contains($0) }
+            
+            print("🎵 Found \(newVTTFiles.count) new VTT files out of \(allVTTFiles.count) total")
+            
+            if newVTTFiles.isEmpty {
+                completion([])
+                return
+            }
+            
+            // Mark these files as loaded before starting to download
+            for file in newVTTFiles {
+                self.loadedVTTFiles.insert(file)
+            }
+            
+            self.loadVTTFiles(newVTTFiles) { newWords in
+                completion(newWords)
             }
             
         }.resume()
@@ -102,16 +110,16 @@ class SubtitleViewModel: ObservableObject {
         return vttFiles
     }
     
-    private func loadAllVTTFiles(_ vttFiles: [String], completion: @escaping ([WordTimestamp]) -> Void) {
+    private func loadVTTFiles(_ vttFiles: [String], completion: @escaping ([WordTimestamp]) -> Void) {
         let group = DispatchGroup()
-        var allWords: [WordTimestamp] = []
+        var newWords: [WordTimestamp] = []
         let lock = NSLock()
         
         for vttFile in vttFiles {
             group.enter()
             fetchVTTContent(vttFile) { words in
                 lock.lock()
-                allWords.append(contentsOf: words)
+                newWords.append(contentsOf: words)
                 lock.unlock()
                 group.leave()
             }
@@ -119,8 +127,8 @@ class SubtitleViewModel: ObservableObject {
         
         group.notify(queue: .main) {
             // Sort by start time
-            allWords.sort { $0.start < $1.start }
-            completion(allWords)
+            newWords.sort { $0.start < $1.start }
+            completion(newWords)
         }
     }
     
@@ -144,6 +152,7 @@ class SubtitleViewModel: ObservableObject {
             }
             
             let words = self.parseVTT(content: content)
+            print("🎵 Parsed \(words.count) words from VTT: \(url.lastPathComponent)")
             completion(words)
             
         }.resume()
@@ -152,59 +161,102 @@ class SubtitleViewModel: ObservableObject {
     private func parseVTT(content: String) -> [WordTimestamp] {
         var words: [WordTimestamp] = []
         let lines = content.components(separatedBy: .newlines)
-        let timeRegex = try! NSRegularExpression(
-            pattern: #"(\d+):(\d+):(\d+\.\d+)\s-->\s(\d+):(\d+):(\d+\.\d+)"#,
-            options: []
-        )
+        let timeRegex = try! NSRegularExpression(pattern: #"(\d+:\d+:\d+\.\d+) --> (\d+:\d+:\d+\.\d+)"#)
+        
+        var currentStartTime: TimeInterval = 0
+        var currentEndTime: TimeInterval = 0
         
         for i in 0..<lines.count {
-            let line = lines[i]
-            if let match = timeRegex.firstMatch(
-                in: line,
-                options: [],
-                range: NSRange(location: 0, length: line.utf16.count)) {
+            let line = lines[i].trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            // Skip empty lines and WEBVTT header
+            if line.isEmpty || line.hasPrefix("WEBVTT") || line.hasPrefix("NOTE") {
+                continue
+            }
+            
+            // Check if this line contains timing information
+            if let match = timeRegex.firstMatch(in: line, range: NSRange(line.startIndex..., in: line)) {
+                let startTimeString = String(line[Range(match.range(at: 1), in: line)!])
+                let endTimeString = String(line[Range(match.range(at: 2), in: line)!])
                 
-                guard let startTime = parseTime(from: line, match: match, isStart: true),
-                      let endTime = parseTime(from: line, match: match, isStart: false)
-                else { continue }
-                
-                // Get text from next lines
-                var j = i + 1
-                var cueTextLines: [String] = []
-                while j < lines.count,
-                      !lines[j].isEmpty,
-                      timeRegex.firstMatch(in: lines[j], options: [], range: NSRange(location: 0, length: lines[j].utf16.count)) == nil {
-                    cueTextLines.append(lines[j])
-                    j += 1
-                }
-                
-                let combinedText = cueTextLines.joined(separator: " ")
-                let wordTexts = combinedText.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
-                
-                for wordText in wordTexts {
-                    words.append(WordTimestamp(start: startTime, end: endTime, text: wordText))
-                }
+                currentStartTime = parseTimeString(startTimeString)
+                currentEndTime = parseTimeString(endTimeString)
+                continue
+            }
+            
+            // Check if this line is a cue text (not a number and has content)
+            if !line.allSatisfy({ $0.isNumber }) && !line.isEmpty {
+                // Parse individual words with their specific timings
+                let wordsInLine = parseWordsFromCueLine(line, defaultStart: currentStartTime, defaultEnd: currentEndTime)
+                words.append(contentsOf: wordsInLine)
             }
         }
         
         return words
     }
     
-    private func parseTime(from line: String, match: NSTextCheckingResult, isStart: Bool) -> Double? {
-        let hourIndex = isStart ? 1 : 4
-        let minuteIndex = isStart ? 2 : 5
-        let secondIndex = isStart ? 3 : 6
+    private func parseWordsFromCueLine(_ line: String, defaultStart: TimeInterval, defaultEnd: TimeInterval) -> [WordTimestamp] {
+        var words: [WordTimestamp] = []
         
-        guard let hourRange = Range(match.range(at: hourIndex), in: line),
-              let minuteRange = Range(match.range(at: minuteIndex), in: line),
-              let secondRange = Range(match.range(at: secondIndex), in: line) else {
-            return nil
+        // Handle lines with <v> tags for word-level timing
+        if line.contains("<") {
+            let pattern = #"<(\d+:\d+:\d+\.\d+)><c>([^<]+)</c>"#
+            let regex = try! NSRegularExpression(pattern: pattern)
+            let matches = regex.matches(in: line, range: NSRange(line.startIndex..., in: line))
+            
+            for match in matches {
+                if let timeRange = Range(match.range(at: 1), in: line),
+                   let textRange = Range(match.range(at: 2), in: line) {
+                    let timeString = String(line[timeRange])
+                    let text = String(line[textRange])
+                    let startTime = parseTimeString(timeString)
+                    
+                    words.append(WordTimestamp(
+                        start: startTime,
+                        end: startTime + 0.5,
+                        text: text.trimmingCharacters(in: .whitespacesAndNewlines)
+                    ))
+                }
+            }
+        } else {
+            // Fallback for simple text without word-level timing
+            let lineWords = line.components(separatedBy: .whitespaces)
+                .filter { !$0.isEmpty }
+            
+            let wordDuration = (defaultEnd - defaultStart) / Double(lineWords.count)
+            
+            for (index, word) in lineWords.enumerated() {
+                let startTime = defaultStart + (Double(index) * wordDuration)
+                let endTime = startTime + wordDuration
+                
+                words.append(WordTimestamp(
+                    start: startTime,
+                    end: endTime,
+                    text: word.trimmingCharacters(in: .punctuationCharacters)
+                ))
+            }
         }
         
-        let hours = Double(String(line[hourRange])) ?? 0
-        let minutes = Double(String(line[minuteRange])) ?? 0
-        let seconds = Double(String(line[secondRange])) ?? 0
+        return words
+    }
+    
+    private func parseTimeString(_ timeString: String) -> TimeInterval {
+        let components = timeString.components(separatedBy: ":")
+        guard components.count == 3 else { return 0 }
+        
+        let hours = Double(components[0]) ?? 0
+        let minutes = Double(components[1]) ?? 0
+        let seconds = Double(components[2]) ?? 0
         
         return hours * 3600 + minutes * 60 + seconds
+    }
+    
+    // MARK: - Reset functionality for new content
+    func resetForNewThought() {
+        allWords.removeAll()
+        loadedVTTFiles.removeAll()
+        currentWordIndex = -1
+        lastUpdateTime = -1
+        print("🎵 Subtitle state reset for new thought")
     }
 }
