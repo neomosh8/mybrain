@@ -200,9 +200,10 @@ struct ListeningView: View {
     
     private func handleNewChapterSubtitles(_ notification: Notification) {
         if let userInfo = notification.userInfo,
-           let subtitlesURL = userInfo["url"] as? String {
+           let url = userInfo["url"] as? String,
+           let offset = userInfo["offset"] as? Double {
             print("🎵 Loading new subtitles")
-            subtitleViewModel.loadChapterSubtitles(playlistURL: subtitlesURL, chapterOffset: 0.0)
+            subtitleViewModel.loadChapterSubtitles(playlistURL: url, chapterOffset: offset)
         }
     }
     
