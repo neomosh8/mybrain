@@ -200,7 +200,10 @@ class AudioStreamingViewModel: ObservableObject {
                 NotificationCenter.default.post(
                     name: Notification.Name("NewChapterSubtitles"),
                     object: nil,
-                    userInfo: ["url": subtitleURL]
+                    userInfo: [
+                        "url": subtitleURL,
+                        "offset": 0.0
+                    ]
                 )
             }
         }
@@ -246,7 +249,7 @@ class AudioStreamingViewModel: ObservableObject {
             }
         
         let timeObserver = player.addPeriodicTimeObserver(
-            forInterval: CMTime(seconds: 1.0, preferredTimescale: CMTimeScale(NSEC_PER_SEC)),
+            forInterval: CMTime(seconds: 0.1, preferredTimescale: CMTimeScale(NSEC_PER_SEC)),
             queue: .main
         ) { [weak self] currentTime in
             Task { @MainActor in
@@ -344,7 +347,10 @@ class AudioStreamingViewModel: ObservableObject {
                 NotificationCenter.default.post(
                     name: Notification.Name("NewChapterSubtitles"),
                     object: nil,
-                    userInfo: ["url": subtitleURL]
+                    userInfo: [
+                        "url": subtitleURL,
+                        "offset": chapterStartTime
+                    ]
                 )
             }
         }
