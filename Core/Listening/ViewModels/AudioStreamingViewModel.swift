@@ -305,7 +305,6 @@ class AudioStreamingViewModel: ObservableObject {
         networkService.webSocket.requestNextChapter(thoughtId: thoughtId, generateAudio: true)
     }
     
-    // UPDATED: handleChapterAudioResponse with subtitle notification
     private func handleChapterAudioResponse(data: [String: Any]?) {
         guard let data = data else {
             print("🎵 No chapter data received")
