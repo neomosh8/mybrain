@@ -21,15 +21,18 @@ class SubtitleViewModel: ObservableObject {
         }
     }
     
-    
     private func appendOnlyNewWords(_ allWordsFromPlaylist: [WordTimestamp]) {
         let sortedPlaylistWords = allWordsFromPlaylist.sorted { $0.start < $1.start }
-        let newWords = Array(sortedPlaylistWords.dropFirst(loadedWordCount))
+        
+        let newWords = sortedPlaylistWords.filter { playlistWord in
+            !allWords.contains { existingWord in
+                abs(existingWord.start - playlistWord.start) < 0.01 &&
+                existingWord.text == playlistWord.text
+            }
+        }
         
         if !newWords.isEmpty {
             allWords.append(contentsOf: newWords)
-            loadedWordCount = sortedPlaylistWords.count
-            
             print("🎵 Added \(newWords.count) new words")
             print("🎵 Total words loaded: \(allWords.count)")
         } else {
