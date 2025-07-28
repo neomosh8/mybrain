@@ -273,8 +273,6 @@ class AudioStreamingViewModel: ObservableObject {
         if let currentItem = player?.currentItem {
             let totalDuration = currentItem.duration.seconds
             self.duration = totalDuration.isFinite ? totalDuration : 0.0
-            
-            print("🎵 Progress: \(currentSeconds)/\(totalDuration) - Chapter \(currentChapterNumber)")
         }
         
         chapterManager.updateCurrentChapter(for: currentSeconds)
