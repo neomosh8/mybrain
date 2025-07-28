@@ -241,8 +241,6 @@ struct SubtitlePlaylist {
     }
 }
 
-
-
 struct WordTimestamp: Equatable {
     let id = UUID()
     let start: Double
