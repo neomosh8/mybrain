@@ -7,7 +7,8 @@ class SubtitleViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     
     private var loadedWordCount: Int = 0
-    
+    private var lastUpdateTime: TimeInterval = -1
+
     func loadChapterSubtitles(playlistURL: String, chapterOffset: Double) {
         self.isLoading = true
         print("🎵 Loading subtitles from: \(playlistURL)")
@@ -37,10 +38,17 @@ class SubtitleViewModel: ObservableObject {
     }
     
     func updateCurrentTime(_ globalTime: Double) {
+        guard abs(globalTime - lastUpdateTime) > 0.05 else { return }
+        lastUpdateTime = globalTime
+
         let newIndex = allWords.firstIndex { word in
-            globalTime >= word.start && globalTime <= word.end
+            if word.start == word.end {
+                return abs(globalTime - word.start) < 0.05
+            } else {
+                return globalTime >= word.start && globalTime <= word.end
+            }
         } ?? -1
-        
+
         if newIndex != currentWordIndex {
             currentWordIndex = newIndex
         }
