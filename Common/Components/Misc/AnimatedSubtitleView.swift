@@ -32,21 +32,16 @@ struct AnimatedSubtitleView: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                if subtitleViewModel.isLoading {
-                    ProgressView("Loading subtitles...")
-                        .padding()
-                } else {
-                    SubtitleTextView(
-                        paragraphs: paragraphs,
-                        currentWordIndex: subtitleViewModel.currentWordIndex,
-                        wordFrames: $wordFrames,
-                        highlightFrame: $highlightFrame
-                    )
-                    .padding()
-                }
+                SubtitleTextView(
+                    paragraphs: paragraphs,
+                    currentWordIndex: subtitleViewModel.currentWordIndex,
+                    wordFrames: $wordFrames,
+                    highlightFrame: $highlightFrame
+                )
+                .padding()
             }
             .onChange(of: subtitleViewModel.currentWordIndex) { _, newIndex in
-                if newIndex >= 5 {
+                if newIndex >= 10 {
                     withAnimation(.easeInOut(duration: 0.3)) {
                         proxy.scrollTo(newIndex, anchor: .center)
                     }
