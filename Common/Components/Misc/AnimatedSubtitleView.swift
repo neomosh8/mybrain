@@ -1,6 +1,7 @@
 
 import SwiftUI
 import Combine
+import NaturalLanguage
 
 struct AnimatedSubtitleView: View {
     @ObservedObject var subtitleViewModel: SubtitleViewModel
@@ -45,17 +46,20 @@ struct AnimatedSubtitleView: View {
                 }
             }
             .onChange(of: subtitleViewModel.currentWordIndex) { _, newIndex in
-                if newIndex >= 0 {
+                if newIndex >= 5 {
                     withAnimation(.easeInOut(duration: 0.3)) {
                         proxy.scrollTo(newIndex, anchor: .center)
                     }
-                    
-                    // Send feedback
+                }
+                
+                // Send feedback
+                if newIndex >= 0 {
                     if newIndex < subtitleViewModel.allWords.count {
                         let word = subtitleViewModel.allWords[newIndex].text
                         sendFeedback(for: word)
                     }
                 }
+                
                 updateHighlightFrame()
             }
             .onChange(of: subtitleViewModel.allWords) { _, _ in
@@ -68,26 +72,64 @@ struct AnimatedSubtitleView: View {
     }
     
     private func buildParagraphs() {
-        let wordsPerParagraph = 15
+        let allText = subtitleViewModel.allWords.map { $0.text }.joined(separator: " ")
+        let tagger = NLTagger(tagSchemes: [.nameType, .lexicalClass])
+        tagger.string = allText
+        
+        let commonUppercaseWords: Set<String> = ["I", "I'm", "I'll", "I've", "I'd", "Dr", "Mr", "Mrs", "Ms"]
+        
         var currentParagraph: [SubtitleWordData] = []
         var newParagraphs: [[SubtitleWordData]] = []
+        var textIndex = allText.startIndex
 
         for (index, wordTimestamp) in subtitleViewModel.allWords.enumerated() {
-            print("🕐 Word \(index): '\(wordTimestamp.text)' [\(wordTimestamp.start) - \(wordTimestamp.end)]") // 👈 Debug line
-
             let wordData = SubtitleWordData(
                 text: wordTimestamp.text,
                 startTime: wordTimestamp.start,
                 endTime: wordTimestamp.end,
                 originalIndex: index
             )
-
-            currentParagraph.append(wordData)
-
-            if currentParagraph.count >= wordsPerParagraph {
-                newParagraphs.append(currentParagraph)
-                currentParagraph = []
+            
+            let word = wordTimestamp.text
+            let firstChar = word.first
+            let isUppercase = firstChar?.isUppercase == true
+            
+            if let wordRange = allText.range(of: word, range: textIndex..<allText.endIndex) {
+                var shouldStartNewParagraph = false
+                
+                if isUppercase && !currentParagraph.isEmpty {
+                    if commonUppercaseWords.contains(word) {
+                        shouldStartNewParagraph = false
+                    } else {
+                        tagger.enumerateTags(in: wordRange, unit: .word, scheme: .nameType) { tag, _ in
+                            if tag == .personalName || tag == .placeName || tag == .organizationName {
+                                shouldStartNewParagraph = false
+                            } else {
+                                shouldStartNewParagraph = true
+                            }
+                            return false
+                        }
+                        
+                        if shouldStartNewParagraph {
+                            tagger.enumerateTags(in: wordRange, unit: .word, scheme: .lexicalClass) { tag, _ in
+                                if tag == .noun && word.count > 3 {
+                                    shouldStartNewParagraph = false
+                                }
+                                return false
+                            }
+                        }
+                    }
+                }
+                
+                if shouldStartNewParagraph {
+                    newParagraphs.append(currentParagraph)
+                    currentParagraph = []
+                }
+                
+                textIndex = wordRange.upperBound
             }
+            
+            currentParagraph.append(wordData)
         }
 
         if !currentParagraph.isEmpty {
@@ -133,7 +175,6 @@ struct SubtitleTextView: View {
     
     var body: some View {
         ZStack(alignment: .topLeading) {
-            // Animated highlight background
             if currentWordIndex >= 0 && highlightFrame != .zero {
                 RoundedRectangle(cornerRadius: 4)
                     .fill(LinearGradient(
@@ -147,7 +188,6 @@ struct SubtitleTextView: View {
                     .animation(.spring(response: 0.3, dampingFraction: 0.8), value: highlightFrame)
             }
             
-            // Text content with FlowLayout
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(Array(paragraphs.enumerated()), id: \.offset) { _, paragraph in
                     FlowLayout(spacing: 4, lineSpacing: 6) {
@@ -166,6 +206,9 @@ struct SubtitleTextView: View {
                     }
                     .padding(.bottom, 8)
                 }
+                
+                Spacer()
+                    .frame(height: 50)
             }
         }
         .coordinateSpace(name: "subtitleContainer")
@@ -175,7 +218,7 @@ struct SubtitleTextView: View {
     }
     
     private func getModifiedText(for wordData: SubtitleWordData) -> String {
-        return wordData.text + " "
+        return wordData.text
     }
 }
 
