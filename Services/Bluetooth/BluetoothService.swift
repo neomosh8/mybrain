@@ -9,6 +9,7 @@ class BluetoothService: NSObject, ObservableObject {
     // MARK: - Published Properties
     
     static let shared = BluetoothService()
+    private let onlineFilter = OnlineFilter()
     
     @Published var isDevelopmentMode = false
     
@@ -20,7 +21,7 @@ class BluetoothService: NSObject, ObservableObject {
     
     // MARK: - Simulation state
     private var simPhase: Double = 0.0
-    private let simStep:  Double = 0.15
+    private let simStep: Double = 0.15
     
     @Published var isScanning = false
     @Published var isConnected = false
@@ -37,7 +38,9 @@ class BluetoothService: NSObject, ObservableObject {
     @Published var isReceivingTestData = false
     @Published var eegChannel1: [Int32] = []
     @Published var eegChannel2: [Int32] = []
-    private let EEG_PACKET_TYPE: UInt8 = 0x04
+    private let EEG_PACKET_TYPE: UInt8 = 0x02 // Updated from 0x04 to match Python
+    private let HEADER_BYTES: Int = 2       // Feature + PDU header trimmed by Python client
+    
     @Published var isInNormalMode = false  // True for normal mode, false for test signal mode
     @Published var isLeadOffDetectionEnabled = false
     private let NEOCORE_CMD_ID_EEG_LEAD_OFF_CTRL: UInt16 = 0x02
@@ -137,7 +140,7 @@ class BluetoothService: NSObject, ObservableObject {
     func disconnect() {
         guard let peripheral = peripheral else { return }
         centralManager.cancelPeripheralConnection(peripheral)
-        removeSavedDevice() 
+        removeSavedDevice()
     }
     
     func saveConnectedDevice() {
@@ -379,17 +382,18 @@ class BluetoothService: NSObject, ObservableObject {
     
     // Replace the handleEEGDataNotification method
     private func parseResponse(data: Data) {
-        guard data.count >= 1 else {
+        guard data.count > HEADER_BYTES else {
             print("Invalid data: too short")
             return
         }
         
-        // Extract packet type (first byte)
-        let packetType = data[0]
+        // First two bytes are Feature ID + PDU header in the new protocol
+        let payload = data.dropFirst(HEADER_BYTES)
+        guard let packetType = payload.first else { return }
         
-        // Handle EEG data packets
+        // EEG streaming packets
         if packetType == EEG_PACKET_TYPE {
-            handleEEGDataPacket(data)
+            handleEEGDataPacket(Data(payload))
             return
         }
         
@@ -431,64 +435,62 @@ class BluetoothService: NSObject, ObservableObject {
     }
     
     private func handleEEGDataPacket(_ data: Data) {
-        // EEG packet structure:
-        // [Packet Type (1 byte)] [Payload Length (1 byte)] [Message Index (2 bytes)] [Channel Data...]
-        
-        // Ensure we have at least the header
+        // [0] Packet Type (0x02)
+        // [1] Payload length
+        // [2..3] Message index (little-endian)
+        // [4...] Interleaved samples (ch1 4-bytes, ch2 4-bytes)
         guard data.count >= 4 else {
             print("EEG packet too short")
             return
         }
         
-        // Extract header fields
-        let packetType = data[0]   // Should be 0x04
-        let payloadLength = data[1]
+        let payloadLength = Int(data[1])
         let messageIndex = UInt16(data[2]) | (UInt16(data[3]) << 8)
         
-        print("EEG Packet: Type=\(packetType), Length=\(payloadLength), Index=\(messageIndex)")
+        print("EEG Packet: Type=0x02, Length=\(payloadLength), Index=\(messageIndex)")
         
-        // Skip the 4-byte header to get to the channel data
-        let channelData = data.subdata(in: 4..<data.count)
+        // Calculate expected total packet size
+        let expectedSize = 4 + payloadLength // header + payload
+        guard data.count >= expectedSize else {
+            print("Packet size mismatch: expected \(expectedSize), got \(data.count)")
+            return
+        }
         
-        // Process the interleaved channel data (each channel has 4-byte samples)
-        var channel1Samples: [Int32] = []
-        var channel2Samples: [Int32] = []
+        // Extract samples data
+        let samplesStart = 4
+        let samplesEnd = samplesStart + payloadLength
+        let samples = data.subdata(in: samplesStart..<samplesEnd)
         
-        // Process 8 bytes at a time (4 bytes per channel)
-        for i in stride(from: 0, to: channelData.count, by: 8) {
-            // Channel 1 (first 4 bytes)
-            if i + 3 < channelData.count {
-                let ch1Value = parseInt32(from: channelData, startIndex: i)
-                channel1Samples.append(ch1Value)
-            }
+        // Process interleaved channel data
+        var ch1Doubles = [Double]()
+        var ch2Doubles = [Double]()
+        
+        for i in stride(from: 0, to: samples.count - 7, by: 8) {
+            // Parse little-endian Int32 values
+            let ch1Val = samples.subdata(in: i..<i+4).withUnsafeBytes { $0.load(as: Int32.self) }
+            let ch2Val = samples.subdata(in: i+4..<i+8).withUnsafeBytes { $0.load(as: Int32.self) }
             
-            // Channel 2 (next 4 bytes)
-            if i + 7 < channelData.count {
-                let ch2Value = parseInt32(from: channelData, startIndex: i + 4)
-                channel2Samples.append(ch2Value)
-            }
+            ch1Doubles.append(Double(ch1Val))
+            ch2Doubles.append(Double(ch2Val))
         }
         
-        print("Parsed \(channel1Samples.count) samples for Channel 1")
-        print("Parsed \(channel2Samples.count) samples for Channel 2")
+        print("Parsed \(ch1Doubles.count) samples for each channel")
         
-        if channel1Samples.count > 0 {
-            print("CH1 first sample: \(channel1Samples[0])")
-        }
+        // Apply online filtering (matching Python implementation)
+        onlineFilter.apply(to: &ch1Doubles, &ch2Doubles)
         
-        if channel2Samples.count > 0 {
-            print("CH2 first sample: \(channel2Samples[0])")
-        }
+        // Convert back to Int32 for storage
+        let filteredCh1 = ch1Doubles.map { Int32($0) }
+        let filteredCh2 = ch2Doubles.map { Int32($0) }
         
-        // Only append data if we're in test mode and receiving data
+        // Only append data if we're receiving data
         if isReceivingTestData && isInTestMode {
             DispatchQueue.main.async {
-                // Add the new samples to each channel
-                self.eegChannel1.append(contentsOf: channel1Samples)
-                self.eegChannel2.append(contentsOf: channel2Samples)
+                self.eegChannel1.append(contentsOf: filteredCh1)
+                self.eegChannel2.append(contentsOf: filteredCh2)
                 
-                // Limit total points to prevent memory issues
-                let maxStoredSamples = 2000
+                // Keep buffer bounded (matching Python's buffer_size logic)
+                let maxStoredSamples = 5000 // 20 seconds at 250Hz
                 if self.eegChannel1.count > maxStoredSamples {
                     self.eegChannel1.removeFirst(self.eegChannel1.count - maxStoredSamples)
                 }
@@ -501,27 +503,13 @@ class BluetoothService: NSObject, ObservableObject {
         }
     }
     
-    
-    // Helper to parse Int32 from little-endian data
-    private func parseInt32(from data: Data, startIndex: Int) -> Int32 {
-        guard startIndex + 3 < data.count else { return 0 }
-        
-        // Little-endian format
-        let byte0 = UInt32(data[startIndex])
-        let byte1 = UInt32(data[startIndex + 1]) << 8
-        let byte2 = UInt32(data[startIndex + 2]) << 16
-        let byte3 = UInt32(data[startIndex + 3]) << 24
-        
-        return Int32(bitPattern: byte0 | byte1 | byte2 | byte3)
-    }
-    
     private func enableDataStreaming(_ enable: Bool) {
         // Construct the Data Stream Control command
         // Feature ID: 0x01 (Sensor Configuration)
         // PDU Type: 0x00 (Command)
         // PDU Specific ID: 0x00 (Data Stream Control)
-        let payload = Data([enable ? 0x01 : 0x00])
         
+        let payload = Data([enable ? 0x01 : 0x00])
         sendCommand(
             featureId: NEOCORE_SENSOR_CFG_FEATURE_ID,
             pduType: PDU_TYPE_COMMAND,
@@ -532,7 +520,6 @@ class BluetoothService: NSObject, ObservableObject {
         print("Data streaming \(enable ? "enabled" : "disabled")")
         isStreamingEnabled = enable
         
-        // If disabling streaming, also clear the test data
         if !enable {
             testSignalData = []
         }
@@ -582,7 +569,7 @@ class BluetoothService: NSObject, ObservableObject {
         let ch1Avg = ch1Samples.isEmpty ? 0 : Double(ch1Samples.reduce(0, +)) / Double(ch1Samples.count)
         let ch2Avg = ch2Samples.isEmpty ? 0 : Double(ch2Samples.reduce(0, +)) / Double(ch2Samples.count)
         
-        let raw = (ch1Avg + ch2Avg)
+        let raw = (ch1Avg + ch2Avg) / 2.0
         return raw
     }
     
