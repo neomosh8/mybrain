@@ -21,24 +21,12 @@ class SubtitleViewModel: ObservableObject {
     private func appendNewWords(_ newWords: [WordTimestamp]) {
         if !newWords.isEmpty {
             allWords.append(contentsOf: newWords)
-            // Sort to maintain chronological order
             allWords.sort { $0.start < $1.start }
             
-            print("🎵 Added \(newWords.count) new words")
-            print("🎵 Total words loaded: \(allWords.count)")
-            
             if let firstNewWord = newWords.first {
-                print("🎵 New chapter starts at: \(firstNewWord.start)")
-                // Trigger immediate update to pick up new words
-                lastUpdateTime = -1 // Reset to force update
+                lastUpdateTime = -1
                 
-                // Resume playback in case it paused during the gap
                 DispatchQueue.main.async {
-                    // You'll need to pass the player reference or call through a delegate
-                    // Option 1: If you have access to the player
-                    // player?.play()
-                    
-                    // Option 2: Post a notification that AudioStreamingViewModel can listen to
                     NotificationCenter.default.post(
                         name: Notification.Name("ResumePlaybackAfterGap"),
                         object: nil
@@ -46,20 +34,12 @@ class SubtitleViewModel: ObservableObject {
                 }
                 
             }
-        } else {
-            print("🎵 No new words to add")
         }
     }
     
     func updateCurrentTime(_ globalTime: Double) {
         guard abs(globalTime - lastUpdateTime) > 0.05 else { return }
         lastUpdateTime = globalTime
-
-        if let firstWord = allWords.first, let lastWord = allWords.last {
-            if globalTime < firstWord.start || globalTime > lastWord.end {
-                print("🎵 Player time \(globalTime) is outside word range (\(firstWord.start)-\(lastWord.end))")
-            }
-        }
         
         let newIndex = allWords.firstIndex { word in
             if word.start == word.end {
@@ -70,20 +50,11 @@ class SubtitleViewModel: ObservableObject {
         } ?? -1
 
         if newIndex != currentWordIndex {
-            // If no word found but we had a valid word before, keep the last valid word
             if newIndex == -1 && currentWordIndex >= 0 {
-                // Check if we're in a gap between chapters (next chapter loading)
                 let lastWordTime = allWords.last?.end ?? 0
                 if globalTime > lastWordTime && globalTime < (lastWordTime + 10) {
-                    // We're in a loading gap, don't change the index
-                    print("🎵 In chapter loading gap at time: \(globalTime)")
                     return
                 }
-            }
-            
-            print("🎵 Time: \(globalTime) -> Word index: \(newIndex) (was \(currentWordIndex))")
-            if newIndex >= 0 && newIndex < allWords.count {
-                print("🎵 Current word: '\(allWords[newIndex].text)' (\(allWords[newIndex].start)-\(allWords[newIndex].end))")
             }
             
             currentWordIndex = newIndex
@@ -119,7 +90,6 @@ class SubtitleViewModel: ObservableObject {
                 return
             }
             
-            // Mark these files as loaded before starting to download
             for file in newVTTFiles {
                 self.loadedVTTFiles.insert(file)
             }
@@ -165,7 +135,6 @@ class SubtitleViewModel: ObservableObject {
         }
         
         group.notify(queue: .main) {
-            // Sort by start time
             newWords.sort { $0.start < $1.start }
             completion(newWords)
         }
@@ -208,12 +177,10 @@ class SubtitleViewModel: ObservableObject {
         for i in 0..<lines.count {
             let line = lines[i].trimmingCharacters(in: .whitespacesAndNewlines)
             
-            // Skip empty lines and WEBVTT header
             if line.isEmpty || line.hasPrefix("WEBVTT") || line.hasPrefix("NOTE") {
                 continue
             }
             
-            // Check if this line contains timing information
             if let match = timeRegex.firstMatch(in: line, range: NSRange(line.startIndex..., in: line)) {
                 let startTimeString = String(line[Range(match.range(at: 1), in: line)!])
                 let endTimeString = String(line[Range(match.range(at: 2), in: line)!])
@@ -223,9 +190,7 @@ class SubtitleViewModel: ObservableObject {
                 continue
             }
             
-            // Check if this line is a cue text (not a number and has content)
             if !line.allSatisfy({ $0.isNumber }) && !line.isEmpty {
-                // Parse individual words with their specific timings
                 let wordsInLine = parseWordsFromCueLine(line, defaultStart: currentStartTime, defaultEnd: currentEndTime)
                 words.append(contentsOf: wordsInLine)
             }
@@ -237,7 +202,6 @@ class SubtitleViewModel: ObservableObject {
     private func parseWordsFromCueLine(_ line: String, defaultStart: TimeInterval, defaultEnd: TimeInterval) -> [WordTimestamp] {
         var words: [WordTimestamp] = []
         
-        // Handle lines with <v> tags for word-level timing
         if line.contains("<") {
             let pattern = #"<(\d+:\d+:\d+\.\d+)><c>([^<]+)</c>"#
             let regex = try! NSRegularExpression(pattern: pattern)
@@ -258,7 +222,6 @@ class SubtitleViewModel: ObservableObject {
                 }
             }
         } else {
-            // Fallback for simple text without word-level timing
             let lineWords = line.components(separatedBy: .whitespaces)
                 .filter { !$0.isEmpty }
             
@@ -296,6 +259,5 @@ class SubtitleViewModel: ObservableObject {
         loadedVTTFiles.removeAll()
         currentWordIndex = -1
         lastUpdateTime = -1
-        print("🎵 Subtitle state reset for new thought")
     }
 }
