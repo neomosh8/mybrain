@@ -4,19 +4,16 @@ import Combine
 class SubtitleViewModel: ObservableObject {
     @Published var allWords: [WordTimestamp] = []
     @Published var currentWordIndex: Int = -1
-    @Published var isLoading: Bool = false
     
     private var loadedVTTFiles: Set<String> = []
     private var lastUpdateTime: TimeInterval = -1
 
     func loadChapterSubtitles(playlistURL: String, chapterOffset: Double) {
-        self.isLoading = true
         print("🎵 Loading subtitles from: \(playlistURL)")
         
         fetchOnlyNewVTTFiles(playlistURL: playlistURL) { [weak self] newWords in
             DispatchQueue.main.async {
                 self?.appendNewWords(newWords)
-                self?.isLoading = false
             }
         }
     }
@@ -29,6 +26,26 @@ class SubtitleViewModel: ObservableObject {
             
             print("🎵 Added \(newWords.count) new words")
             print("🎵 Total words loaded: \(allWords.count)")
+            
+            if let firstNewWord = newWords.first {
+                print("🎵 New chapter starts at: \(firstNewWord.start)")
+                // Trigger immediate update to pick up new words
+                lastUpdateTime = -1 // Reset to force update
+                
+                // Resume playback in case it paused during the gap
+                DispatchQueue.main.async {
+                    // You'll need to pass the player reference or call through a delegate
+                    // Option 1: If you have access to the player
+                    // player?.play()
+                    
+                    // Option 2: Post a notification that AudioStreamingViewModel can listen to
+                    NotificationCenter.default.post(
+                        name: Notification.Name("ResumePlaybackAfterGap"),
+                        object: nil
+                    )
+                }
+                
+            }
         } else {
             print("🎵 No new words to add")
         }
@@ -38,6 +55,12 @@ class SubtitleViewModel: ObservableObject {
         guard abs(globalTime - lastUpdateTime) > 0.05 else { return }
         lastUpdateTime = globalTime
 
+        if let firstWord = allWords.first, let lastWord = allWords.last {
+            if globalTime < firstWord.start || globalTime > lastWord.end {
+                print("🎵 Player time \(globalTime) is outside word range (\(firstWord.start)-\(lastWord.end))")
+            }
+        }
+        
         let newIndex = allWords.firstIndex { word in
             if word.start == word.end {
                 return abs(globalTime - word.start) < 0.05
@@ -47,6 +70,22 @@ class SubtitleViewModel: ObservableObject {
         } ?? -1
 
         if newIndex != currentWordIndex {
+            // If no word found but we had a valid word before, keep the last valid word
+            if newIndex == -1 && currentWordIndex >= 0 {
+                // Check if we're in a gap between chapters (next chapter loading)
+                let lastWordTime = allWords.last?.end ?? 0
+                if globalTime > lastWordTime && globalTime < (lastWordTime + 10) {
+                    // We're in a loading gap, don't change the index
+                    print("🎵 In chapter loading gap at time: \(globalTime)")
+                    return
+                }
+            }
+            
+            print("🎵 Time: \(globalTime) -> Word index: \(newIndex) (was \(currentWordIndex))")
+            if newIndex >= 0 && newIndex < allWords.count {
+                print("🎵 Current word: '\(allWords[newIndex].text)' (\(allWords[newIndex].start)-\(allWords[newIndex].end))")
+            }
+            
             currentWordIndex = newIndex
         }
     }
