@@ -53,9 +53,7 @@ class AudioStreamingViewModel: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
-                let currentPlayerTime = self?.player?.currentTime().seconds ?? 0
-                
+            Task { @MainActor in                
                 self?.player?.play()
                 self?.isPlaying = true
             }
@@ -139,12 +137,12 @@ class AudioStreamingViewModel: ObservableObject {
                 playerError = NSError(domain: "StreamingError", code: -1, userInfo: [NSLocalizedDescriptionKey: message])
             }
             
-        case .chapterAudio(let status, let message, let data):
+        case .chapterAudio(let status, _, let data):
             if status.isSuccess {
                 handleChapterAudioResponse(data: data)
             }
             
-        case .chapterComplete(_, let message, let data):
+        case .chapterComplete(_, _, let data):
             if let completeData = ChapterCompleteResponseData(from: data),
                let complete = completeData.complete,
                complete {
