@@ -415,8 +415,6 @@ extension DeviceView {
     }
     
     private func skipOnboarding() {
-        bluetoothService.isDevelopmentMode = true
-        // Navigate away or handle skip appropriately
         onNavigateToHome?() ?? dismiss()
     }
     
@@ -424,7 +422,6 @@ extension DeviceView {
         isReconnecting = true
         bluetoothService.reconnectToPreviousDevice()
         
-        // Set timeout for auto-reconnection
         DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
             if !bluetoothService.isConnected {
                 self.isReconnecting = false

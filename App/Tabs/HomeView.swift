@@ -165,8 +165,6 @@ struct HomeView: View {
         
         if bluetoothService.isConnected && batteryCancellable == nil {
             startBatteryLevelTimer()
-        } else {
-            bluetoothService.isDevelopmentMode = true
         }
     }
     

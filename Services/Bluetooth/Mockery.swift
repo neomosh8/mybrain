@@ -6,9 +6,7 @@ class MockBluetoothService: NSObject, ObservableObject {
     // MARK: - Published Properties
     
     static let shared = MockBluetoothService()
-    
-    @Published var isDevelopmentMode = false
-    
+        
     private let feedbackSubject = PassthroughSubject<Double, Never>()
     
     var feedbackPublisher: AnyPublisher<Double, Never> {
@@ -480,7 +478,7 @@ class MockBluetoothService: NSObject, ObservableObject {
     
     func processFeedback(word: String) -> Double {
         let value: Double
-        if isConnected && !isDevelopmentMode {
+        if isConnected {
             value = calculateSignalValue()
         } else {
             value = generateSimulatedValue(for: word)

@@ -10,10 +10,8 @@ class BluetoothService: NSObject, ObservableObject {
     // MARK: - Published Properties
     
     static let shared = BluetoothService()
-    private let onlineFilter = OnlineFilter()
-    
-    @Published var isDevelopmentMode = false
-    
+    private var onlineFilter = OnlineFilter()
+        
     private let feedbackSubject = PassthroughSubject<Double, Never>()
     
     var feedbackPublisher: AnyPublisher<Double, Never> {
@@ -63,6 +61,8 @@ class BluetoothService: NSObject, ObservableObject {
     @Published var ch1ConnectionStatus: (connected: Bool, quality: Double) = (false, 0.0)
     @Published var ch2ConnectionStatus: (connected: Bool, quality: Double) = (false, 0.0)
     private var leadOffAnalysisTimer: Timer?
+    private var qualityAnalysisTimer: Timer?
+
     // MARK: - Neocore Protocol Constants
     private let serviceUUID = CBUUID(string: "6E400001-B5A3-F393-E0A9-E50E24DCCA9E")
     private let writeCharacteristicUUID = CBUUID(string: "6E400002-B5A3-F393-E0A9-E50E24DCCA9E")
@@ -262,6 +262,8 @@ class BluetoothService: NSObject, ObservableObject {
         leadOffAnalysisTimer?.invalidate()
         leadOffAnalysisTimer = nil
         
+        onlineFilter = OnlineFilter()
+        
         print("Starting recording in \(useTestSignal ? "test signal" : "normal") mode with lead-off detection \(enableLeadOff ? "enabled" : "disabled")")
         
         // 1. Enable notifications on the characteristic
@@ -312,8 +314,12 @@ class BluetoothService: NSObject, ObservableObject {
                 }
             }
         }
+        
+        if isReceivingTestData {
+            startQualityAnalysis()
+        }
     }
-    
+
     // Add method to start lead-off analysis
     private func startLeadOffAnalysis() {
         // Create a timer that runs every second to analyze the data
@@ -336,6 +342,23 @@ class BluetoothService: NSObject, ObservableObject {
                 self.ch1ConnectionStatus = (result.ch1Connected, result.ch1Quality)
                 self.ch2ConnectionStatus = (result.ch2Connected, result.ch2Quality)
             }
+        }
+    }
+    
+    
+    private func startQualityAnalysis() {
+        qualityAnalysisTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+            guard let self = self,
+                  !self.eegChannel1.isEmpty,
+                  !self.eegChannel2.isEmpty else { return }
+            
+            let (ch1Metrics, ch2Metrics) = self.analyzeSignalQuality(
+                channel1: self.eegChannel1,
+                channel2: self.eegChannel2
+            )
+            
+            // Process or display metrics as needed
+            print("Signal Quality - CH1 SNR: \(ch1Metrics?.snr.totalSNRdB ?? 0) dB, CH2 SNR: \(ch2Metrics?.snr.totalSNRdB ?? 0) dB")
         }
     }
     
@@ -455,11 +478,17 @@ class BluetoothService: NSObject, ObservableObject {
         // [2..3] Message index (little-endian)
         // [4...] Interleaved samples (ch1 4-bytes, ch2 4-bytes)
         guard data.count >= 4 else {
-            print("EEG packet too short")
+            print("EEG packet too short: \(data.count) bytes")
             return
         }
         
         let payloadLength = Int(data[1])
+        
+        guard payloadLength > 0 && payloadLength <= 216 else {  // 27 samples * 2 channels * 4 bytes
+            print("Invalid payload length: \(payloadLength)")
+            return
+        }
+        
         let messageIndex = UInt16(data[2]) | (UInt16(data[3]) << 8)
         
         print("EEG Packet: Type=0x02, Length=\(payloadLength), Index=\(messageIndex)")
@@ -563,7 +592,7 @@ class BluetoothService: NSObject, ObservableObject {
     
     func processFeedback(word: String) -> Double {
         let value: Double
-        if isConnected && !isDevelopmentMode {
+        if isConnected {
             value = calculateSignalValue()
         } else {
             value = generateSimulatedValue(for: word)
@@ -1028,8 +1057,6 @@ extension BluetoothService: CBCentralManagerDelegate {
         DispatchQueue.main.async {
             self.connectedDevice = device
             self.saveConnectedDevice()
-            
-            self.isDevelopmentMode = false
         }
     }
     
