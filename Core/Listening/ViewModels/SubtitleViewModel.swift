@@ -23,7 +23,7 @@ class SubtitleViewModel: ObservableObject {
             allWords.append(contentsOf: newWords)
             allWords.sort { $0.start < $1.start }
             
-            if let firstNewWord = newWords.first {
+            if newWords.first != nil {
                 lastUpdateTime = -1
                 
                 DispatchQueue.main.async {
