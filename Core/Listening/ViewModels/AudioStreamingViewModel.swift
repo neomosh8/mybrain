@@ -55,26 +55,18 @@ class AudioStreamingViewModel: ObservableObject {
         ) { [weak self] _ in
             Task { @MainActor in
                 let currentPlayerTime = self?.player?.currentTime().seconds ?? 0
-                print("🎵 Player time before resume: \(currentPlayerTime)")
                 
                 self?.player?.play()
                 self?.isPlaying = true
-                
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    let newPlayerTime = self?.player?.currentTime().seconds ?? 0
-                    print("🎵 Player time after resume: \(newPlayerTime)")
-                }
-                
-                print("🎵 Resumed playback after chapter gap")
             }
         }
     }
     
-    deinit {
-        NotificationCenter.default.removeObserver(self)
-    }
+//    deinit {
+//        cleanup()
+//    }
     
-    // MARK: - Public Methods
+    // MARK: - Public Interface
     
     func startListening(for thought: Thought) {
         currentThought = thought
@@ -139,33 +131,23 @@ class AudioStreamingViewModel: ObservableObject {
     private func handleWebSocketMessage(_ message: WebSocketMessage) {
         switch message {
         case .streamingLinksResponse(let status, let message, let data):
-            print("🎵 Streaming links response: \(status.rawValue) - \(message)")
-            
             if status.isSuccess {
                 handleStreamingLinksResponse(data: data)
             } else {
-                print("❌ Streaming links error: \(message)")
                 isFetchingLinks = false
                 streamingState = .error(playerError ?? NSError(domain: "StreamingError", code: -1))
                 playerError = NSError(domain: "StreamingError", code: -1, userInfo: [NSLocalizedDescriptionKey: message])
             }
             
         case .chapterAudio(let status, let message, let data):
-            print("🎵 Chapter audio response: \(status.rawValue) - \(message)")
-            
             if status.isSuccess {
                 handleChapterAudioResponse(data: data)
-            } else {
-                print("❌ Chapter audio error: \(message)")
             }
             
         case .chapterComplete(_, let message, let data):
-            print("🎵 Chapter complete: \(message)")
-            
             if let completeData = ChapterCompleteResponseData(from: data),
                let complete = completeData.complete,
                complete {
-                print("🎵 All chapters completed")
                 lastChapterComplete = true
                 hasCompletedPlayback = true
             }
@@ -188,7 +170,6 @@ class AudioStreamingViewModel: ObservableObject {
             
             if let subtitlesPlaylist = data["subtitles_playlist"] as? String {
                 self.subtitlesURL = "\(NetworkConstants.baseURL)\(subtitlesPlaylist)"
-                print("🎵 Subtitles URL set: \(self.subtitlesURL!)")
             }
             
             DispatchQueue.main.async {
@@ -381,15 +362,10 @@ class AudioStreamingViewModel: ObservableObject {
     }
     
     private func handlePlaybackCompletion() {
-        print("🎵 Playback completed - lastChapterComplete: \(lastChapterComplete)")
-        
         DispatchQueue.main.async {
             if self.lastChapterComplete {
                 self.hasCompletedPlayback = true
                 self.isPlaying = false
-            }
-            else{
-                print("🎵 ⚠️ Playback ended but more chapters expected")
             }
         }
     }
