@@ -16,12 +16,12 @@ final class OnlineFilter {
         [0.003621681, 0.0072433619, 0.003621681, 1.0, -1.8151128103, 0.8310055891],
         [1.0, 2.0, 1.0, 1.0, -1.1428738642, 0.4128015981]
     ]
-    
+
     // 2nd order notch filter at 60 Hz
     private let notchSOS: [[Double]] = [
         [0.9565436765, -1.8130534305, 0.9565436765, 1.0, -1.8130534305, 0.9130873534]
     ]
-    
+
     private var initialized = false
     
     init() {
@@ -174,14 +174,20 @@ class SignalProcessing {
         // Prepare for FFT
         var realPart = windowedData
         var imagPart = [Double](repeating: 0.0, count: windowSize)
-        var splitComplex = DSPDoubleSplitComplex(realp: &realPart, imagp: &imagPart)
-        
-        // Perform FFT
-        vDSP_fft_zipD(fftSetup, &splitComplex, 1, log2n, FFTDirection(FFT_FORWARD))
-        
-        // Calculate power spectral density
         var powerSpectrum = [Double](repeating: 0.0, count: windowSize/2)
-        vDSP_zvmagsD(&splitComplex, 1, &powerSpectrum, 1, vDSP_Length(windowSize/2))
+        
+        // Fix the pointer issue here too
+        realPart.withUnsafeMutableBufferPointer { realBuffer in
+            imagPart.withUnsafeMutableBufferPointer { imagBuffer in
+                var splitComplex = DSPDoubleSplitComplex(
+                    realp: realBuffer.baseAddress!,
+                    imagp: imagBuffer.baseAddress!
+                )
+                
+                vDSP_fft_zipD(fftSetup, &splitComplex, 1, log2n, FFTDirection(FFT_FORWARD))
+                vDSP_zvmagsD(&splitComplex, 1, &powerSpectrum, 1, vDSP_Length(windowSize/2))
+            }
+        }
         
         // Scale power spectrum (matching Python's scaling)
         var scale = 2.0 / (Double(sampleRate) * Double(windowSize))
@@ -281,7 +287,7 @@ class SignalProcessing {
         
         // Calculate variance
         var variance: Double = 0.0
-        var temp = data.map { $0 - mean }
+        let temp = data.map { $0 - mean }
         vDSP_svesqD(temp, 1, &variance, vDSP_Length(count))
         variance = variance / Double(count - 1)
         
