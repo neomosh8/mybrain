@@ -11,7 +11,7 @@ class BluetoothService: NSObject, ObservableObject {
     
     static let shared = BluetoothService()
     private var onlineFilter = OnlineFilter()
-        
+    
     private let feedbackSubject = PassthroughSubject<Double, Never>()
     
     var feedbackPublisher: AnyPublisher<Double, Never> {
@@ -62,7 +62,7 @@ class BluetoothService: NSObject, ObservableObject {
     @Published var ch2ConnectionStatus: (connected: Bool, quality: Double) = (false, 0.0)
     private var leadOffAnalysisTimer: Timer?
     private var qualityAnalysisTimer: Timer?
-
+    
     // MARK: - Neocore Protocol Constants
     private let serviceUUID = CBUUID(string: "6E400001-B5A3-F393-E0A9-E50E24DCCA9E")
     private let writeCharacteristicUUID = CBUUID(string: "6E400002-B5A3-F393-E0A9-E50E24DCCA9E")
@@ -319,7 +319,7 @@ class BluetoothService: NSObject, ObservableObject {
             startQualityAnalysis()
         }
     }
-
+    
     // Add method to start lead-off analysis
     private func startLeadOffAnalysis() {
         // Create a timer that runs every second to analyze the data
@@ -1145,7 +1145,17 @@ extension BluetoothService: CBPeripheralDelegate {
             DispatchQueue.main.async {
                 self.isConnected = true
                 
-                // Request serial number and battery level
+                // Request larger MTU for better throughput (matching Python's 247)
+                // Note: iOS will negotiate the actual MTU with the peripheral
+                if #available(iOS 9.0, *) {
+                    print("Requesting MTU update...")
+                    // The actual MTU request happens automatically in iOS
+                    // We can check the negotiated MTU value
+                    let currentMTU = peripheral.maximumWriteValueLength(for: .withResponse)
+                    print("Current MTU for writes: \(currentMTU)")
+                }
+                
+                // Request serial number and battery level after connection is fully established
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     self.readSerialNumber()
                     
@@ -1157,6 +1167,7 @@ extension BluetoothService: CBPeripheralDelegate {
             }
         }
     }
+    
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
         guard error == nil else {
             print("Error receiving characteristic update: \(error!.localizedDescription)")
