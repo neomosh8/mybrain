@@ -47,6 +47,31 @@ class AudioStreamingViewModel: ObservableObject {
     init() {
         setupWebSocketSubscriptions()
         setupRemoteControlHandlers()
+        
+        NotificationCenter.default.addObserver(
+            forName: Notification.Name("ResumePlaybackAfterGap"),
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                let currentPlayerTime = self?.player?.currentTime().seconds ?? 0
+                print("🎵 Player time before resume: \(currentPlayerTime)")
+                
+                self?.player?.play()
+                self?.isPlaying = true
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    let newPlayerTime = self?.player?.currentTime().seconds ?? 0
+                    print("🎵 Player time after resume: \(newPlayerTime)")
+                }
+                
+                print("🎵 Resumed playback after chapter gap")
+            }
+        }
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
     
     // MARK: - Public Methods
