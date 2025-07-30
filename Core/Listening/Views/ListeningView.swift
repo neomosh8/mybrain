@@ -190,19 +190,19 @@ struct ListeningView: View {
                 chapterNumber: audioViewModel.chapterManager.currentChapter?.number ?? 1
             )
         }
-        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("NewChapterSubtitles"))) { notification in
-            handleNewChapterSubtitles(notification)
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("NewChapterWordsFromAudio"))) { notification in
+            handleNewChapterWords(notification)
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("UpdateSubtitleTime"))) { notification in
             handleTimeUpdate(notification)
         }
     }
     
-    private func handleNewChapterSubtitles(_ notification: Notification) {
+    private func handleNewChapterWords(_ notification: Notification) {
         if let userInfo = notification.userInfo,
-           let url = userInfo["url"] as? String,
-           let offset = userInfo["offset"] as? Double {
-            subtitleViewModel.loadChapterSubtitles(playlistURL: url, chapterOffset: offset)
+           let words = userInfo["words"] as? [[String: Any]] {
+
+            subtitleViewModel.loadWordsFromChapterAudio(words: words)
         }
     }
     
