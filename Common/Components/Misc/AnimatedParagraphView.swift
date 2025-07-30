@@ -340,7 +340,6 @@ struct WordByWordTextView: View {
     
     @State private var wordFrames: [Int: CGRect] = [:]
     @State private var highlightFrame: CGRect = .zero
-    @Namespace private var namespace
     
     var body: some View {
         ZStack(alignment: .topLeading) {
