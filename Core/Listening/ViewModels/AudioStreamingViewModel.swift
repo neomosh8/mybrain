@@ -27,9 +27,7 @@ class AudioStreamingViewModel: ObservableObject {
     // MARK: - Request Deduplication
     private var requestedChapters: Set<Int> = []
     @Published var currentChapterNumber: Int = 1
-    
-    // MARK: - Subtitle State
-    @Published var subtitlesURL: String?
+    private var pendingChapterWords: [[String: Any]] = []
     
     // MARK: - Thought Context
     private var currentThought: Thought?
@@ -105,10 +103,10 @@ class AudioStreamingViewModel: ObservableObject {
         hasCompletedPlayback = false
         nextChapterRequestTime = nil
         durationsSoFar = 0.0
-        subtitlesURL = nil
         playerError = nil
         chapterManager.chapters.removeAll()
         chapterManager.currentChapter = nil
+        pendingChapterWords.removeAll() // Add this line
     }
     
     private func fetchStreamingLinks(for thought: Thought) {
@@ -166,10 +164,6 @@ class AudioStreamingViewModel: ObservableObject {
         if let masterPlaylist = data["master_playlist"] as? String {
             let fullURL = "\(NetworkConstants.baseURL)\(masterPlaylist)"
             
-            if let subtitlesPlaylist = data["subtitles_playlist"] as? String {
-                self.subtitlesURL = "\(NetworkConstants.baseURL)\(subtitlesPlaylist)"
-            }
-            
             DispatchQueue.main.async {
                 self.setupPlayer(with: fullURL)
             }
@@ -199,19 +193,20 @@ class AudioStreamingViewModel: ObservableObject {
         
         resumePlayback()
         
-        if let subtitleURL = subtitlesURL {
+        // Send any pending words now that player is ready
+        if !pendingChapterWords.isEmpty {
+            print("🎵 Sending \(pendingChapterWords.count) pending words from Chapter 1")
             DispatchQueue.main.async {
                 NotificationCenter.default.post(
-                    name: Notification.Name("NewChapterSubtitles"),
+                    name: Notification.Name("NewChapterWordsFromAudio"),
                     object: nil,
-                    userInfo: [
-                        "url": subtitleURL,
-                        "offset": 0.0
-                    ]
+                    userInfo: ["words": self.pendingChapterWords]
                 )
+                self.pendingChapterWords.removeAll()
             }
         }
     }
+
     
     private func cleanupPlayer() {
         if let observer = playbackProgressObserver {
@@ -310,54 +305,71 @@ class AudioStreamingViewModel: ObservableObject {
     }
     
     private func handleChapterAudioResponse(data: [String: Any]?) {
-        guard let data = data else {
-            print("🎵 No chapter data received")
+        guard let data = data,
+              let chapterAudioData = ChapterAudioResponseData(from: data) else {
+            print("❌ Failed to parse chapter_audio data")
             return
         }
         
-        let chapterNumber = data["chapter_number"] as? Int ?? 0
-        let audioDuration = data["audio_duration"] as? Double ?? 0.0
-        let generationTime = data["generation_time"] as? Double ?? 0.0
-        let isComplete = data["complete"] as? Bool ?? false
+        // Handle chapter info
+        if let chapterNumber = chapterAudioData.chapterNumber {
+            let audioDuration = chapterAudioData.audioDuration ?? 0.0
+            let generationTime = chapterAudioData.generationTime ?? 0.0
+            let title = chapterAudioData.title ?? ""
+            let chapterStartTime = durationsSoFar
+            
+            print("🎵 Chapter \(chapterNumber) audio generated")
+            currentChapterNumber = chapterNumber
+            
+            let chapterInfo = ChapterInfo(
+                number: chapterNumber,
+                title: title,
+                duration: audioDuration,
+                startTime: chapterStartTime
+            )
+            chapterManager.addChapter(chapterInfo)
+            
+            let requestDelay = audioDuration - generationTime
+            nextChapterRequestTime = durationsSoFar + requestDelay
+            durationsSoFar += audioDuration
+        }
         
-        print("🎵 Received chapter \(chapterNumber): duration=\(audioDuration)s, generation=\(generationTime)s")
-        
-        currentChapterNumber = chapterNumber
-        
-        let chapterStartTime = durationsSoFar
-        
-        let chapterInfo = ChapterInfo(
-            number: chapterNumber,
-            title: data["title"] as? String,
-            duration: audioDuration,
-            startTime: chapterStartTime,
-            isComplete: isComplete
-        )
-        chapterManager.addChapter(chapterInfo)
-        
-        let requestDelay = audioDuration - generationTime
-        nextChapterRequestTime = durationsSoFar + requestDelay
-        
-        durationsSoFar += audioDuration
-        lastChapterComplete = isComplete
-        
-        print("🎵 Next chapter request time set to: \(nextChapterRequestTime ?? 0)")
-        print("🎵 Total duration so far: \(durationsSoFar)")
-        print("🎵 Chapter \(chapterNumber) starts at: \(chapterStartTime)")
-        
-        if let subtitleURL = subtitlesURL {
-            DispatchQueue.main.async {
-                NotificationCenter.default.post(
-                    name: Notification.Name("NewChapterSubtitles"),
-                    object: nil,
-                    userInfo: [
-                        "url": subtitleURL,
-                        "offset": chapterStartTime
-                    ]
-                )
+        if let words = chapterAudioData.words {
+            print("🎵 Sending \(words.count) words to subtitle system")
+            // Adjust word timings to account for previous chapters
+            let adjustedWords = words.compactMap { wordData -> [String: Any]? in
+                guard let text = wordData["text"] as? String,
+                      let start = wordData["start"] as? Double,
+                      let end = wordData["end"] as? Double else {
+                    return nil
+                }
+                
+                // Add the chapter offset to word timings
+                let chapterOffset = durationsSoFar - (chapterAudioData.audioDuration ?? 0.0)
+                
+                return [
+                    "text": text,
+                    "start": start + chapterOffset,
+                    "end": end + chapterOffset
+                ]
+            }
+            // If player is ready, send immediately
+            if player != nil {
+                DispatchQueue.main.async {
+                    NotificationCenter.default.post(
+                        name: Notification.Name("NewChapterWordsFromAudio"),
+                        object: nil,
+                        userInfo: ["words": adjustedWords]
+                    )
+                }
+            } else {
+                // Store for later when player is ready
+                print("🎵 Player not ready, storing words for later")
+                pendingChapterWords = adjustedWords
             }
         }
     }
+
     
     private func handlePlaybackCompletion() {
         DispatchQueue.main.async {
