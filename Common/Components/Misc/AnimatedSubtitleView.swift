@@ -4,7 +4,7 @@ import Combine
 import NaturalLanguage
 
 struct AnimatedSubtitleView: View {
-    @ObservedObject var audioViewModel: AudioStreamingViewModel
+    @ObservedObject var listeningViewModel: ListeningViewModel
     
     let currentTime: TimeInterval
     let thoughtId: String
@@ -17,13 +17,13 @@ struct AnimatedSubtitleView: View {
     @State private var highlightFrame: CGRect = .zero
     
     init(
-        audioViewModel: AudioStreamingViewModel,
+        listeningViewModel: ListeningViewModel,
         currentTime: TimeInterval,
         thoughtId: String,
         chapterNumber: Int,
         feedbackService: any FeedbackServiceProtocol = FeedbackService.shared
     ) {
-        self.audioViewModel = audioViewModel
+        self.listeningViewModel = listeningViewModel
         self.currentTime = currentTime
         self.thoughtId = thoughtId
         self.chapterNumber = chapterNumber
@@ -35,13 +35,13 @@ struct AnimatedSubtitleView: View {
             ScrollView {
                 SubtitleTextView(
                     paragraphs: paragraphs,
-                    currentWordIndex: audioViewModel.currentWordIndex,
+                    currentWordIndex: listeningViewModel.currentWordIndex,
                     wordFrames: $wordFrames,
                     highlightFrame: $highlightFrame
                 )
                 .padding()
             }
-            .onChange(of: audioViewModel.currentWordIndex) { _, newIndex in
+            .onChange(of: listeningViewModel.currentWordIndex) { _, newIndex in
                 if newIndex >= 10 {
                     withAnimation(.easeInOut(duration: 0.3)) {
                         proxy.scrollTo(newIndex, anchor: .center)
@@ -50,15 +50,15 @@ struct AnimatedSubtitleView: View {
                 
                 // Send feedback
                 if newIndex >= 0 {
-                    if newIndex < audioViewModel.allWords.count {
-                        let word = audioViewModel.allWords[newIndex].text
+                    if newIndex < listeningViewModel.allWords.count {
+                        let word = listeningViewModel.allWords[newIndex].text
                         sendFeedback(for: word)
                     }
                 }
                 
                 updateHighlightFrame()
             }
-            .onChange(of: audioViewModel.allWords) { _, _ in
+            .onChange(of: listeningViewModel.allWords) { _, _ in
                 buildParagraphs()
             }
             .onAppear {
@@ -68,7 +68,7 @@ struct AnimatedSubtitleView: View {
     }
     
     private func buildParagraphs() {
-        let allText = audioViewModel.allWords.map { $0.text }.joined(separator: " ")
+        let allText = listeningViewModel.allWords.map { $0.text }.joined(separator: " ")
         let tagger = NLTagger(tagSchemes: [.nameType, .lexicalClass])
         tagger.string = allText
         
@@ -78,7 +78,7 @@ struct AnimatedSubtitleView: View {
         var newParagraphs: [[SubtitleWordData]] = []
         var textIndex = allText.startIndex
         
-        for (index, wordTimestamp) in audioViewModel.allWords.enumerated() {
+        for (index, wordTimestamp) in listeningViewModel.allWords.enumerated() {
             let wordData = SubtitleWordData(
                 text: wordTimestamp.text,
                 startTime: wordTimestamp.start,
@@ -136,8 +136,8 @@ struct AnimatedSubtitleView: View {
     }
     
     private func updateHighlightFrame() {
-        guard audioViewModel.currentWordIndex >= 0,
-              let frame = wordFrames[audioViewModel.currentWordIndex] else {
+        guard listeningViewModel.currentWordIndex >= 0,
+              let frame = wordFrames[listeningViewModel.currentWordIndex] else {
             highlightFrame = .zero
             return
         }

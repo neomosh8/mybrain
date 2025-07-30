@@ -5,14 +5,14 @@ import Combine
 import MediaPlayer
 
 @MainActor
-class AudioStreamingViewModel: ObservableObject {
+class ListeningViewModel: ObservableObject {
     // MARK: - Audio Player State
     @Published var player: AVPlayer?
     @Published var masterPlaylistURL: URL?
     @Published var isPlaying = false
     @Published var isFetchingLinks = false
     @Published var playerError: Error?
-    @Published var streamingState: AudioStreamingState = .idle
+    @Published var listeningState: ListeningState = .idle
     @Published var chapterManager = ChapterManager()
     
     @Published var currentTime: Double = 0.0
@@ -116,7 +116,7 @@ class AudioStreamingViewModel: ObservableObject {
     
     private func fetchStreamingLinks(for thought: Thought) {
         isFetchingLinks = true
-        streamingState = .fetchingLinks
+        listeningState = .fetchingLinks
         networkService.webSocket.requestStreamingLinks(thoughtId: thought.id)
     }
     
@@ -136,8 +136,8 @@ class AudioStreamingViewModel: ObservableObject {
                 handleStreamingLinksResponse(data: data)
             } else {
                 isFetchingLinks = false
-                streamingState = .error(playerError ?? NSError(domain: "StreamingError", code: -1))
-                playerError = NSError(domain: "StreamingError", code: -1, userInfo: [NSLocalizedDescriptionKey: message])
+                listeningState = .error(playerError ?? NSError(domain: "ListeningError", code: -1))
+                playerError = NSError(domain: "ListeningError", code: -1, userInfo: [NSLocalizedDescriptionKey: message])
             }
             
         case .chapterAudio(let status, _, let data):
@@ -162,7 +162,7 @@ class AudioStreamingViewModel: ObservableObject {
         isFetchingLinks = false
         
         guard let data = data else {
-            streamingState = .error(NSError(domain: "StreamingError", code: -1))
+            listeningState = .error(NSError(domain: "ListeningError", code: -1))
             return
         }
         
@@ -173,13 +173,13 @@ class AudioStreamingViewModel: ObservableObject {
                 self.setupPlayer(with: fullURL)
             }
         } else {
-            streamingState = .error(NSError(domain: "StreamingError", code: -2))
+            listeningState = .error(NSError(domain: "ListeningError", code: -2))
         }
     }
     
     private func setupPlayer(with urlString: String) {
         guard let url = URL(string: urlString) else {
-            streamingState = .error(NSError(domain: "InvalidURL", code: -1))
+            listeningState = .error(NSError(domain: "InvalidURL", code: -1))
             return
         }
         
@@ -193,7 +193,7 @@ class AudioStreamingViewModel: ObservableObject {
         setupPlayerObservations()
         configureAudioSession()
         
-        streamingState = .ready
+        listeningState = .ready
         startTime = Date()
         
         resumePlayback()

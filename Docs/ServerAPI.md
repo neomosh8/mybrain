@@ -1084,7 +1084,7 @@ Both `chapter_audio` and `chapter_text` can return these error types:
 }
 ```
 
-#### No More Chapters (Streaming)
+#### No More Chapters (Listening)
 ```json
 {
   "type": "chapter_complete",

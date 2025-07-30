@@ -1,8 +1,8 @@
 import Foundation
 
-// MARK: - Audio Streaming State
+// MARK: - Listening State
 
-enum AudioStreamingState {
+enum ListeningState {
     case idle
     case fetchingLinks
     case ready
@@ -141,7 +141,7 @@ class ChapterManager: ObservableObject {
 
 // MARK: - Audio Error Types
 
-enum AudioStreamingError: LocalizedError {
+enum ListeningError: LocalizedError {
     case invalidURL(String)
     case networkError(Error)
     case playerSetupFailed(Error)
