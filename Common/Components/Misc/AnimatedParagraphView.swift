@@ -60,7 +60,6 @@ struct AnimatedParagraphView: View {
                 isAnimating: isAnimating
             )
             .padding()
-            .padding(.bottom, 80)
         }
         .onAppear {
             if !hasSetupContent {
