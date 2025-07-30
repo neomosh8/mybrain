@@ -7,7 +7,6 @@ struct ListeningView: View {
     
     @Environment(\.dismiss) private var dismiss
     @StateObject private var audioViewModel = AudioStreamingViewModel()
-    @StateObject private var subtitleViewModel = SubtitleViewModel()
     @StateObject private var statusPickerController = BottomSheetPickerController()
     
     private let networkService = NetworkServiceManager.shared
@@ -184,7 +183,7 @@ struct ListeningView: View {
     private var listeningContent: some View {
         VStack(spacing: 20) {
             AnimatedSubtitleView(
-                subtitleViewModel: subtitleViewModel,
+                audioViewModel: audioViewModel,
                 currentTime: audioViewModel.currentTime,
                 thoughtId: thought.id,
                 chapterNumber: audioViewModel.chapterManager.currentChapter?.number ?? 1
@@ -201,14 +200,14 @@ struct ListeningView: View {
     private func handleNewChapterWords(_ notification: Notification) {
         if let userInfo = notification.userInfo,
            let words = userInfo["words"] as? [[String: Any]] {
-
-            subtitleViewModel.loadWordsFromChapterAudio(words: words)
+            
+            audioViewModel.loadWordsFromChapterAudio(words: words)
         }
     }
     
     private func handleTimeUpdate(_ notification: Notification) {
         if let globalTime = notification.object as? Double {
-            subtitleViewModel.updateCurrentTime(globalTime)
+            audioViewModel.updateCurrentTime(globalTime)
         }
     }
     

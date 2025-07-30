@@ -4,7 +4,8 @@ import Combine
 import NaturalLanguage
 
 struct AnimatedSubtitleView: View {
-    @ObservedObject var subtitleViewModel: SubtitleViewModel
+    @ObservedObject var audioViewModel: AudioStreamingViewModel
+    
     let currentTime: TimeInterval
     let thoughtId: String
     let chapterNumber: Int
@@ -16,13 +17,13 @@ struct AnimatedSubtitleView: View {
     @State private var highlightFrame: CGRect = .zero
     
     init(
-        subtitleViewModel: SubtitleViewModel,
+        audioViewModel: AudioStreamingViewModel,
         currentTime: TimeInterval,
         thoughtId: String,
         chapterNumber: Int,
         feedbackService: any FeedbackServiceProtocol = FeedbackService.shared
     ) {
-        self.subtitleViewModel = subtitleViewModel
+        self.audioViewModel = audioViewModel
         self.currentTime = currentTime
         self.thoughtId = thoughtId
         self.chapterNumber = chapterNumber
@@ -34,13 +35,13 @@ struct AnimatedSubtitleView: View {
             ScrollView {
                 SubtitleTextView(
                     paragraphs: paragraphs,
-                    currentWordIndex: subtitleViewModel.currentWordIndex,
+                    currentWordIndex: audioViewModel.currentWordIndex,
                     wordFrames: $wordFrames,
                     highlightFrame: $highlightFrame
                 )
                 .padding()
             }
-            .onChange(of: subtitleViewModel.currentWordIndex) { _, newIndex in
+            .onChange(of: audioViewModel.currentWordIndex) { _, newIndex in
                 if newIndex >= 10 {
                     withAnimation(.easeInOut(duration: 0.3)) {
                         proxy.scrollTo(newIndex, anchor: .center)
@@ -49,15 +50,15 @@ struct AnimatedSubtitleView: View {
                 
                 // Send feedback
                 if newIndex >= 0 {
-                    if newIndex < subtitleViewModel.allWords.count {
-                        let word = subtitleViewModel.allWords[newIndex].text
+                    if newIndex < audioViewModel.allWords.count {
+                        let word = audioViewModel.allWords[newIndex].text
                         sendFeedback(for: word)
                     }
                 }
                 
                 updateHighlightFrame()
             }
-            .onChange(of: subtitleViewModel.allWords) { _, _ in
+            .onChange(of: audioViewModel.allWords) { _, _ in
                 buildParagraphs()
             }
             .onAppear {
@@ -67,7 +68,7 @@ struct AnimatedSubtitleView: View {
     }
     
     private func buildParagraphs() {
-        let allText = subtitleViewModel.allWords.map { $0.text }.joined(separator: " ")
+        let allText = audioViewModel.allWords.map { $0.text }.joined(separator: " ")
         let tagger = NLTagger(tagSchemes: [.nameType, .lexicalClass])
         tagger.string = allText
         
@@ -76,8 +77,8 @@ struct AnimatedSubtitleView: View {
         var currentParagraph: [SubtitleWordData] = []
         var newParagraphs: [[SubtitleWordData]] = []
         var textIndex = allText.startIndex
-
-        for (index, wordTimestamp) in subtitleViewModel.allWords.enumerated() {
+        
+        for (index, wordTimestamp) in audioViewModel.allWords.enumerated() {
             let wordData = SubtitleWordData(
                 text: wordTimestamp.text,
                 startTime: wordTimestamp.start,
@@ -126,17 +127,17 @@ struct AnimatedSubtitleView: View {
             
             currentParagraph.append(wordData)
         }
-
+        
         if !currentParagraph.isEmpty {
             newParagraphs.append(currentParagraph)
         }
-
+        
         paragraphs = newParagraphs
     }
     
     private func updateHighlightFrame() {
-        guard subtitleViewModel.currentWordIndex >= 0,
-              let frame = wordFrames[subtitleViewModel.currentWordIndex] else {
+        guard audioViewModel.currentWordIndex >= 0,
+              let frame = wordFrames[audioViewModel.currentWordIndex] else {
             highlightFrame = .zero
             return
         }
