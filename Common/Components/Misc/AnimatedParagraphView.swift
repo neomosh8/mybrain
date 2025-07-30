@@ -371,6 +371,9 @@ struct WordByWordTextView: View {
                     }
                     .padding(.bottom, 8)
                 }
+                
+                Spacer()
+                    .frame(height: 70)
             }
             .coordinateSpace(name: "container")
             .onPreferenceChange(WordFrameKey.self) { frames in
