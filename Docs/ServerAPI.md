@@ -922,7 +922,29 @@ For chapters with audio generation (`generate_audio: true`).
     "chapter_number": 1,
     "title": "Chapter Title",
     "audio_duration": 86.7,
-    "generation_time": 12.5
+    "generation_time": 12.5,
+    "words": [
+      {
+        "text": "The",
+        "start": 0.1,
+        "end": 0.3
+      },
+      {
+        "text": "future",
+        "start": 0.3,
+        "end": 0.6
+      },
+      {
+        "text": "is",
+        "start": 0.6,
+        "end": 0.7
+      },
+      {
+        "text": "now",
+        "start": 0.7,
+        "end": 1.0
+      }
+    ]
   }
 }
 ```
@@ -1223,6 +1245,15 @@ Get HLS streaming URLs for audio playback. This action will first generate an au
 2. Then sends a `streaming_links` message with the URLs
 3. If no more chapters, sends `chapter_complete` message
 
+### Words Array Format
+
+The `words` array in `chapter_audio` responses contains word-level subtitle data:
+
+- **`text`**: The spoken word as a string
+- **`start`**: Timestamp in seconds (float) when the word begins
+- **`end`**: Timestamp in seconds (float) when the word ends
+- Words are sorted chronologically by start time
+- Timestamps are relative to the beginning of the chapter audio
 
 ### Status Values
 
