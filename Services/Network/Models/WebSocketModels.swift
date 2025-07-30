@@ -202,6 +202,7 @@ struct ChapterAudioResponseData {
     let title: String?
     let audioDuration: Double?
     let generationTime: Double?
+    let words: [[String: Any]]?
     
     init?(from data: [String: Any]?) {
         guard let data = data else { return nil }
@@ -210,6 +211,7 @@ struct ChapterAudioResponseData {
         self.title = data["title"] as? String
         self.audioDuration = data["audio_duration"] as? Double
         self.generationTime = data["generation_time"] as? Double
+        self.words = data["words"] as? [[String: Any]]
     }
 }
 
