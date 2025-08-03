@@ -286,7 +286,6 @@
 			isa = PBXGroup;
 			children = (
 				74263C792DDADF1C00953598 /* Utilities */,
-				74263C612DDADDF500953598 /* Extensions */,
 				74263C622DDADDFC00953598 /* Components */,
 			);
 			path = Common;
@@ -349,13 +348,6 @@
 				74263C1A2DDADAE800953598 /* SignalProcessing.swift */,
 			);
 			path = Bluetooth;
-			sourceTree = "<group>";
-		};
-		74263C612DDADDF500953598 /* Extensions */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Extensions;
 			sourceTree = "<group>";
 		};
 		74263C622DDADDFC00953598 /* Components */ = {
