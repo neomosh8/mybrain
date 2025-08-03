@@ -33,6 +33,7 @@ class ListeningViewModel: ObservableObject {
     private var requestedChapters: Set<Int> = []
     @Published var currentChapterNumber: Int = 1
     private var pendingChapterWords: [[String: Any]] = []
+    private var isCurrentlyStalled = false
     
     // MARK: - Thought Context
     private var currentThought: Thought?
@@ -212,9 +213,6 @@ class ListeningViewModel: ObservableObject {
         }
     }
     
-    
-    
-    
     func loadWordsFromChapterAudio(words: [[String: Any]]) {
         let newWords = words.compactMap { wordData -> WordTimestamp? in
             guard let text = wordData["text"] as? String,
@@ -333,6 +331,14 @@ class ListeningViewModel: ObservableObject {
                 self?.handlePlaybackCompletion()
             }
         }
+        
+        NotificationCenter.default.publisher(for: AVPlayerItem.playbackStalledNotification)
+            .sink { _ in
+                print("🎵 Playback stalled (likely waiting for next chapter)")
+                self.isCurrentlyStalled = true
+            }
+            .store(in: &cancellables)
+
     }
     
     private func monitorPlaybackProgress(currentTime: CMTime) {
@@ -378,6 +384,8 @@ class ListeningViewModel: ObservableObject {
             return
         }
         
+        let receivedChapterNumber = chapterAudioData.chapterNumber ?? 0
+
         // Handle chapter info
         if let chapterNumber = chapterAudioData.chapterNumber {
             let audioDuration = chapterAudioData.audioDuration ?? 0.0
@@ -435,6 +443,61 @@ class ListeningViewModel: ObservableObject {
                 pendingChapterWords = adjustedWords
             }
         }
+        
+        print("🎵 Debug - Player exists: \(player != nil)")
+        print("🎵 Debug - isPlaying: \(isPlaying)")
+        print("🎵 Debug - isCurrentlyStalled: \(isCurrentlyStalled)")
+        if let player = player {
+            print("🎵 Debug - Player rate: \(player.rate)")
+        }
+
+        if let player = player,
+           isPlaying,
+           isCurrentlyStalled {
+            print("🎵 Player is stalled but new chapter \(receivedChapterNumber) is ready, resuming playback...")
+            
+            // Reset stalled flag
+            isCurrentlyStalled = false
+            
+            // The HLS playlist has been updated on the server with the new chapter
+            // We just need to tell the player to continue playing
+            // It will automatically fetch the updated playlist
+            
+            print("🎵 Forcing playback to continue...")
+            
+            // First, try a simple play command
+            player.play()
+            
+            // If the player is truly stuck, we might need to nudge it
+            // by pausing and immediately playing again
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                guard let self = self,
+                      self.isPlaying,
+                      let player = self.player else { return }
+                
+                if player.rate == 0 {
+                    print("🎵 Player still stalled, trying pause/play cycle...")
+                    player.pause()
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        player.play()
+                        self.isPlaying = true
+                        
+                        // Final verification
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            if player.rate > 0 {
+                                print("🎵 ✅ Playback successfully resumed")
+                            } else {
+                                print("🎵 ⚠️ Playback still stalled - HLS might need more time to update")
+                            }
+                        }
+                    }
+                } else {
+                    print("🎵 ✅ Playback resumed successfully")
+                }
+            }
+        }
+        
     }
     
     
