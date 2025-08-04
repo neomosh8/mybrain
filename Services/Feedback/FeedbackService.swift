@@ -53,5 +53,45 @@ class FeedbackService: FeedbackServiceProtocol {
             word: cleanWord
         ))
     }
+    
+    func submitBatchFeedback(
+        thoughtId: String,
+        chapterNumber: Int,
+        words: [String]
+    ) async -> Result<FeedbackResponse, FeedbackError> {
+        
+        let cleanWords = words.compactMap { word in
+            let cleaned = word.trimmingCharacters(in: .whitespacesAndNewlines)
+            return cleaned.isEmpty ? nil : cleaned
+        }
+        
+        guard !cleanWords.isEmpty else {
+            return .failure(.invalidWord)
+        }
+        
+        let feedbacks = cleanWords.map { word in
+            let feedbackValue = bluetoothService.processFeedback(word: word)
+            return (word: word, value: feedbackValue)
+        }
+        
+        guard webSocketService.isConnected else {
+            return .failure(.webSocketNotConnected)
+        }
+        
+        webSocketService.sendBatchFeedback(
+            thoughtId: thoughtId,
+            chapterNumber: chapterNumber,
+            feedbacks: feedbacks
+        )
+        
+        return .success(FeedbackResponse(
+            success: true,
+            message: "Batch feedback sent",
+            thoughtId: thoughtId,
+            chapterNumber: chapterNumber,
+            word: cleanWords.first
+        ))
+    }
+
 }
 
