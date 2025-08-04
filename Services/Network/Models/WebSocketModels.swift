@@ -6,6 +6,7 @@ enum WebSocketAction {
     case streamingLinks(thoughtId: String)
     case nextChapter(thoughtId: String, generateAudio: Bool)
     case feedback(thoughtId: String, chapterNumber: Int, word: String, value: Double)
+    case batchFeedback(thoughtId: String, chapterNumber: Int, feedbacks: [(word: String, value: Double)])
     case thoughtStatus(thoughtId: String)
 
     func toDictionary() -> [String: Any] {
@@ -33,6 +34,22 @@ enum WebSocketAction {
                     "chapter_number": chapterNumber,
                     "word": word,
                     "value": value
+                ]
+            ]
+            
+        case .batchFeedback(let thoughtId, let chapterNumber, let feedbacks):
+            let feedbackArray = feedbacks.map { feedback in
+                [
+                    "word": feedback.word,
+                    "value": feedback.value
+                ]
+            }
+            return [
+                "action": "batch_feedback",
+                "data": [
+                    "thought_id": thoughtId,
+                    "chapter_number": chapterNumber,
+                    "feedbacks": feedbackArray
                 ]
             ]
             
