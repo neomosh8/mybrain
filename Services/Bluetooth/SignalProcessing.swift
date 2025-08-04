@@ -81,11 +81,11 @@ class SignalProcessing {
     private static let powerScale: Double = 0.84
     private static let targetBin: Int = 8
     
-    private static var histCh1: [Double] = []
-    private static var histCh2: [Double] = []
+    private static var leadoffCh1: [Double] = []
+    private static var leadoffCh2: [Double] = []
     
     static func resetLeadoffData() {
-        histCh1.removeAll(); histCh2.removeAll()
+        leadoffCh1.removeAll(); leadoffCh2.removeAll()
     }
     
     static func processLeadoffDetection(ch1Data: [Int32], ch2Data: [Int32]) -> (ch1Connected: Bool, ch2Connected: Bool, ch1Quality: Double, ch2Quality: Double) {
@@ -95,14 +95,14 @@ class SignalProcessing {
         let p2 = calculateWelchPower(data: d2)
         print("Lead-off Detection - Channel Powers: CH1=\(p1), CH2=\(p2)")
 
-        histCh1.append(p1); histCh2.append(p2)
-        if histCh1.count > 100 { histCh1.removeFirst(histCh1.count - 100) }
-        if histCh2.count > 100 { histCh2.removeFirst(histCh2.count - 100) }
+        leadoffCh1.append(p1); leadoffCh2.append(p2)
+        if leadoffCh1.count > 100 { leadoffCh1.removeFirst(leadoffCh1.count - 100) }
+        if leadoffCh2.count > 100 { leadoffCh2.removeFirst(leadoffCh2.count - 100) }
 
-        let conn1 = checkConnection(data: histCh1)
-        let conn2 = checkConnection(data: histCh2)
-        let qual1 = calculateQuality(data: histCh1)
-        let qual2 = calculateQuality(data: histCh2)
+        let conn1 = checkConnection(data: leadoffCh1)
+        let conn2 = checkConnection(data: leadoffCh2)
+        let qual1 = calculateQuality(data: leadoffCh1)
+        let qual2 = calculateQuality(data: leadoffCh2)
         return (conn1, conn2, qual1, qual2)
     }
     
