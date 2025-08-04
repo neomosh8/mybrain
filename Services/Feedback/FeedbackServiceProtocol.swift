@@ -39,4 +39,10 @@ protocol FeedbackServiceProtocol: ObservableObject {
         chapterNumber: Int,
         word: String
     ) async -> Result<FeedbackResponse, FeedbackError>
+    
+    func submitBatchFeedback(
+        thoughtId: String,
+        chapterNumber: Int,
+        words: [String]
+    ) async -> Result<FeedbackResponse, FeedbackError>
 }
