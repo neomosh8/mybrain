@@ -89,6 +89,15 @@ final class WebSocketNetworkService: WebSocketAPI {
         sendAction(action)
     }
     
+    func sendBatchFeedback(thoughtId: String, chapterNumber: Int, feedbacks: [(word: String, value: Double)]) {
+        let action = WebSocketAction.batchFeedback(
+            thoughtId: thoughtId,
+            chapterNumber: chapterNumber,
+            feedbacks: feedbacks
+        )
+        sendAction(action)
+    }
+    
     func requestThoughtStatus(thoughtId: String) {
         let action = WebSocketAction.thoughtStatus(thoughtId: thoughtId)
         sendAction(action)
