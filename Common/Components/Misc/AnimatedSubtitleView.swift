@@ -16,6 +16,9 @@ struct AnimatedSubtitleView: View {
     @State private var wordFrames: [Int: CGRect] = [:]
     @State private var highlightFrame: CGRect = .zero
     
+    @State private var wordBuffer: [String] = []
+    private let batchSize = 10
+    
     init(
         listeningViewModel: ListeningViewModel,
         currentTime: TimeInterval,
@@ -48,11 +51,19 @@ struct AnimatedSubtitleView: View {
                     }
                 }
                 
-                // Send feedback
-                if newIndex >= 0 {
-                    if newIndex < listeningViewModel.allWords.count {
-                        let word = listeningViewModel.allWords[newIndex].text
-                        sendFeedback(for: word)
+//                if newIndex >= 0 {
+//                    if newIndex < listeningViewModel.allWords.count {
+//                        let word = listeningViewModel.allWords[newIndex].text
+//                        sendFeedback(for: word)
+//                    }
+//                }
+                
+                if newIndex >= 0 && newIndex < listeningViewModel.allWords.count {
+                    let word = listeningViewModel.allWords[newIndex].text
+                    wordBuffer.append(word)
+                    
+                    if wordBuffer.count >= batchSize {
+                        sendBatchFeedback()
                     }
                 }
                 
@@ -63,6 +74,11 @@ struct AnimatedSubtitleView: View {
             }
             .onAppear {
                 buildParagraphs()
+            }
+            .onDisappear {
+                if !wordBuffer.isEmpty {
+                    sendBatchFeedback()
+                }
             }
         }
     }
@@ -157,6 +173,28 @@ struct AnimatedSubtitleView: View {
                 break
             case .failure(let error):
                 print("Subtitle feedback submission failed: \(error.localizedDescription)")
+            }
+        }
+    }
+    
+    private func sendBatchFeedback() {
+        guard !wordBuffer.isEmpty else { return }
+        
+        let wordsToSend = wordBuffer
+        wordBuffer.removeAll()
+        
+        Task.detached(priority: .background) {
+            let result = await feedbackService.submitBatchFeedback(
+                thoughtId: thoughtId,
+                chapterNumber: chapterNumber,
+                words: wordsToSend
+            )
+            
+            switch result {
+            case .success(_):
+                break
+            case .failure(let error):
+                print("Batch feedback submission failed: \(error.localizedDescription)")
             }
         }
     }
