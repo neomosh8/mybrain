@@ -462,8 +462,6 @@ class ListeningViewModel: ObservableObject {
             
             player.play()
             
-            // If the player is truly stuck, we might need to nudge it
-            // by pausing and immediately playing again
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
                 guard let self = self,
                       self.isPlaying,
