@@ -456,16 +456,10 @@ class ListeningViewModel: ObservableObject {
            isCurrentlyStalled {
             print("🎵 Player is stalled but new chapter \(receivedChapterNumber) is ready, resuming playback...")
             
-            // Reset stalled flag
             isCurrentlyStalled = false
-            
-            // The HLS playlist has been updated on the server with the new chapter
-            // We just need to tell the player to continue playing
-            // It will automatically fetch the updated playlist
             
             print("🎵 Forcing playback to continue...")
             
-            // First, try a simple play command
             player.play()
             
             // If the player is truly stuck, we might need to nudge it
