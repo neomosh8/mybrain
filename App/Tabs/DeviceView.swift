@@ -420,7 +420,7 @@ extension DeviceView {
     
     private func checkForPreviousDevice() {
         isReconnecting = true
-        bluetoothService.reconnectToPreviousDevice()
+        bluetoothService.autoConnect()
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
             if !bluetoothService.isConnected {

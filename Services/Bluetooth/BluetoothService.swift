@@ -185,10 +185,6 @@ class BluetoothService: NSObject, ObservableObject {
         parser.clearEEGData()
     }
     
-    func reconnectToPreviousDevice() {
-        scanner.reconnectToPreviousDevice()
-    }
-    
     func checkPermissions() {
         scanner.checkPermissions()
     }

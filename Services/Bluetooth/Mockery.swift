@@ -156,18 +156,6 @@ class MockBluetoothService: NSObject, ObservableObject {
         isScanning = false
     }
     
-    func autoConnect() {
-        print("Mock: Auto connecting")
-        // Check if we have a saved device
-        if let savedID = UserDefaults.standard.string(forKey: savedDeviceKey) {
-            print("Mock: Attempting to reconnect to saved device: \(savedID)")
-            reconnectToPreviousDevice()
-        } else {
-            print("Mock: No saved device, starting scan")
-            startScanning()
-        }
-    }
-    
     func connect(to device: DiscoveredDevice) {
         print("Mock: Connecting to \(device.name)")
         stopScanning()
@@ -223,7 +211,9 @@ class MockBluetoothService: NSObject, ObservableObject {
         isLeadOffDetectionEnabled = enable
     }
     
-    func reconnectToPreviousDevice() {
+    func autoConnect() {
+        print("Mock: Auto connecting")
+        
         guard let savedID = UserDefaults.standard.string(forKey: savedDeviceKey) else { return }
         
         startScanning()

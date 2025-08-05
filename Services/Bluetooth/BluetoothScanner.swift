@@ -73,17 +73,22 @@ class BluetoothScanner: NSObject, ObservableObject {
     
     func autoConnect() {
         guard centralManager.state == .poweredOn else {
-            print("Bluetooth not ready, waiting for powered on state")
+            print("Bluetooth not ready for reconnection")
             return
         }
         
-        if let savedID = UserDefaults.standard.string(forKey: savedDeviceKey) {
-            print("Attempting to auto-connect to saved device: \(savedID)")
-            reconnectToPreviousDevice()
-        } else {
-            print("No saved device, starting scan")
-            startScanning()
-        }
+        guard let savedID = UserDefaults.standard.string(forKey: savedDeviceKey) else { return }
+        
+        startScanning()
+        
+        $discoveredDevices
+            .compactMap { devices in devices.first { $0.id == savedID } }
+            .first()
+            .sink { [weak self] device in
+                self?.stopScanning()
+                self?.connect(to: device)
+            }
+            .store(in: &cancellables)
     }
     
     func connect(to device: DiscoveredDevice) {
@@ -105,28 +110,6 @@ class BluetoothScanner: NSObject, ObservableObject {
     
     func removeSavedDevice() {
         UserDefaults.standard.removeObject(forKey: savedDeviceKey)
-    }
-    
-    func reconnectToPreviousDevice() {
-        guard centralManager.state == .poweredOn else {
-            print("Bluetooth not ready for reconnection")
-            return
-        }
-        
-        guard let savedID = UserDefaults.standard.string(forKey: savedDeviceKey) else { return }
-        
-        // Start scanning to find the device
-        startScanning()
-        
-        // Setup observer for the saved device
-        $discoveredDevices
-            .compactMap { devices in devices.first { $0.id == savedID } }
-            .first()
-            .sink { [weak self] device in
-                self?.stopScanning()
-                self?.connect(to: device)
-            }
-            .store(in: &cancellables)
     }
     
     func checkPermissions() {
@@ -175,7 +158,7 @@ extension BluetoothScanner: CBCentralManagerDelegate {
         switch central.state {
         case .poweredOn:
             print("Bluetooth powered on, ready for operations")
-            reconnectToPreviousDevice()
+            autoConnect()
         case .poweredOff:
             print("Bluetooth powered off")
         case .unauthorized:
