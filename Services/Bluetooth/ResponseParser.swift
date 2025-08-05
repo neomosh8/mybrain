@@ -15,7 +15,6 @@ class ResponseParser: NSObject, ObservableObject {
     // MARK: - Private Properties
     private let EEG_PACKET_TYPE: UInt8 = 0x02 // Updated from 0x04 to match Python
     private let HEADER_BYTES: Int = 2       // Feature + PDU header trimmed by Python client
-    private let SAMPLE_RATE = 250
     private let SAMPLES_PER_CHUNK = 27
     private let NUM_CHANNELS = 2
     private let EEG_DATA_HEADER: UInt16 = 0x0480

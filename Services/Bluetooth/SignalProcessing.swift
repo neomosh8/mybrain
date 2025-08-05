@@ -75,22 +75,20 @@ final class OnlineFilter {
 
 // MARK: - SignalProcessing
 class SignalProcessing {
-    private static let sampleRate: Int = 250
+    internal static let sampleRate: Int = 250
+    
     private static let windowSize: Int = 250
     private static let overlapFraction: Double = 0.75
     private static let powerScale: Double = 0.84
     private static let targetBin: Int = 8
-    
-    private static let SIGNAL_BANDS: [String: (low: Double, high: Double)] = [
+    private static let noiseBand = (45.0, 100.0)
+    private static let signalBands: [String: (low: Double, high: Double)] = [
         "delta": (1, 4),
         "theta": (4, 8),
         "alpha": (8, 12),
         "beta": (13, 30),
         "gamma": (30, 45)
     ]
-    
-    
-    private static let NOISE_BAND = (45.0, 100.0)
     
     private static var leadoffCh1: [Double] = []
     private static var leadoffCh2: [Double] = []
@@ -272,7 +270,7 @@ class SignalProcessing {
         var signalPower: Double = 0
         var bandSNR: [String: Double] = [:]
         
-        for (bandName, (low, high)) in SIGNAL_BANDS {
+        for (bandName, (low, high)) in signalBands {
             let bandPower = calculateBandPower(freqs: freqs, psd: psd, lowFreq: low, highFreq: high)
             signalPower += bandPower
             bandSNR[bandName] = bandPower
@@ -282,8 +280,8 @@ class SignalProcessing {
         let noisePower = calculateBandPower(
             freqs: freqs,
             psd: psd,
-            lowFreq: NOISE_BAND.0,
-            highFreq: NOISE_BAND.1
+            lowFreq: noiseBand.0,
+            highFreq: noiseBand.1
         )
         
         // Total SNR
