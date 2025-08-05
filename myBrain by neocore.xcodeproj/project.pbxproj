@@ -50,6 +50,10 @@
 		747A2D9D2E2BCD3400CE9B80 /* FeedbackService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747A2D9C2E2BCD3100CE9B80 /* FeedbackService.swift */; };
 		747A54B32DFDC0B400BD9541 /* ThoughtCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747A54B22DFDC0A900BD9541 /* ThoughtCard.swift */; };
 		747E83BF2E31E3AF00F28F50 /* Mockery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747E83BE2E31E3AA00F28F50 /* Mockery.swift */; };
+		7482861E2E40981F0058C2C0 /* BluetoothScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7482861D2E40981E0058C2C0 /* BluetoothScanner.swift */; };
+		748286202E409A190058C2C0 /* BluetoothStreamer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7482861F2E409A170058C2C0 /* BluetoothStreamer.swift */; };
+		748286222E409A3F0058C2C0 /* ResponseParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748286212E409A3D0058C2C0 /* ResponseParser.swift */; };
+		748286242E409A660058C2C0 /* QualityAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748286232E409A650058C2C0 /* QualityAnalyzer.swift */; };
 		7489330C2E2389BE007A5340 /* ReadingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7489330B2E2389BB007A5340 /* ReadingViewModel.swift */; };
 		748C65842E27684800C912FB /* ActionButtons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748C65832E27684700C912FB /* ActionButtons.swift */; };
 		748C65882E27A80D00C912FB /* FloatingFocusChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748C65872E27A80900C912FB /* FloatingFocusChart.swift */; };
@@ -157,6 +161,10 @@
 		747A2D9C2E2BCD3100CE9B80 /* FeedbackService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackService.swift; sourceTree = "<group>"; };
 		747A54B22DFDC0A900BD9541 /* ThoughtCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtCard.swift; sourceTree = "<group>"; };
 		747E83BE2E31E3AA00F28F50 /* Mockery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mockery.swift; sourceTree = "<group>"; };
+		7482861D2E40981E0058C2C0 /* BluetoothScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothScanner.swift; sourceTree = "<group>"; };
+		7482861F2E409A170058C2C0 /* BluetoothStreamer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothStreamer.swift; sourceTree = "<group>"; };
+		748286212E409A3D0058C2C0 /* ResponseParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResponseParser.swift; sourceTree = "<group>"; };
+		748286232E409A650058C2C0 /* QualityAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QualityAnalyzer.swift; sourceTree = "<group>"; };
 		7489330B2E2389BB007A5340 /* ReadingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingViewModel.swift; sourceTree = "<group>"; };
 		748C65832E27684700C912FB /* ActionButtons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionButtons.swift; sourceTree = "<group>"; };
 		748C65872E27A80900C912FB /* FloatingFocusChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingFocusChart.swift; sourceTree = "<group>"; };
@@ -343,9 +351,13 @@
 		74263C602DDADDEA00953598 /* Bluetooth */ = {
 			isa = PBXGroup;
 			children = (
-				747E83BE2E31E3AA00F28F50 /* Mockery.swift */,
+				748286232E409A650058C2C0 /* QualityAnalyzer.swift */,
+				748286212E409A3D0058C2C0 /* ResponseParser.swift */,
+				7482861F2E409A170058C2C0 /* BluetoothStreamer.swift */,
+				7482861D2E40981E0058C2C0 /* BluetoothScanner.swift */,
 				74263C0B2DDADAE800953598 /* BluetoothService.swift */,
 				74263C1A2DDADAE800953598 /* SignalProcessing.swift */,
+				747E83BE2E31E3AA00F28F50 /* Mockery.swift */,
 			);
 			path = Bluetooth;
 			sourceTree = "<group>";
@@ -713,18 +725,22 @@
 				7499D9082E02A652007E8C92 /* Thought+URLProcessing.swift in Sources */,
 				74263C3B2DDADAE800953598 /* InsightCard.swift in Sources */,
 				746FB2E12E369C4600204028 /* ToggleRow.swift in Sources */,
+				748286202E409A190058C2C0 /* BluetoothStreamer.swift in Sources */,
 				74263C3C2DDADAE800953598 /* LoginScreen.swift in Sources */,
 				747E83BF2E31E3AF00F28F50 /* Mockery.swift in Sources */,
 				74263C892DDAF66400953598 /* Constants.swift in Sources */,
 				74BC7E722E0010D200A9C2F4 /* ProfileAPI+Implementation.swift in Sources */,
 				745BE7AA2E23D05C00FA1CC1 /* ListeningModels.swift in Sources */,
+				7482861E2E40981F0058C2C0 /* BluetoothScanner.swift in Sources */,
 				74263C402DDADAE800953598 /* ChapterCompletionView.swift in Sources */,
 				747377F72E26CC2100C50D04 /* ReadingView.swift in Sources */,
 				74BC7E782E0013D500A9C2F4 /* ThoughtsAPI+Implementation.swift in Sources */,
 				74D58B382E152780008B62DC /* AppNavigationBar.swift in Sources */,
+				748286222E409A3F0058C2C0 /* ResponseParser.swift in Sources */,
 				747A2D9B2E2BCD2F00CE9B80 /* FeedbackServiceProtocol.swift in Sources */,
 				746822642E2F75D3007AB029 /* ListeningView.swift in Sources */,
 				74B3FDAD2E1CD6AF00173269 /* BottomSheetPicker.swift in Sources */,
+				748286242E409A660058C2C0 /* QualityAnalyzer.swift in Sources */,
 				74BC7E622E000DEF00A9C2F4 /* WebSocketProtocols.swift in Sources */,
 				74C2860D2DB4C32400CF836B /* GoogleAuthManager.swift in Sources */,
 				74BC7E662E000E0000A9C2F4 /* RequestModels.swift in Sources */,
