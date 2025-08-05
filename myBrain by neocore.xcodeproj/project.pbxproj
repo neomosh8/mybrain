@@ -57,6 +57,7 @@
 		7489330C2E2389BE007A5340 /* ReadingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7489330B2E2389BB007A5340 /* ReadingViewModel.swift */; };
 		748C65842E27684800C912FB /* ActionButtons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748C65832E27684700C912FB /* ActionButtons.swift */; };
 		748C65882E27A80D00C912FB /* FloatingFocusChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748C65872E27A80900C912FB /* FloatingFocusChart.swift */; };
+		748CFE322E42153A0034763E /* BTServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748CFE312E4215350034763E /* BTServiceProtocol.swift */; };
 		748DF72A2E1BA15400FD4080 /* AvatarImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748DF7292E1BA15100FD4080 /* AvatarImageCache.swift */; };
 		748DF72C2E1BA17600FD4080 /* CachedAvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748DF72B2E1BA17400FD4080 /* CachedAvatarView.swift */; };
 		748E387F2E1E822E004FADCA /* PopupMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748E387E2E1E822D004FADCA /* PopupMenu.swift */; };
@@ -168,6 +169,7 @@
 		7489330B2E2389BB007A5340 /* ReadingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingViewModel.swift; sourceTree = "<group>"; };
 		748C65832E27684700C912FB /* ActionButtons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionButtons.swift; sourceTree = "<group>"; };
 		748C65872E27A80900C912FB /* FloatingFocusChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingFocusChart.swift; sourceTree = "<group>"; };
+		748CFE312E4215350034763E /* BTServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BTServiceProtocol.swift; sourceTree = "<group>"; };
 		748DF7292E1BA15100FD4080 /* AvatarImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarImageCache.swift; sourceTree = "<group>"; };
 		748DF72B2E1BA17400FD4080 /* CachedAvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CachedAvatarView.swift; sourceTree = "<group>"; };
 		748E387E2E1E822D004FADCA /* PopupMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopupMenu.swift; sourceTree = "<group>"; };
@@ -351,11 +353,12 @@
 		74263C602DDADDEA00953598 /* Bluetooth */ = {
 			isa = PBXGroup;
 			children = (
+				748CFE312E4215350034763E /* BTServiceProtocol.swift */,
+				74263C0B2DDADAE800953598 /* BluetoothService.swift */,
 				748286232E409A650058C2C0 /* QualityAnalyzer.swift */,
 				748286212E409A3D0058C2C0 /* ResponseParser.swift */,
 				7482861F2E409A170058C2C0 /* BluetoothStreamer.swift */,
 				7482861D2E40981E0058C2C0 /* BluetoothScanner.swift */,
-				74263C0B2DDADAE800953598 /* BluetoothService.swift */,
 				74263C1A2DDADAE800953598 /* SignalProcessing.swift */,
 				747E83BE2E31E3AA00F28F50 /* MockBluetoothService.swift */,
 			);
@@ -712,6 +715,7 @@
 				74263C2B2DDADAE800953598 /* SignalProcessing.swift in Sources */,
 				74BC7E5E2E000DCB00A9C2F4 /* TokenStorage.swift in Sources */,
 				74BC7E682E000E0700A9C2F4 /* ResponseModels.swift in Sources */,
+				748CFE322E42153A0034763E /* BTServiceProtocol.swift in Sources */,
 				74BC7E6A2E000E0E00A9C2F4 /* WebSocketModels.swift in Sources */,
 				74263C2D2DDADAE800953598 /* FeedbackPlotView.swift in Sources */,
 				74BC7E5C2E000DC100A9C2F4 /* WebSocketNetworkService.swift in Sources */,

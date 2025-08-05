@@ -3,10 +3,7 @@ import CoreBluetooth
 import Combine
 import Accelerate
 
-//typealias BTService = BluetoothService
-typealias BTService = MockBluetoothService
-
-class BluetoothService: NSObject, ObservableObject {
+final class BluetoothService: NSObject, BTServiceProtocol {
     // MARK: - Composed Components
     private let scanner = BluetoothScanner()
     private let streamer = BluetoothStreamer()
