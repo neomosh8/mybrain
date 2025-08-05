@@ -278,8 +278,8 @@ extension BluetoothScanner: CBPeripheralDelegate {
             print("Notification state updated for \(characteristic.uuid): " +
                   (characteristic.isNotifying ? "enabled" : "disabled"))
         }
-
+        
         onNotificationStateChanged?(peripheral, characteristic, error)
     }
-
+    
 }

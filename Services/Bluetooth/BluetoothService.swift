@@ -226,6 +226,11 @@ class BluetoothService: NSObject, ObservableObject {
         qualityAnalyzer.stopAllAnalysis()
         parser.updateReceivingState(isReceiving: false, inTestMode: false)
         isInTestMode = false
+        
+        if let notifyChar = notifyCharacteristic {
+            scanner.setNotifications(enabled: false, for: notifyChar)
+            print("Notifications disabled for EEG characteristic")
+        }
     }
     
     // Device Information Commands
@@ -376,7 +381,7 @@ class BluetoothService: NSObject, ObservableObject {
             
             self.isConnected = true
             print("Device marked as connected")
-
+            
             let mtu = peripheral.maximumWriteValueLength(for: .withResponse)
             print("MTU: \(mtu)")
             

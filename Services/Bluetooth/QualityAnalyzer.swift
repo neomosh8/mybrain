@@ -319,7 +319,7 @@ class QualityAnalyzer: NSObject, ObservableObject {
         
         return powerSpectrum
     }
-
+    
     private func calculateBandPower(freqs: [Double], psd: [Double], lowFreq: Double, highFreq: Double) -> Double {
         var power: Double = 0
         

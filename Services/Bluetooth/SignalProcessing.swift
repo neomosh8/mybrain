@@ -7,17 +7,17 @@ private struct SOSSection {
     let b0: Double, b1: Double, b2: Double
     let a0: Double, a1: Double, a2: Double
     private var v1: Double, v2: Double
-
+    
     init(coefficients sos: [Double], initialState value: Double) {
         b0 = sos[0]; b1 = sos[1]; b2 = sos[2]
         a0 = sos[3]; a1 = sos[4]; a2 = sos[5]
         v1 = value; v2 = value
     }
-
+    
     mutating func reset(to value: Double) {
         v1 = value; v2 = value
     }
-
+    
     mutating func apply(to data: inout [Double]) {
         for i in 0..<data.count {
             let x = data[i]
@@ -42,17 +42,17 @@ final class OnlineFilter {
     private let notchSOS: [[Double]] = [
         [0.9565436765, -1.8130534305, 0.9565436765, 1.0, -1.8130534305, 0.9130873534]
     ]
-
+    
     private var bpChainCh1: [SOSSection] = []
     private var bpChainCh2: [SOSSection] = []
     private var notchChainCh1: [SOSSection] = []
     private var notchChainCh2: [SOSSection] = []
     private var isInitialized = false
-
+    
     /// Apply bandpass + notch filters to two channels in place
     func apply(to ch1Data: inout [Double], _ ch2Data: inout [Double]) {
         guard !ch1Data.isEmpty && !ch2Data.isEmpty else { return }
-
+        
         if !isInitialized {
             let init1 = ch1Data[0], init2 = ch2Data[0]
             bpChainCh1 = bpSOS.map { SOSSection(coefficients: $0, initialState: init1) }
@@ -61,7 +61,7 @@ final class OnlineFilter {
             notchChainCh2 = notchSOS.map { SOSSection(coefficients: $0, initialState: init2) }
             isInitialized = true
         }
-
+        
         // Copy for processing
         var temp1 = ch1Data, temp2 = ch2Data
         // Bandpass
@@ -94,11 +94,11 @@ class SignalProcessing {
         let p1 = calculateWelchPower(data: d1)
         let p2 = calculateWelchPower(data: d2)
         print("Lead-off Detection - Channel Powers: CH1=\(p1), CH2=\(p2)")
-
+        
         leadoffCh1.append(p1); leadoffCh2.append(p2)
         if leadoffCh1.count > 100 { leadoffCh1.removeFirst(leadoffCh1.count - 100) }
         if leadoffCh2.count > 100 { leadoffCh2.removeFirst(leadoffCh2.count - 100) }
-
+        
         let conn1 = checkConnection(data: leadoffCh1)
         let conn2 = checkConnection(data: leadoffCh2)
         let qual1 = calculateQuality(data: leadoffCh1)
@@ -117,12 +117,12 @@ class SignalProcessing {
         let log2n = vDSP_Length(log2(Double(windowSize)))
         guard let fftSetup = vDSP_create_fftsetupD(log2n, FFTRadix(kFFTRadix2)) else { return 0 }
         defer { vDSP_destroy_fftsetupD(fftSetup) }
-
+        
         var win = [Double](repeating: 0, count: windowSize)
         vDSP_hann_windowD(&win, vDSP_Length(windowSize), Int32(vDSP_HANN_NORM))
         var windowed = [Double](repeating: 0, count: windowSize)
         vDSP_vmulD(windowData, 1, win, 1, &windowed, 1, vDSP_Length(windowSize))
-
+        
         var real = windowed, imag = [Double](repeating: 0, count: windowSize)
         var spectrum = [Double](repeating: 0, count: windowSize/2)
         real.withUnsafeMutableBufferPointer { rBuf in
@@ -154,14 +154,14 @@ class SignalProcessing {
         let baseline = removeOutliers(from: Array(data.prefix(baselineCount)))
         let recent = Array(data.suffix(5))
         guard !baseline.isEmpty && !recent.isEmpty else { return false }
-
+        
         let meanBase = baseline.reduce(0, +) / Double(baseline.count)
         let meanRecent = recent.reduce(0, +) / Double(recent.count)
         let stdBase = calculateStd(data: baseline, mean: meanBase)
         let threshold = meanBase + 2*stdBase
         return meanRecent > threshold
     }
-
+    
     private static func calculateQuality(data: [Double]) -> Double {
         guard data.count >= 5 else { return 0.0 }
         
@@ -174,7 +174,7 @@ class SignalProcessing {
         let cv = std / abs(mean)
         return max(0, min(100, 100 * (1 - cv)))
     }
-
+    
     private static func calculateStd(data: [Double], mean: Double) -> Double {
         let count = data.count
         guard count > 1 else { return 0.0 }
