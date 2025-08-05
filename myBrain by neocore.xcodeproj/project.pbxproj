@@ -49,7 +49,7 @@
 		747A2D9B2E2BCD2F00CE9B80 /* FeedbackServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747A2D9A2E2BCD2C00CE9B80 /* FeedbackServiceProtocol.swift */; };
 		747A2D9D2E2BCD3400CE9B80 /* FeedbackService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747A2D9C2E2BCD3100CE9B80 /* FeedbackService.swift */; };
 		747A54B32DFDC0B400BD9541 /* ThoughtCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747A54B22DFDC0A900BD9541 /* ThoughtCard.swift */; };
-		747E83BF2E31E3AF00F28F50 /* Mockery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747E83BE2E31E3AA00F28F50 /* Mockery.swift */; };
+		747E83BF2E31E3AF00F28F50 /* MockBluetoothService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747E83BE2E31E3AA00F28F50 /* MockBluetoothService.swift */; };
 		7482861E2E40981F0058C2C0 /* BluetoothScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7482861D2E40981E0058C2C0 /* BluetoothScanner.swift */; };
 		748286202E409A190058C2C0 /* BluetoothStreamer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7482861F2E409A170058C2C0 /* BluetoothStreamer.swift */; };
 		748286222E409A3F0058C2C0 /* ResponseParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748286212E409A3D0058C2C0 /* ResponseParser.swift */; };
@@ -160,7 +160,7 @@
 		747A2D9A2E2BCD2C00CE9B80 /* FeedbackServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackServiceProtocol.swift; sourceTree = "<group>"; };
 		747A2D9C2E2BCD3100CE9B80 /* FeedbackService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackService.swift; sourceTree = "<group>"; };
 		747A54B22DFDC0A900BD9541 /* ThoughtCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtCard.swift; sourceTree = "<group>"; };
-		747E83BE2E31E3AA00F28F50 /* Mockery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mockery.swift; sourceTree = "<group>"; };
+		747E83BE2E31E3AA00F28F50 /* MockBluetoothService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockBluetoothService.swift; sourceTree = "<group>"; };
 		7482861D2E40981E0058C2C0 /* BluetoothScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothScanner.swift; sourceTree = "<group>"; };
 		7482861F2E409A170058C2C0 /* BluetoothStreamer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothStreamer.swift; sourceTree = "<group>"; };
 		748286212E409A3D0058C2C0 /* ResponseParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResponseParser.swift; sourceTree = "<group>"; };
@@ -357,7 +357,7 @@
 				7482861D2E40981E0058C2C0 /* BluetoothScanner.swift */,
 				74263C0B2DDADAE800953598 /* BluetoothService.swift */,
 				74263C1A2DDADAE800953598 /* SignalProcessing.swift */,
-				747E83BE2E31E3AA00F28F50 /* Mockery.swift */,
+				747E83BE2E31E3AA00F28F50 /* MockBluetoothService.swift */,
 			);
 			path = Bluetooth;
 			sourceTree = "<group>";
@@ -727,7 +727,7 @@
 				746FB2E12E369C4600204028 /* ToggleRow.swift in Sources */,
 				748286202E409A190058C2C0 /* BluetoothStreamer.swift in Sources */,
 				74263C3C2DDADAE800953598 /* LoginScreen.swift in Sources */,
-				747E83BF2E31E3AF00F28F50 /* Mockery.swift in Sources */,
+				747E83BF2E31E3AF00F28F50 /* MockBluetoothService.swift in Sources */,
 				74263C892DDAF66400953598 /* Constants.swift in Sources */,
 				74BC7E722E0010D200A9C2F4 /* ProfileAPI+Implementation.swift in Sources */,
 				745BE7AA2E23D05C00FA1CC1 /* ListeningModels.swift in Sources */,
