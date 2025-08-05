@@ -204,7 +204,6 @@ class QualityAnalyzer: NSObject, ObservableObject {
         )
     }
     
-    // Helper method for Welch's method implementation
     private func welch(_ data: [Double], fs: Double, nperseg: Int) -> (freqs: [Double], psd: [Double]) {
         let noverlap = nperseg / 2
         let step = nperseg - noverlap
@@ -230,15 +229,12 @@ class QualityAnalyzer: NSObject, ObservableObject {
             vDSP_vmulD(segment, 1, window, 1, &windowedSegment, 1, vDSP_Length(nperseg))
             
             // Compute FFT and PSD
-            let realPart = windowedSegment
-            let imagPart = [Double](repeating: 0, count: nperseg)
+            var realPart = windowedSegment
+            var imagPart = [Double](repeating: 0, count: nperseg)
             var segmentPSD = [Double](repeating: 0, count: nperseg / 2 + 1)
             
-            var realPartCopy = realPart
-            var imagPartCopy = imagPart
-            
-            realPartCopy.withUnsafeMutableBufferPointer { realBuffer in
-                imagPartCopy.withUnsafeMutableBufferPointer { imagBuffer in
+            realPart.withUnsafeMutableBufferPointer { realBuffer in
+                imagPart.withUnsafeMutableBufferPointer { imagBuffer in
                     var splitComplex = DSPDoubleSplitComplex(
                         realp: realBuffer.baseAddress!,
                         imagp: imagBuffer.baseAddress!
@@ -248,44 +244,26 @@ class QualityAnalyzer: NSObject, ObservableObject {
                     vDSP_fft_zipD(fftSetup, &splitComplex, 1, log2n, FFTDirection(FFT_FORWARD))
                     
                     // Calculate power spectrum
-                    var powerSpectrum = [Double](repeating: 0, count: nperseg / 2 + 1)
-                    let n = nperseg
-                    
-                    // Calculate magnitude squared for each frequency bin
-                    for i in 0..<(n / 2 + 1) {
-                        if i == 0 {
-                            powerSpectrum[i] = realPart[0] * realPart[0]
-                        } else if i == n / 2 && n % 2 == 0 {
-                            powerSpectrum[i] = realPart[n / 2] * realPart[n / 2]
-                        } else {
-                            powerSpectrum[i] = realPart[i] * realPart[i] + imagPart[i] * imagPart[i]
-                        }
-                    }
-                    
-                    // Scale for PSD
-                    var scale = 2.0 / (fs * Double(n))
-                    vDSP_vsmulD(powerSpectrum, 1, &scale, &powerSpectrum, 1, vDSP_Length(powerSpectrum.count))
-                    
-                    // DC and Nyquist don't get doubled
-                    powerSpectrum[0] /= 2.0
-                    if n % 2 == 0 {
-                        powerSpectrum[n / 2] /= 2.0
-                    }
-                    
-                    segmentPSD = powerSpectrum
+                    vDSP_zvmagsD(&splitComplex, 1, &segmentPSD, 1, vDSP_Length(nperseg / 2))
                 }
             }
             
-            // Accumulate PSD
-            vDSP_vaddD(psdAccumulator, 1, segmentPSD, 1, &psdAccumulator, 1, vDSP_Length(psdAccumulator.count))
+            // Handle DC component
+            segmentPSD[0] = realPart[0] * realPart[0]
+            
+            // Scale
+            var scale = 2.0 / (fs * Double(nperseg))
+            vDSP_vsmulD(segmentPSD, 1, &scale, &segmentPSD, 1, vDSP_Length(segmentPSD.count))
+            segmentPSD[0] /= 2.0
+            
+            // Accumulate
+            vDSP_vaddD(psdAccumulator, 1, segmentPSD, 1, &psdAccumulator, 1, vDSP_Length(segmentPSD.count))
             segmentCount += 1
         }
         
-        // Average the accumulated PSD
-        if segmentCount > 0 {
-            var count = Double(segmentCount)
-            vDSP_vsdivD(psdAccumulator, 1, &count, &psdAccumulator, 1, vDSP_Length(psdAccumulator.count))
-        }
+        // Average
+        var scale = 1.0 / Double(segmentCount)
+        vDSP_vsmulD(psdAccumulator, 1, &scale, &psdAccumulator, 1, vDSP_Length(psdAccumulator.count))
         
         // Generate frequency array
         let freqs = (0..<psdAccumulator.count).map { Double($0) * fs / Double(nperseg) }
@@ -293,7 +271,55 @@ class QualityAnalyzer: NSObject, ObservableObject {
         return (freqs, psdAccumulator)
     }
     
-    // Helper method to calculate band power
+    private func computePSD(_ segment: [Double], fs: Double) -> [Double] {
+        let n = segment.count
+        let log2n = vDSP_Length(log2(Double(n)))
+        
+        guard let fftSetup = vDSP_create_fftsetupD(log2n, FFTRadix(kFFTRadix2)) else {
+            return [Double](repeating: 0, count: n / 2 + 1)
+        }
+        defer { vDSP_destroy_fftsetupD(fftSetup) }
+        
+        // Prepare for FFT
+        var realPart = segment
+        var imagPart = [Double](repeating: 0, count: n)
+        var powerSpectrum = [Double](repeating: 0, count: n / 2 + 1)
+        
+        // Use withUnsafeMutablePointer to ensure pointer validity
+        realPart.withUnsafeMutableBufferPointer { realBuffer in
+            imagPart.withUnsafeMutableBufferPointer { imagBuffer in
+                var splitComplex = DSPDoubleSplitComplex(
+                    realp: realBuffer.baseAddress!,
+                    imagp: imagBuffer.baseAddress!
+                )
+                
+                // Perform FFT
+                vDSP_fft_zipD(fftSetup, &splitComplex, 1, log2n, FFTDirection(FFT_FORWARD))
+                
+                // Calculate power spectrum
+                vDSP_zvmagsD(&splitComplex, 1, &powerSpectrum, 1, vDSP_Length(n / 2))
+            }
+        }
+        
+        // Handle DC and Nyquist
+        powerSpectrum[0] = realPart[0] * realPart[0]
+        if n % 2 == 0 {
+            powerSpectrum[n / 2] = realPart[n / 2] * realPart[n / 2]
+        }
+        
+        // Scale for PSD
+        var scale = 2.0 / (fs * Double(n))
+        vDSP_vsmulD(powerSpectrum, 1, &scale, &powerSpectrum, 1, vDSP_Length(powerSpectrum.count))
+        
+        // DC and Nyquist don't get doubled
+        powerSpectrum[0] /= 2.0
+        if n % 2 == 0 {
+            powerSpectrum[n / 2] /= 2.0
+        }
+        
+        return powerSpectrum
+    }
+
     private func calculateBandPower(freqs: [Double], psd: [Double], lowFreq: Double, highFreq: Double) -> Double {
         var power: Double = 0
         
