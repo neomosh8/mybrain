@@ -145,6 +145,15 @@ class BluetoothService: NSObject, ObservableObject {
             }
         }
         
+        scanner.onNotificationStateChanged = { [weak self] peripheral, characteristic, error in
+            if let error = error {
+                print("Failed to change notification state for \(characteristic.uuid): \(error.localizedDescription)")
+            } else {
+                print("Notification state for \(characteristic.uuid) is now " +
+                      (characteristic.isNotifying ? "ENABLED" : "DISABLED"))
+            }
+        }
+        
         // Streamer callbacks
         streamer.onSendCommand = { [weak self] featureId, pduType, pduId, data in
             self?.sendCommand(featureId: featureId, pduType: pduType, pduId: pduId, data: data)
@@ -364,6 +373,12 @@ class BluetoothService: NSObject, ObservableObject {
         // Once we have both characteristics, we're fully connected
         if writeCharacteristic != nil && notifyCharacteristic != nil {
             print("Device fully connected and ready")
+            
+            self.isConnected = true
+            print("Device marked as connected")
+
+            let mtu = peripheral.maximumWriteValueLength(for: .withResponse)
+            print("MTU: \(mtu)")
             
             // Auto-start streaming if configured
             if streamer.shouldAutoStartStreaming() {
