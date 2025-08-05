@@ -93,6 +93,8 @@ class SignalProcessing {
     private static var leadoffCh1: [Double] = []
     private static var leadoffCh2: [Double] = []
     
+    private static var fftSetupCache = [vDSP_Length: FFTSetup]()
+    
     static func resetLeadoffData() {
         leadoffCh1.removeAll(); leadoffCh2.removeAll()
     }
@@ -123,10 +125,10 @@ class SignalProcessing {
             return msq * powerScale
         }
         let windowData = Array(data.suffix(windowSize))
-        let log2n = vDSP_Length(log2(Double(windowSize)))
-        guard let fftSetup = vDSP_create_fftsetupD(log2n, FFTRadix(kFFTRadix2)) else { return 0 }
-        defer { vDSP_destroy_fftsetupD(fftSetup) }
         
+        let log2n = vDSP_Length(log2(Double(windowSize)))
+        guard let fftSetup = fftSetup(for: windowSize) else { return 0 }
+
         var win = [Double](repeating: 0, count: windowSize)
         vDSP_hann_windowD(&win, vDSP_Length(windowSize), Int32(vDSP_HANN_NORM))
         var windowed = [Double](repeating: 0, count: windowSize)
@@ -189,6 +191,18 @@ class SignalProcessing {
         guard count > 1 else { return 0.0 }
         let varSum = data.reduce(0) { $0 + ($1 - mean) * ($1 - mean) }
         return sqrt(varSum / Double(count - 1))
+    }
+    
+    private static func fftSetup(for length: Int) -> FFTSetup? {
+        let log2n = vDSP_Length(log2(Double(length)))
+        if let existing = fftSetupCache[log2n] {
+            return existing
+        }
+        guard let newSetup = vDSP_create_fftsetupD(log2n, FFTRadix(kFFTRadix2)) else {
+            return nil
+        }
+        fftSetupCache[log2n] = newSetup
+        return newSetup
     }
     
     // MARK: - Private Quality Analysis Methods
@@ -313,11 +327,8 @@ class SignalProcessing {
         
         // Create FFT setup once
         let log2n = vDSP_Length(log2(Double(nperseg)))
-        guard let fftSetup = vDSP_create_fftsetupD(log2n, FFTRadix(kFFTRadix2)) else {
-            return ([], [])
-        }
-        defer { vDSP_destroy_fftsetupD(fftSetup) }
-        
+        guard let fftSetup = fftSetup(for: nperseg) else { return ([], []) }
+
         // Process overlapping segments
         for start in stride(from: 0, to: data.count - nperseg + 1, by: step) {
             let segment = Array(data[start..<start + nperseg])
@@ -374,11 +385,7 @@ class SignalProcessing {
     private static func computePSD(_ segment: [Double], fs: Double) -> [Double] {
         let n = segment.count
         let log2n = vDSP_Length(log2(Double(n)))
-        
-        guard let fftSetup = vDSP_create_fftsetupD(log2n, FFTRadix(kFFTRadix2)) else {
-            return [Double](repeating: 0, count: n / 2 + 1)
-        }
-        defer { vDSP_destroy_fftsetupD(fftSetup) }
+        guard let fftSetup = fftSetup(for: n) else { return [Double](repeating: 0, count: n / 2 + 1) }
         
         // Prepare for FFT
         var realPart = segment
