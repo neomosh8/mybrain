@@ -42,6 +42,7 @@ class BluetoothScanner: NSObject, ObservableObject {
     var onServicesDiscovered: ((CBPeripheral, Error?) -> Void)?
     var onCharacteristicsDiscovered: ((CBPeripheral, CBService, Error?) -> Void)?
     var onCharacteristicValueUpdated: ((CBPeripheral, CBCharacteristic, Data?) -> Void)?
+    var onNotificationStateChanged: ((CBPeripheral, CBCharacteristic, Error?) -> Void)?
     
     // MARK: - Initialization
     override init() {
@@ -266,4 +267,19 @@ extension BluetoothScanner: CBPeripheralDelegate {
             print("Successfully wrote to characteristic: \(characteristic.uuid)")
         }
     }
+    
+    
+    func peripheral(_ peripheral: CBPeripheral,
+                    didUpdateNotificationStateFor characteristic: CBCharacteristic,
+                    error: Error?) {
+        if let error = error {
+            print("Error changing notification state: \(error.localizedDescription)")
+        } else {
+            print("Notification state updated for \(characteristic.uuid): " +
+                  (characteristic.isNotifying ? "enabled" : "disabled"))
+        }
+
+        onNotificationStateChanged?(peripheral, characteristic, error)
+    }
+
 }
