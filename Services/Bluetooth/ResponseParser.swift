@@ -156,32 +156,54 @@ class ResponseParser: NSObject, ObservableObject {
         }
     }
     
-    func handleEEGDataPacket(_ data: Data) {
-        // Skip first 2 bytes (header)
-        let eegData = data.dropFirst(HEADER_BYTES)
+    // MARK: – EEG Packet Handler (Version 2 style)
+    private func handleEEGDataPacket(_ data: Data) {
+        // [0] Packet Type, [1] Payload length, [2…3] Message index, [4…] Interleaved samples
+        guard data.count >= 4 else {
+            print("EEG packet too short: \(data.count) bytes")
+            return
+        }
         
-        // Parse EEG samples
-        let (ch1Samples, ch2Samples) = parseEEGSamples(from: Data(eegData))
+        let packetType = data[0]
+        let payloadLength = Int(data[1])
+        let messageIndex = UInt16(data[2]) | (UInt16(data[3]) << 8)
         
-        // Apply filtering before storing
-        var ch1Doubles = ch1Samples.map { Double($0) }
-        var ch2Doubles = ch2Samples.map { Double($0) }
+        print("EEG Packet: Type=0x\(String(format: "%02X", packetType)), Length=\(payloadLength), Index=\(messageIndex)")
         
-        // Apply online filtering (matching Python implementation)
+        // sanity-check length (max 27 samples × 2 channels × 4 bytes = 216)
+        guard payloadLength > 0 && payloadLength <= 216 else {
+            print("Invalid payload length: \(payloadLength)")
+            return
+        }
+        
+        let expectedSize = 4 + payloadLength
+        guard data.count >= expectedSize else {
+            print("Packet size mismatch: expected \(expectedSize), got \(data.count)")
+            return
+        }
+        
+        // extract just the raw samples
+        let samplesData = data.subdata(in: 4..<4 + payloadLength)
+        
+        // parse into Int32 arrays, then to Double for filtering
+        let (rawCh1, rawCh2) = parseEEGSamples(from: samplesData)
+        var ch1Doubles = rawCh1.map { Double($0) }
+        var ch2Doubles = rawCh2.map { Double($0) }
+        
+        // apply your online filter
         onlineFilter.apply(to: &ch1Doubles, &ch2Doubles)
         
-        // Convert back to Int32 for storage
+        // convert filtered back to Int32
         let filteredCh1 = ch1Doubles.map { Int32($0) }
         let filteredCh2 = ch2Doubles.map { Int32($0) }
         
-        // Only append data if we're receiving data
+        // append & bound buffer
         if isReceivingTestData && isInTestMode {
             DispatchQueue.main.async {
                 self.eegChannel1.append(contentsOf: filteredCh1)
                 self.eegChannel2.append(contentsOf: filteredCh2)
                 
-                // Keep buffer bounded (matching Python's buffer_size logic)
-                let maxStoredSamples = 5000 // 20 seconds at 250Hz
+                let maxStoredSamples = 5000 // 20 s @250 Hz
                 if self.eegChannel1.count > maxStoredSamples {
                     self.eegChannel1.removeFirst(self.eegChannel1.count - maxStoredSamples)
                 }
@@ -192,9 +214,6 @@ class ResponseParser: NSObject, ObservableObject {
                 print("Updated EEG channels: CH1=\(self.eegChannel1.count), CH2=\(self.eegChannel2.count)")
             }
         }
-        
-        // Notify callback if available
-        onEEGDataReceived?(filteredCh1, filteredCh2)
     }
     
     private func handleChargerStatusResponse(pduType: UInt16, pduId: UInt16, data: Data) {
@@ -213,44 +232,23 @@ class ResponseParser: NSObject, ObservableObject {
         self.lastError = "feature=0x\(String(featureId, radix:16)), id=0x\(String(pduId, radix:16)): \(data.hexDescription)"
     }
     
+    // MARK: – Sample Parsing (4-byte Int32 per channel)
     private func parseEEGSamples(from data: Data) -> ([Int32], [Int32]) {
         var ch1Samples: [Int32] = []
         var ch2Samples: [Int32] = []
         
-        // Each sample is 3 bytes (24-bit) per channel, and we have 2 channels
-        let bytesPerSample = 3
-        let totalBytesPerSamplePair = bytesPerSample * NUM_CHANNELS
+        // Each sample-pair is 8 bytes: 4 bytes for channel 1 + 4 bytes for channel 2
+        let bytesPerPair = MemoryLayout<Int32>.size * 2
         
-        var offset = 0
-        while offset + totalBytesPerSamplePair <= data.count {
-            // Parse Channel 1 (first 3 bytes)
-            let ch1Bytes = data.subdata(in: offset..<offset + bytesPerSample)
-            let ch1Value = parseSignedInt24(from: ch1Bytes)
-            ch1Samples.append(ch1Value)
-            
-            // Parse Channel 2 (next 3 bytes)
-            let ch2Bytes = data.subdata(in: (offset + bytesPerSample)..<(offset + totalBytesPerSamplePair))
-            let ch2Value = parseSignedInt24(from: ch2Bytes)
-            ch2Samples.append(ch2Value)
-            
-            offset += totalBytesPerSamplePair
+        for offset in stride(from: 0, to: data.count - bytesPerPair + 1, by: bytesPerPair) {
+            let pair = data.subdata(in: offset..<(offset + bytesPerPair))
+            let ch1Val = pair.subdata(in: 0..<4).withUnsafeBytes { $0.load(as: Int32.self) }
+            let ch2Val = pair.subdata(in: 4..<8).withUnsafeBytes { $0.load(as: Int32.self) }
+            ch1Samples.append(ch1Val)
+            ch2Samples.append(ch2Val)
         }
         
         return (ch1Samples, ch2Samples)
-    }
-    
-    private func parseSignedInt24(from data: Data) -> Int32 {
-        guard data.count == 3 else { return 0 }
-        
-        // Convert 3 bytes to Int32 (little endian, sign-extended)
-        let value = Int32(data[0]) | (Int32(data[1]) << 8) | (Int32(data[2]) << 16)
-        
-        // Sign extend from 24-bit to 32-bit
-        if value & 0x800000 != 0 {
-            return value | Int32(bitPattern: 0xFF000000)
-        } else {
-            return value
-        }
     }
     
     // MARK: - Characteristic UUID Helpers
