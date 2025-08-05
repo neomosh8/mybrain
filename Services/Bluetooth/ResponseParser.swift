@@ -135,11 +135,17 @@ class ResponseParser: NSObject, ObservableObject {
         guard data.count > 2 else { return }
         
         let serialData = data.dropFirst(2) // Skip header
-        if let serialString = String(data: serialData, encoding: .utf8) {
+        if let str = String(data: serialData, encoding: .utf8) {
             DispatchQueue.main.async {
-                self.serialNumber = serialString
+                self.serialNumber = str
+                print("Device serial number: \(str)")
             }
-            print("Device serial number: \(serialString)")
+        } else {
+            let hex = serialData.hexDescription
+            DispatchQueue.main.async {
+                self.serialNumber = hex
+                print("Device serial number (hex): \(hex)")
+            }
         }
     }
     
