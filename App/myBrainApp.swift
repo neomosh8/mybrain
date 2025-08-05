@@ -45,6 +45,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     
     func applicationWillTerminate(_ application: UIApplication) {
         networkService.disconnectWebSocket()
+        SignalProcessing.cleanupFFTSetups()
     }
     
     func applicationDidEnterBackground(_ application: UIApplication) {

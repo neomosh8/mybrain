@@ -76,7 +76,6 @@ final class OnlineFilter {
 // MARK: - SignalProcessing
 class SignalProcessing {
     internal static let sampleRate: Int = 250
-    
     private static let windowSize: Int = 250
     private static let overlapFraction: Double = 0.75
     private static let powerScale: Double = 0.84
@@ -128,7 +127,7 @@ class SignalProcessing {
         
         let log2n = vDSP_Length(log2(Double(windowSize)))
         guard let fftSetup = fftSetup(for: windowSize) else { return 0 }
-
+        
         var win = [Double](repeating: 0, count: windowSize)
         vDSP_hann_windowD(&win, vDSP_Length(windowSize), Int32(vDSP_HANN_NORM))
         var windowed = [Double](repeating: 0, count: windowSize)
@@ -328,7 +327,7 @@ class SignalProcessing {
         // Create FFT setup once
         let log2n = vDSP_Length(log2(Double(nperseg)))
         guard let fftSetup = fftSetup(for: nperseg) else { return ([], []) }
-
+        
         // Process overlapping segments
         for start in stride(from: 0, to: data.count - nperseg + 1, by: step) {
             let segment = Array(data[start..<start + nperseg])
@@ -443,4 +442,10 @@ class SignalProcessing {
         return power
     }
     
+    static func cleanupFFTSetups() {
+        for setup in fftSetupCache.values {
+            vDSP_destroy_fftsetupD(setup)
+        }
+        fftSetupCache.removeAll()
+    }
 }
