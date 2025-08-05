@@ -73,13 +73,24 @@ final class OnlineFilter {
     }
 }
 
-// MARK: - SignalProcessing (Lead-Off Detection)
+// MARK: - SignalProcessing
 class SignalProcessing {
-    private static let sampleRate: Double = 250.0
+    private static let sampleRate: Int = 250
     private static let windowSize: Int = 250
     private static let overlapFraction: Double = 0.75
     private static let powerScale: Double = 0.84
     private static let targetBin: Int = 8
+    
+    private static let SIGNAL_BANDS: [String: (low: Double, high: Double)] = [
+        "delta": (1, 4),
+        "theta": (4, 8),
+        "alpha": (8, 12),
+        "beta": (13, 30),
+        "gamma": (30, 45)
+    ]
+    
+    
+    private static let NOISE_BAND = (45.0, 100.0)
     
     private static var leadoffCh1: [Double] = []
     private static var leadoffCh2: [Double] = []
@@ -132,7 +143,7 @@ class SignalProcessing {
                 vDSP_zvmagsD(&split, 1, &spectrum, 1, vDSP_Length(windowSize/2))
             }
         }
-        var scale = 2.0 / (sampleRate * Double(windowSize))
+        var scale = 2.0 / (Double(sampleRate) * Double(windowSize))
         vDSP_vsmulD(spectrum, 1, &scale, &spectrum, 1, vDSP_Length(spectrum.count))
         return spectrum[min(targetBin, spectrum.count-1)]
     }
@@ -181,4 +192,250 @@ class SignalProcessing {
         let varSum = data.reduce(0) { $0 + ($1 - mean) * ($1 - mean) }
         return sqrt(varSum / Double(count - 1))
     }
+    
+    // MARK: - Private Quality Analysis Methods
+    
+    static func calculateQualityMetrics(for data: [Double]) -> SignalQualityMetrics? {
+        // Calculate dynamic range
+        let dr = calculateDynamicRange(data)
+        
+        // Calculate SNR using Welch's method
+        let snr = calculateSNR(data)
+        
+        return SignalQualityMetrics(dynamicRange: dr, snr: snr)
+    }
+    
+    private static func calculateDynamicRange(_ data: [Double]) -> DynamicRange {
+        guard !data.isEmpty else {
+            return DynamicRange(linear: 0, db: 0, peakToPeak: 0, rms: 0, max: 0, min: 0)
+        }
+        
+        // Remove DC component
+        var mean: Double = 0
+        vDSP_meanvD(data, 1, &mean, vDSP_Length(data.count))
+        let signalAC = data.map { $0 - mean }
+        
+        // Peak-to-peak dynamic range
+        var max: Double = 0
+        var min: Double = 0
+        vDSP_maxvD(signalAC, 1, &max, vDSP_Length(signalAC.count))
+        vDSP_minvD(signalAC, 1, &min, vDSP_Length(signalAC.count))
+        let peakToPeak = max - min
+        
+        // RMS value
+        var rms: Double = 0
+        vDSP_measqvD(signalAC, 1, &rms, vDSP_Length(signalAC.count))
+        rms = sqrt(rms)
+        
+        // Dynamic range in dB
+        let absValues = signalAC.map { abs($0) }
+        var maxAbs: Double = 0
+        var minAbs: Double = 0
+        vDSP_maxvD(absValues, 1, &maxAbs, vDSP_Length(absValues.count))
+        
+        // Find minimum non-zero value
+        let nonZeroValues = absValues.filter { $0 > 0 }
+        if !nonZeroValues.isEmpty {
+            vDSP_minvD(nonZeroValues, 1, &minAbs, vDSP_Length(nonZeroValues.count))
+        } else {
+            minAbs = 1e-10
+        }
+        
+        let drDB = minAbs > 0 ? 20 * log10(maxAbs / minAbs) : 0
+        let linear = minAbs > 0 ? maxAbs / minAbs : 0
+        
+        return DynamicRange(
+            linear: linear,
+            db: drDB,
+            peakToPeak: peakToPeak,
+            rms: rms,
+            max: maxAbs,
+            min: minAbs
+        )
+    }
+    
+    private static func calculateSNR(_ data: [Double]) -> SignalToNoiseRatio {
+        guard data.count >= sampleRate else {
+            return SignalToNoiseRatio(
+                totalSNRdB: 0,
+                bandSNR: [:],
+                signalPower: 0,
+                noisePower: 0
+            )
+        }
+        
+        // Calculate power spectral density using Welch's method
+        let nperseg = min(data.count / 4, sampleRate)
+        let (freqs, psd) = welch(data, fs: Double(sampleRate), nperseg: nperseg)
+        
+        // Calculate power in signal bands
+        var signalPower: Double = 0
+        var bandSNR: [String: Double] = [:]
+        
+        for (bandName, (low, high)) in SIGNAL_BANDS {
+            let bandPower = calculateBandPower(freqs: freqs, psd: psd, lowFreq: low, highFreq: high)
+            signalPower += bandPower
+            bandSNR[bandName] = bandPower
+        }
+        
+        // Calculate noise power
+        let noisePower = calculateBandPower(
+            freqs: freqs,
+            psd: psd,
+            lowFreq: NOISE_BAND.0,
+            highFreq: NOISE_BAND.1
+        )
+        
+        // Total SNR
+        let totalSNRdB = noisePower > 0 ? 10 * log10(signalPower / noisePower) : 0
+        
+        // Band-specific SNR
+        for bandName in bandSNR.keys {
+            if let bandPower = bandSNR[bandName], noisePower > 0 {
+                bandSNR[bandName] = 10 * log10(bandPower / noisePower)
+            } else {
+                bandSNR[bandName] = 0
+            }
+        }
+        
+        return SignalToNoiseRatio(
+            totalSNRdB: totalSNRdB,
+            bandSNR: bandSNR,
+            signalPower: signalPower,
+            noisePower: noisePower
+        )
+    }
+    
+    private static func welch(_ data: [Double], fs: Double, nperseg: Int) -> (freqs: [Double], psd: [Double]) {
+        let noverlap = nperseg / 2
+        let step = nperseg - noverlap
+        
+        var psdAccumulator = [Double](repeating: 0, count: nperseg / 2 + 1)
+        var segmentCount = 0
+        
+        // Create FFT setup once
+        let log2n = vDSP_Length(log2(Double(nperseg)))
+        guard let fftSetup = vDSP_create_fftsetupD(log2n, FFTRadix(kFFTRadix2)) else {
+            return ([], [])
+        }
+        defer { vDSP_destroy_fftsetupD(fftSetup) }
+        
+        // Process overlapping segments
+        for start in stride(from: 0, to: data.count - nperseg + 1, by: step) {
+            let segment = Array(data[start..<start + nperseg])
+            
+            // Apply Hann window
+            var windowedSegment = [Double](repeating: 0, count: nperseg)
+            var window = [Double](repeating: 0, count: nperseg)
+            vDSP_hann_windowD(&window, vDSP_Length(nperseg), Int32(vDSP_HANN_NORM))
+            vDSP_vmulD(segment, 1, window, 1, &windowedSegment, 1, vDSP_Length(nperseg))
+            
+            // Compute FFT and PSD
+            var realPart = windowedSegment
+            var imagPart = [Double](repeating: 0, count: nperseg)
+            var segmentPSD = [Double](repeating: 0, count: nperseg / 2 + 1)
+            
+            realPart.withUnsafeMutableBufferPointer { realBuffer in
+                imagPart.withUnsafeMutableBufferPointer { imagBuffer in
+                    var splitComplex = DSPDoubleSplitComplex(
+                        realp: realBuffer.baseAddress!,
+                        imagp: imagBuffer.baseAddress!
+                    )
+                    
+                    // Perform FFT
+                    vDSP_fft_zipD(fftSetup, &splitComplex, 1, log2n, FFTDirection(FFT_FORWARD))
+                    
+                    // Calculate power spectrum
+                    vDSP_zvmagsD(&splitComplex, 1, &segmentPSD, 1, vDSP_Length(nperseg / 2))
+                }
+            }
+            
+            // Handle DC component
+            segmentPSD[0] = realPart[0] * realPart[0]
+            
+            // Scale
+            var scale = 2.0 / (fs * Double(nperseg))
+            vDSP_vsmulD(segmentPSD, 1, &scale, &segmentPSD, 1, vDSP_Length(segmentPSD.count))
+            segmentPSD[0] /= 2.0
+            
+            // Accumulate
+            vDSP_vaddD(psdAccumulator, 1, segmentPSD, 1, &psdAccumulator, 1, vDSP_Length(segmentPSD.count))
+            segmentCount += 1
+        }
+        
+        // Average
+        var scale = 1.0 / Double(segmentCount)
+        vDSP_vsmulD(psdAccumulator, 1, &scale, &psdAccumulator, 1, vDSP_Length(psdAccumulator.count))
+        
+        // Generate frequency array
+        let freqs = (0..<psdAccumulator.count).map { Double($0) * fs / Double(nperseg) }
+        
+        return (freqs, psdAccumulator)
+    }
+    
+    private static func computePSD(_ segment: [Double], fs: Double) -> [Double] {
+        let n = segment.count
+        let log2n = vDSP_Length(log2(Double(n)))
+        
+        guard let fftSetup = vDSP_create_fftsetupD(log2n, FFTRadix(kFFTRadix2)) else {
+            return [Double](repeating: 0, count: n / 2 + 1)
+        }
+        defer { vDSP_destroy_fftsetupD(fftSetup) }
+        
+        // Prepare for FFT
+        var realPart = segment
+        var imagPart = [Double](repeating: 0, count: n)
+        var powerSpectrum = [Double](repeating: 0, count: n / 2 + 1)
+        
+        // Use withUnsafeMutablePointer to ensure pointer validity
+        realPart.withUnsafeMutableBufferPointer { realBuffer in
+            imagPart.withUnsafeMutableBufferPointer { imagBuffer in
+                var splitComplex = DSPDoubleSplitComplex(
+                    realp: realBuffer.baseAddress!,
+                    imagp: imagBuffer.baseAddress!
+                )
+                
+                // Perform FFT
+                vDSP_fft_zipD(fftSetup, &splitComplex, 1, log2n, FFTDirection(FFT_FORWARD))
+                
+                // Calculate power spectrum
+                vDSP_zvmagsD(&splitComplex, 1, &powerSpectrum, 1, vDSP_Length(n / 2))
+            }
+        }
+        
+        // Handle DC and Nyquist
+        powerSpectrum[0] = realPart[0] * realPart[0]
+        if n % 2 == 0 {
+            powerSpectrum[n / 2] = realPart[n / 2] * realPart[n / 2]
+        }
+        
+        // Scale for PSD
+        var scale = 2.0 / (fs * Double(n))
+        vDSP_vsmulD(powerSpectrum, 1, &scale, &powerSpectrum, 1, vDSP_Length(powerSpectrum.count))
+        
+        // DC and Nyquist don't get doubled
+        powerSpectrum[0] /= 2.0
+        if n % 2 == 0 {
+            powerSpectrum[n / 2] /= 2.0
+        }
+        
+        return powerSpectrum
+    }
+    
+    private static func calculateBandPower(freqs: [Double], psd: [Double], lowFreq: Double, highFreq: Double) -> Double {
+        var power: Double = 0
+        
+        for i in 0..<freqs.count {
+            if freqs[i] >= lowFreq && freqs[i] <= highFreq {
+                if i > 0 {
+                    // Trapezoidal integration
+                    let df = freqs[i] - freqs[i-1]
+                    power += (psd[i] + psd[i-1]) * df / 2.0
+                }
+            }
+        }
+        
+        return power
+    }
+    
 }
