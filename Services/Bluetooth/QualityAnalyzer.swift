@@ -40,10 +40,10 @@ class QualityAnalyzer: NSObject, ObservableObject {
     
     // MARK: - Public Quality Analysis Methods
     func analyzeSignalQuality(channel1: [Int32], channel2: [Int32]) -> (ch1: SignalQualityMetrics?, ch2: SignalQualityMetrics?) {
-        guard channel1.count >= Int(SignalProcessing.sampleRate * 2) else { return (nil, nil) }
+        guard channel1.count >= Int(BtConst.SAMPLE_RATE * 2) else { return (nil, nil) }
         
-        let ch1Data = channel1.suffix(Int(SignalProcessing.sampleRate * 5)).map { Double($0) }
-        let ch2Data = channel2.suffix(Int(SignalProcessing.sampleRate * 5)).map { Double($0) }
+        let ch1Data = channel1.suffix(Int(BtConst.SAMPLE_RATE * 5)).map { Double($0) }
+        let ch2Data = channel2.suffix(Int(BtConst.SAMPLE_RATE * 5)).map { Double($0) }
         
         let ch1Metrics = SignalProcessing.calculateQualityMetrics(for: ch1Data)
         let ch2Metrics = SignalProcessing.calculateQualityMetrics(for: ch2Data)
