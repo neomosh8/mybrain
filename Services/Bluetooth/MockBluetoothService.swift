@@ -2,7 +2,7 @@ import Foundation
 import CoreBluetooth
 import Combine
 
-class MockBluetoothService: NSObject, ObservableObject {
+final class MockBluetoothService: NSObject, ObservableObject, BTServiceProtocol {
     // MARK: - Static Properties
     static let shared = MockBluetoothService()
     
@@ -47,29 +47,7 @@ class MockBluetoothService: NSObject, ObservableObject {
     private var leadOffAnalysisTimer: Timer?
     private var batteryTimer: Timer?
     
-    // Neocore Protocol Constants
-    private let NEOCORE_CORE_FEATURE_ID: UInt16 = 0x00
-    private let NEOCORE_SENSOR_CFG_FEATURE_ID: UInt16 = 0x01
-    private let NEOCORE_SENSOR_STREAM_FEATURE_ID: UInt16 = 0x02
-    private let NEOCORE_BATTERY_FEATURE_ID: UInt16 = 0x03
-    private let NEOCORE_CHARGER_STATUS_FEATURE_ID: UInt16 = 0x04
-    
-    private let PDU_TYPE_COMMAND: UInt16 = 0
-    private let PDU_TYPE_NOTIFICATION: UInt16 = 1
-    private let PDU_TYPE_RESPONSE: UInt16 = 2
-    private let PDU_TYPE_ERROR: UInt16 = 3
-    
-    private let NEOCORE_CMD_ID_GET_SERIAL_NUM: UInt16 = 0x01
-    private let NEOCORE_CMD_ID_GET_BATTERY_LEVEL: UInt16 = 0x00
-    private let NEOCORE_CMD_ID_DATA_STREAM_CTRL: UInt16 = 0x00
-    private let NEOCORE_CMD_ID_EEG_TEST_SIGNAL_CTRL: UInt16 = 0x01
-    private let NEOCORE_CMD_ID_EEG_LEAD_OFF_CTRL: UInt16 = 0x02
-    private let NEOCORE_NOTIFY_ID_EEG_DATA: UInt16 = 0x00
-    
-    private let EEG_PACKET_TYPE: UInt8 = 0x04
-    
-    // MARK: - Public Interface
-    
+    // MARK: - Feedback Publisher
     var feedbackPublisher: AnyPublisher<Double, Never> {
         feedbackSubject.eraseToAnyPublisher()
     }
@@ -122,7 +100,7 @@ class MockBluetoothService: NSObject, ObservableObject {
         }
     }
     
-    // MARK: - Scanner Methods
+    // MARK: - Scanner Control Methods
     func startScanning() {
         guard !isScanning else { return }
         
@@ -176,6 +154,7 @@ class MockBluetoothService: NSObject, ObservableObject {
         
         // Stop all streaming and timers
         stopRecording()
+        stopBatteryUpdates()
         stopAllTimers()
         
         // Reset connection state
@@ -201,7 +180,7 @@ class MockBluetoothService: NSObject, ObservableObject {
         permissionStatus = .authorized
     }
     
-    // MARK: - Streamer Methods
+    // MARK: - Streaming Control Methods
     func startRecording(useTestSignal: Bool, enableLeadOff: Bool = false) {
         guard isConnected else {
             print("Mock: Cannot start recording - not connected")
@@ -246,33 +225,6 @@ class MockBluetoothService: NSObject, ObservableObject {
         stopQualityAnalysis()
     }
     
-    func toggleTestSignal() {
-        let newState = !isTestSignalEnabled
-        print("Mock: Toggling test signal to \(newState)")
-        
-        if isStreamingEnabled {
-            isTestSignalEnabled = newState
-            isReceivingTestData = newState
-            isInNormalMode = !newState
-            isInTestMode = newState
-            
-            // Restart data generation with new mode
-            stopDataGeneration()
-            startDataGeneration(useTestSignal: newState)
-        }
-    }
-    
-    func enableLeadOffDetection(_ enable: Bool) {
-        print("Mock: Lead-off detection \(enable ? "enabled" : "disabled")")
-        isLeadOffDetectionEnabled = enable
-        
-        if enable {
-            startLeadOffAnalysis()
-        } else {
-            stopLeadOffAnalysis()
-        }
-    }
-    
     // MARK: - Device Info Methods
     func readSerialNumber() {
         guard isConnected else { return }
@@ -292,6 +244,80 @@ class MockBluetoothService: NSObject, ObservableObject {
             self.batteryLevel = Int.random(in: 60...95)
             print("Mock: Battery level: \(self.batteryLevel!)%")
         }
+    }
+    
+    // MARK: - Battery Monitoring
+    func startBatteryUpdates(interval: TimeInterval = 300.0) {
+        guard isConnected else { return }
+        
+        print("Mock: Starting battery updates (interval: \(interval)s)")
+        
+        // Stop existing timer
+        batteryTimer?.invalidate()
+        
+        // Start new timer with specified interval
+        batteryTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
+            if self.isConnected {
+                self.readBatteryLevel()
+            }
+        }
+    }
+    
+    func stopBatteryUpdates() {
+        print("Mock: Stopping battery updates")
+        batteryTimer?.invalidate()
+        batteryTimer = nil
+    }
+    
+    // MARK: - Analysis Methods
+    func analyzeSignalQuality() -> (ch1: SignalQualityMetrics?, ch2: SignalQualityMetrics?) {
+        guard isConnected else { return (nil, nil) }
+        
+        let ch1Metrics = SignalQualityMetrics(
+            dynamicRange: DynamicRange(
+                linear: ch1ConnectionStatus.quality,
+                db: 20 * log10(max(ch1ConnectionStatus.quality, 0.001)),
+                peakToPeak: ch1ConnectionStatus.quality * 2000,
+                rms: ch1ConnectionStatus.quality * 500,
+                max: ch1ConnectionStatus.quality * 1000,
+                min: -ch1ConnectionStatus.quality * 1000
+            ),
+            snr: SignalToNoiseRatio(
+                totalSNRdB: ch1ConnectionStatus.quality * 30,
+                bandSNR: [
+                    "delta": ch1ConnectionStatus.quality * 25,
+                    "theta": ch1ConnectionStatus.quality * 28,
+                    "alpha": ch1ConnectionStatus.quality * 32,
+                    "beta": ch1ConnectionStatus.quality * 30
+                ],
+                signalPower: ch1ConnectionStatus.quality * 1000,
+                noisePower: (1.0 - ch1ConnectionStatus.quality) * 100
+            )
+        )
+        
+        let ch2Metrics = SignalQualityMetrics(
+            dynamicRange: DynamicRange(
+                linear: ch2ConnectionStatus.quality,
+                db: 20 * log10(max(ch2ConnectionStatus.quality, 0.001)),
+                peakToPeak: ch2ConnectionStatus.quality * 2000,
+                rms: ch2ConnectionStatus.quality * 500,
+                max: ch2ConnectionStatus.quality * 1000,
+                min: -ch2ConnectionStatus.quality * 1000
+            ),
+            snr: SignalToNoiseRatio(
+                totalSNRdB: ch2ConnectionStatus.quality * 30,
+                bandSNR: [
+                    "delta": ch2ConnectionStatus.quality * 25,
+                    "theta": ch2ConnectionStatus.quality * 28,
+                    "alpha": ch2ConnectionStatus.quality * 32,
+                    "beta": ch2ConnectionStatus.quality * 30
+                ],
+                signalPower: ch2ConnectionStatus.quality * 1000,
+                noisePower: (1.0 - ch2ConnectionStatus.quality) * 100
+            )
+        )
+        
+        return (ch1Metrics, ch2Metrics)
     }
     
     // MARK: - Feedback Processing
@@ -350,7 +376,7 @@ class MockBluetoothService: NSObject, ObservableObject {
             }
         }
         
-        // Start periodic battery updates
+        // Start periodic battery updates with default interval
         startBatteryUpdates()
     }
     
@@ -454,14 +480,6 @@ class MockBluetoothService: NSObject, ObservableObject {
         // Reset quality status
         ch1ConnectionStatus = (false, 0.0)
         ch2ConnectionStatus = (false, 0.0)
-    }
-    
-    private func startBatteryUpdates() {
-        batteryTimer = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: true) { _ in
-            if self.isConnected {
-                self.readBatteryLevel()
-            }
-        }
     }
     
     private func stopAllTimers() {
