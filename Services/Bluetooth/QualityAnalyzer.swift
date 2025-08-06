@@ -81,7 +81,7 @@ class QualityAnalyzer: NSObject, ObservableObject {
         qualityAnalysisTimer?.invalidate()
         qualityAnalysisTimer = nil
     }
-
+    
     // MARK: - Lead-Off Detection (from SignalProcessing)
     private func performLeadOffAnalysis(ch1Data: [Int32], ch2Data: [Int32]) {
         let (ch1Connected, ch2Connected, ch1Quality, ch2Quality) = SignalProcessing.processLeadoffDetection(
