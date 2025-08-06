@@ -12,39 +12,7 @@ class ResponseParser: NSObject, ObservableObject {
     @Published var chargerStatus: Bool?
     @Published var lastError: String?
     
-    // MARK: - Private Properties
-    private let EEG_PACKET_TYPE: UInt8 = 0x02 // Updated from 0x04 to match Python
-    private let HEADER_BYTES: Int = 2       // Feature + PDU header trimmed by Python client
-    private let SAMPLES_PER_CHUNK = 27
-    private let NUM_CHANNELS = 2
-    private let EEG_DATA_HEADER: UInt16 = 0x0480
-    
     private var onlineFilter = OnlineFilter()
-    
-    // Neocore Protocol Constants
-    private let serviceUUID = CBUUID(string: "6E400001-B5A3-F393-E0A9-E50E24DCCA9E")
-    private let writeCharacteristicUUID = CBUUID(string: "6E400002-B5A3-F393-E0A9-E50E24DCCA9E")
-    private let notifyCharacteristicUUID = CBUUID(string: "6E400003-B5A3-F393-E0A9-E50E24DCCA9E")
-    
-    // Feature IDs
-    private let NEOCORE_CORE_FEATURE_ID: UInt16 = 0x00
-    private let NEOCORE_SENSOR_CFG_FEATURE_ID: UInt16 = 0x01
-    private let NEOCORE_SENSOR_STREAM_FEATURE_ID: UInt16 = 0x02
-    private let NEOCORE_BATTERY_FEATURE_ID: UInt16 = 0x03
-    private let NEOCORE_CHARGER_STATUS_FEATURE_ID: UInt16 = 0x04
-    
-    // PDU Types
-    private let PDU_TYPE_COMMAND: UInt16 = 0
-    private let PDU_TYPE_NOTIFICATION: UInt16 = 1
-    private let PDU_TYPE_RESPONSE: UInt16 = 2
-    private let PDU_TYPE_ERROR: UInt16 = 3
-    
-    // Command IDs
-    private let NEOCORE_CMD_ID_GET_SERIAL_NUM: UInt16 = 0x01
-    private let NEOCORE_CMD_ID_GET_BATTERY_LEVEL: UInt16 = 0x00
-    private let NEOCORE_CMD_ID_DATA_STREAM_CTRL: UInt16 = 0x00
-    private let NEOCORE_CMD_ID_EEG_TEST_SIGNAL_CTRL: UInt16 = 0x01
-    private let NEOCORE_NOTIFY_ID_EEG_DATA: UInt16 = 0x00
     
     // MARK: - Callbacks
     var onEEGDataReceived: (([Int32], [Int32]) -> Void)?
@@ -58,15 +26,15 @@ class ResponseParser: NSObject, ObservableObject {
     
     // MARK: - Main Parsing Methods
     func parseResponse(from data: Data) {
-        guard data.count >= HEADER_BYTES else {
+        guard data.count >= BtConst.HEADER_BYTES else {
             print("Response too short: \(data.count) bytes")
             return
         }
         
-        let payload = data.dropFirst(HEADER_BYTES)
+        let payload = data.dropFirst(BtConst.HEADER_BYTES)
         guard let packetType = payload.first else { return }
         
-        if packetType == EEG_PACKET_TYPE {
+        if packetType == BtConst.EEG_PACKET_TYPE {
             handleEEGDataPacket(Data(payload))
             return
         }
@@ -79,22 +47,22 @@ class ResponseParser: NSObject, ObservableObject {
         
         print("Parsed response - Feature: 0x\(String(featureId, radix: 16)), PDU Type: \(pduType), PDU ID: 0x\(String(pduId, radix: 16))")
         
-        if pduType == PDU_TYPE_ERROR {
+        if pduType == BtConst.PDU_TYPE_ERROR {
             handleErrorResponse(featureId: featureId, pduId: pduId, raw: data)
             return
         }
         
         switch featureId {
-        case NEOCORE_CORE_FEATURE_ID:
+        case BtConst.NEOCORE_CORE_FEATURE_ID:
             handleCoreResponse(pduType: pduType, pduId: pduId, data: data)
             
-        case NEOCORE_BATTERY_FEATURE_ID:
+        case BtConst.NEOCORE_BATTERY_FEATURE_ID:
             handleBatteryResponse(pduType: pduType, pduId: pduId, data: data)
             
-        case NEOCORE_SENSOR_STREAM_FEATURE_ID:
+        case BtConst.NEOCORE_SENSOR_STREAM_FEATURE_ID:
             handleSensorStreamResponse(pduType: pduType, pduId: pduId, data: data)
             
-        case NEOCORE_CHARGER_STATUS_FEATURE_ID:
+        case BtConst.NEOCORE_CHARGER_STATUS_FEATURE_ID:
             handleChargerStatusResponse(pduType: pduType, pduId: pduId, data: data)
             
         default:
@@ -105,7 +73,7 @@ class ResponseParser: NSObject, ObservableObject {
     // MARK: - Response Handlers
     private func handleCoreResponse(pduType: UInt16, pduId: UInt16, data: Data) {
         switch pduId {
-        case NEOCORE_CMD_ID_GET_SERIAL_NUM:
+        case BtConst.NEOCORE_CMD_ID_GET_SERIAL_NUM:
             handleSerialNumberResponse(data)
         default:
             print("Unknown core command ID: 0x\(String(pduId, radix: 16))")
@@ -114,7 +82,7 @@ class ResponseParser: NSObject, ObservableObject {
     
     private func handleBatteryResponse(pduType: UInt16, pduId: UInt16, data: Data) {
         switch pduId {
-        case NEOCORE_CMD_ID_GET_BATTERY_LEVEL:
+        case BtConst.NEOCORE_CMD_ID_GET_BATTERY_LEVEL:
             handleBatteryLevelResponse(data)
         default:
             print("Unknown battery command ID: 0x\(String(pduId, radix: 16))")
@@ -123,7 +91,7 @@ class ResponseParser: NSObject, ObservableObject {
     
     private func handleSensorStreamResponse(pduType: UInt16, pduId: UInt16, data: Data) {
         switch pduId {
-        case NEOCORE_NOTIFY_ID_EEG_DATA:
+        case BtConst.NEOCORE_NOTIFY_ID_EEG_DATA:
             handleEEGDataPacket(data)
         default:
             print("Unknown sensor stream ID: 0x\(String(pduId, radix: 16))")
@@ -223,8 +191,8 @@ class ResponseParser: NSObject, ObservableObject {
     
     private func handleChargerStatusResponse(pduType: UInt16, pduId: UInt16, data: Data) {
         // Skip header bytes
-        guard data.count > HEADER_BYTES else { return }
-        let statusByte = data[HEADER_BYTES]    // first payload byte
+        guard data.count > BtConst.HEADER_BYTES else { return }
+        let statusByte = data[BtConst.HEADER_BYTES]    // first payload byte
         let isCharging = (statusByte != 0)
         DispatchQueue.main.async {
             self.chargerStatus = isCharging
@@ -258,15 +226,15 @@ class ResponseParser: NSObject, ObservableObject {
     
     // MARK: - Characteristic UUID Helpers
     func isTargetService(_ service: CBService) -> Bool {
-        return service.uuid == serviceUUID
+        return service.uuid == BtConst.SERVICE_UUID
     }
     
     func isWriteCharacteristic(_ characteristic: CBCharacteristic) -> Bool {
-        return characteristic.uuid == writeCharacteristicUUID
+        return characteristic.uuid == BtConst.WRITE_CHARACTERISTIC_UUID
     }
     
     func isNotifyCharacteristic(_ characteristic: CBCharacteristic) -> Bool {
-        return characteristic.uuid == notifyCharacteristicUUID
+        return characteristic.uuid == BtConst.NOTIFY_CHARACTERISTIC_UUID
     }
     
     // MARK: - State Management
