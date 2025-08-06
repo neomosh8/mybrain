@@ -19,10 +19,6 @@ final class BluetoothService: NSObject, BTServiceProtocol {
         feedbackSubject.eraseToAnyPublisher()
     }
     
-    // MARK: - Simulation state
-    private var simPhase: Double = 0.0
-    private let simStep: Double = 0.15
-    
     // Scanner properties
     @Published var isScanning = false
     @Published var discoveredDevices: [DiscoveredDevice] = []
@@ -54,31 +50,6 @@ final class BluetoothService: NSObject, BTServiceProtocol {
     private var writeCharacteristic: CBCharacteristic?
     private var notifyCharacteristic: CBCharacteristic?
     private var cancellables = Set<AnyCancellable>()
-    
-    // Neocore Protocol Constants
-    private let serviceUUID = CBUUID(string: "6E400001-B5A3-F393-E0A9-E50E24DCCA9E")
-    private let writeCharacteristicUUID = CBUUID(string: "6E400002-B5A3-F393-E0A9-E50E24DCCA9E")
-    private let notifyCharacteristicUUID = CBUUID(string: "6E400003-B5A3-F393-E0A9-E50E24DCCA9E")
-    
-    // Feature IDs
-    private let NEOCORE_CORE_FEATURE_ID: UInt16 = 0x00
-    private let NEOCORE_SENSOR_CFG_FEATURE_ID: UInt16 = 0x01
-    private let NEOCORE_SENSOR_STREAM_FEATURE_ID: UInt16 = 0x02
-    private let NEOCORE_BATTERY_FEATURE_ID: UInt16 = 0x03
-    private let NEOCORE_CHARGER_STATUS_FEATURE_ID: UInt16 = 0x04
-    
-    // PDU Types
-    private let PDU_TYPE_COMMAND: UInt16 = 0
-    private let PDU_TYPE_NOTIFICATION: UInt16 = 1
-    private let PDU_TYPE_RESPONSE: UInt16 = 2
-    private let PDU_TYPE_ERROR: UInt16 = 3
-    
-    // Command IDs
-    private let NEOCORE_CMD_ID_GET_SERIAL_NUM: UInt16 = 0x01
-    private let NEOCORE_CMD_ID_GET_BATTERY_LEVEL: UInt16 = 0x00
-    private let NEOCORE_CMD_ID_DATA_STREAM_CTRL: UInt16 = 0x00
-    private let NEOCORE_CMD_ID_EEG_TEST_SIGNAL_CTRL: UInt16 = 0x01
-    private let NEOCORE_NOTIFY_ID_EEG_DATA: UInt16 = 0x00
     
     // MARK: - Initialization
     override init() {
@@ -233,16 +204,16 @@ final class BluetoothService: NSObject, BTServiceProtocol {
     
     // Device Information Commands
     func readSerialNumber() {
-        sendCommand(featureId: NEOCORE_CORE_FEATURE_ID,
-                    pduType: PDU_TYPE_COMMAND,
-                    pduId: NEOCORE_CMD_ID_GET_SERIAL_NUM,
+        sendCommand(featureId: BtConst.NEOCORE_CORE_FEATURE_ID,
+                    pduType: BtConst.PDU_TYPE_COMMAND,
+                    pduId: BtConst.NEOCORE_CMD_ID_GET_SERIAL_NUM,
                     data: nil)
     }
     
     func readBatteryLevel() {
-        sendCommand(featureId: NEOCORE_BATTERY_FEATURE_ID,
-                    pduType: PDU_TYPE_COMMAND,
-                    pduId: NEOCORE_CMD_ID_GET_BATTERY_LEVEL,
+        sendCommand(featureId: BtConst.NEOCORE_BATTERY_FEATURE_ID,
+                    pduType: BtConst.PDU_TYPE_COMMAND,
+                    pduId: BtConst.NEOCORE_CMD_ID_GET_BATTERY_LEVEL,
                     data: nil)
     }
     
@@ -257,13 +228,13 @@ final class BluetoothService: NSObject, BTServiceProtocol {
             self?.readBatteryLevel()
         }
     }
-
+    
     func stopBatteryUpdates() {
         batteryTimer?.invalidate()
         batteryTimer = nil
         print("Stopped battery monitoring")
     }
-
+    
     
     // Quality Analysis
     func analyzeSignalQuality() -> (ch1: SignalQualityMetrics?, ch2: SignalQualityMetrics?) {
@@ -275,12 +246,12 @@ final class BluetoothService: NSObject, BTServiceProtocol {
         let value: Double
         if isConnected {
             value = calculateSignalValue()
-        } else {
-            value = generateSimulatedValue(for: word)
+            
+            feedbackSubject.send(value)
+            return value
         }
         
-        feedbackSubject.send(value)
-        return value
+        return 0.0
     }
     
     // MARK: - Private Helper Methods
@@ -298,18 +269,6 @@ final class BluetoothService: NSObject, BTServiceProtocol {
         
         let raw = (ch1Avg + ch2Avg) / 2.0
         return raw
-    }
-    
-    private func generateSimulatedValue(for word: String) -> Double {
-        let raw = sin(simPhase)
-        
-        // [0..100]
-        let value = raw * 50 + 50
-        
-        simPhase += simStep
-        if simPhase > .pi * 2 { simPhase -= .pi * 2 }
-        
-        return value
     }
     
     // MARK: - Command and Response Handling
@@ -368,7 +327,7 @@ final class BluetoothService: NSObject, BTServiceProtocol {
         for service in services {
             if parser.isTargetService(service) {
                 print("Found target service: \(service.uuid)")
-                peripheral.discoverCharacteristics([writeCharacteristicUUID, notifyCharacteristicUUID], for: service)
+                peripheral.discoverCharacteristics([BtConst.WRITE_CHARACTERISTIC_UUID, BtConst.NOTIFY_CHARACTERISTIC_UUID], for: service)
             }
         }
     }
