@@ -86,6 +86,9 @@ protocol BTServiceProtocol: ObservableObject {
     func readSerialNumber()
     func readBatteryLevel()
     
+    func startBatteryUpdates(interval: TimeInterval)
+    func stopBatteryUpdates()
+    
     
     // MARK: - Analysis
     
