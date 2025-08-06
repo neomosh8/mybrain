@@ -32,7 +32,6 @@ class BluetoothScanner: NSObject, ObservableObject {
     private var centralManager: CBCentralManager!
     private var peripheral: CBPeripheral?
     private var cancellables = Set<AnyCancellable>()
-    private let targetDevices = ["QCC5181", "QCC5181-LE", "NEOCORE"]
     private let savedDeviceKey = "savedBluetoothDeviceID"
     
     // MARK: - Callbacks
@@ -176,7 +175,7 @@ extension BluetoothScanner: CBCentralManagerDelegate {
         guard name != "Unknown Device" else { return }
         
         // Check if this is one of our target devices
-        let isPriority = targetDevices.contains { deviceName in
+        let isPriority = BtConst.TARGET_DEVICES.contains { deviceName in
             name.contains(deviceName)
         }
         
