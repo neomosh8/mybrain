@@ -324,13 +324,13 @@ final class MockBluetoothService: NSObject, ObservableObject, BTServiceProtocol 
     func processFeedback(word: String) -> Double {
         let value: Double
         if isConnected {
-            value = calculateSignalValue()
-        } else {
             value = generateSimulatedValue(for: word)
+            
+            feedbackSubject.send(value)
+            return value
         }
         
-        feedbackSubject.send(value)
-        return value
+        return 0.0
     }
     
     // MARK: - Private Methods
@@ -491,21 +491,6 @@ final class MockBluetoothService: NSObject, ObservableObject, BTServiceProtocol 
         
         batteryTimer?.invalidate()
         batteryTimer = nil
-    }
-    
-    private func calculateSignalValue() -> Double {
-        let ch1Samples = eegChannel1.suffix(10)
-        let ch2Samples = eegChannel2.suffix(10)
-        
-        if ch1Samples.isEmpty && ch2Samples.isEmpty {
-            return 0.0
-        }
-        
-        let ch1Avg = ch1Samples.isEmpty ? 0 : Double(ch1Samples.reduce(0, +)) / Double(ch1Samples.count)
-        let ch2Avg = ch2Samples.isEmpty ? 0 : Double(ch2Samples.reduce(0, +)) / Double(ch2Samples.count)
-        
-        let raw = (ch1Avg + ch2Avg) / 2.0
-        return raw
     }
     
     private func generateSimulatedValue(for word: String) -> Double {
