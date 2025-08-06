@@ -14,13 +14,6 @@ class BluetoothStreamer: NSObject, ObservableObject {
     // MARK: - Private Properties
     private var autoStartStreaming = false
     
-    // MARK: - Neocore Protocol Constants
-    private let NEOCORE_SENSOR_CFG_FEATURE_ID: UInt16 = 0x01
-    private let PDU_TYPE_COMMAND: UInt16 = 0
-    private let NEOCORE_CMD_ID_DATA_STREAM_CTRL: UInt16 = 0x00
-    private let NEOCORE_CMD_ID_EEG_TEST_SIGNAL_CTRL: UInt16 = 0x01
-    private let NEOCORE_CMD_ID_EEG_LEAD_OFF_CTRL: UInt16 = 0x02
-    
     // MARK: - Callbacks
     var onSendCommand: ((UInt16, UInt16, UInt16, Data?) -> Void)?
     
@@ -88,9 +81,9 @@ class BluetoothStreamer: NSObject, ObservableObject {
         
         let payload = Data([enable ? 0x01 : 0x00])
         onSendCommand?(
-            NEOCORE_SENSOR_CFG_FEATURE_ID,
-            PDU_TYPE_COMMAND,
-            NEOCORE_CMD_ID_DATA_STREAM_CTRL,
+            BtConst.NEOCORE_SENSOR_CFG_FEATURE_ID,
+            BtConst.PDU_TYPE_COMMAND,
+            BtConst.NEOCORE_CMD_ID_DATA_STREAM_CTRL,
             payload
         )
         
@@ -106,9 +99,9 @@ class BluetoothStreamer: NSObject, ObservableObject {
         let payload = Data([enable ? 0x01 : 0x00])
         
         onSendCommand?(
-            NEOCORE_SENSOR_CFG_FEATURE_ID,
-            PDU_TYPE_COMMAND,
-            NEOCORE_CMD_ID_EEG_TEST_SIGNAL_CTRL,
+            BtConst.NEOCORE_SENSOR_CFG_FEATURE_ID,
+            BtConst.PDU_TYPE_COMMAND,
+            BtConst.NEOCORE_CMD_ID_EEG_TEST_SIGNAL_CTRL,
             payload
         )
         
@@ -125,9 +118,9 @@ class BluetoothStreamer: NSObject, ObservableObject {
         let payload = Data([enable ? 0x01 : 0x00])
         
         onSendCommand?(
-            NEOCORE_SENSOR_CFG_FEATURE_ID,
-            PDU_TYPE_COMMAND,
-            NEOCORE_CMD_ID_EEG_LEAD_OFF_CTRL,
+            BtConst.NEOCORE_SENSOR_CFG_FEATURE_ID,
+            BtConst.PDU_TYPE_COMMAND,
+            BtConst.NEOCORE_CMD_ID_EEG_LEAD_OFF_CTRL,
             payload
         )
         
