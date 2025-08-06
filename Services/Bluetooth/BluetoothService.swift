@@ -29,6 +29,7 @@ final class BluetoothService: NSObject, BTServiceProtocol {
     @Published var isConnected = false
     @Published var connectedDevice: BLEDevice?
     @Published var permissionStatus: PermissionStatus = .unknown
+    private var batteryTimer: Timer?
     
     // Parser properties
     @Published var batteryLevel: Int?
@@ -244,6 +245,25 @@ final class BluetoothService: NSObject, BTServiceProtocol {
                     pduId: NEOCORE_CMD_ID_GET_BATTERY_LEVEL,
                     data: nil)
     }
+    
+    func startBatteryUpdates(interval: TimeInterval = 300.0) {
+        stopBatteryUpdates()
+        
+        print("Starting battery monitoring with interval: \(interval)s")
+        
+        readBatteryLevel()
+        
+        batteryTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+            self?.readBatteryLevel()
+        }
+    }
+
+    func stopBatteryUpdates() {
+        batteryTimer?.invalidate()
+        batteryTimer = nil
+        print("Stopped battery monitoring")
+    }
+
     
     // Quality Analysis
     func analyzeSignalQuality() -> (ch1: SignalQualityMetrics?, ch2: SignalQualityMetrics?) {
