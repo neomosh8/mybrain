@@ -75,20 +75,6 @@ final class OnlineFilter {
 
 // MARK: - SignalProcessing
 class SignalProcessing {
-    internal static let sampleRate: Int = 250
-    private static let windowSize: Int = 250
-    private static let overlapFraction: Double = 0.75
-    private static let powerScale: Double = 0.84
-    private static let targetBin: Int = 8
-    private static let noiseBand = (45.0, 100.0)
-    private static let signalBands: [String: (low: Double, high: Double)] = [
-        "delta": (1, 4),
-        "theta": (4, 8),
-        "alpha": (8, 12),
-        "beta": (13, 30),
-        "gamma": (30, 45)
-    ]
-    
     private static var leadoffCh1: [Double] = []
     private static var leadoffCh2: [Double] = []
     
@@ -117,34 +103,34 @@ class SignalProcessing {
     }
     
     private static func calculateWelchPower(data: [Double]) -> Double {
-        guard data.count >= windowSize else {
+        guard data.count >= BtConst.WINDOW_SIZE else {
             if data.isEmpty { return 0.0 }
             var msq: Double = 0
             vDSP_measqvD(data, 1, &msq, vDSP_Length(data.count))
-            return msq * powerScale
+            return msq * BtConst.POWER_SCALE
         }
-        let windowData = Array(data.suffix(windowSize))
+        let windowData = Array(data.suffix(BtConst.WINDOW_SIZE))
         
-        let log2n = vDSP_Length(log2(Double(windowSize)))
-        guard let fftSetup = fftSetup(for: windowSize) else { return 0 }
+        let log2n = vDSP_Length(log2(Double(BtConst.WINDOW_SIZE)))
+        guard let fftSetup = fftSetup(for: BtConst.WINDOW_SIZE) else { return 0 }
         
-        var win = [Double](repeating: 0, count: windowSize)
-        vDSP_hann_windowD(&win, vDSP_Length(windowSize), Int32(vDSP_HANN_NORM))
-        var windowed = [Double](repeating: 0, count: windowSize)
-        vDSP_vmulD(windowData, 1, win, 1, &windowed, 1, vDSP_Length(windowSize))
+        var win = [Double](repeating: 0, count: BtConst.WINDOW_SIZE)
+        vDSP_hann_windowD(&win, vDSP_Length(BtConst.WINDOW_SIZE), Int32(vDSP_HANN_NORM))
+        var windowed = [Double](repeating: 0, count: BtConst.WINDOW_SIZE)
+        vDSP_vmulD(windowData, 1, win, 1, &windowed, 1, vDSP_Length(BtConst.WINDOW_SIZE))
         
-        var real = windowed, imag = [Double](repeating: 0, count: windowSize)
-        var spectrum = [Double](repeating: 0, count: windowSize/2)
+        var real = windowed, imag = [Double](repeating: 0, count: BtConst.WINDOW_SIZE)
+        var spectrum = [Double](repeating: 0, count: BtConst.WINDOW_SIZE/2)
         real.withUnsafeMutableBufferPointer { rBuf in
             imag.withUnsafeMutableBufferPointer { iBuf in
                 var split = DSPDoubleSplitComplex(realp: rBuf.baseAddress!, imagp: iBuf.baseAddress!)
                 vDSP_fft_zipD(fftSetup, &split, 1, log2n, FFTDirection(FFT_FORWARD))
-                vDSP_zvmagsD(&split, 1, &spectrum, 1, vDSP_Length(windowSize/2))
+                vDSP_zvmagsD(&split, 1, &spectrum, 1, vDSP_Length(BtConst.WINDOW_SIZE/2))
             }
         }
-        var scale = 2.0 / (Double(sampleRate) * Double(windowSize))
+        var scale = 2.0 / (Double(BtConst.SAMPLE_RATE) * Double(BtConst.WINDOW_SIZE))
         vDSP_vsmulD(spectrum, 1, &scale, &spectrum, 1, vDSP_Length(spectrum.count))
-        return spectrum[min(targetBin, spectrum.count-1)]
+        return spectrum[min(BtConst.TARGET_BIN, spectrum.count-1)]
     }
     
     private static func removeOutliers(from data: [Double]) -> [Double] {
@@ -266,7 +252,7 @@ class SignalProcessing {
     }
     
     private static func calculateSNR(_ data: [Double]) -> SignalToNoiseRatio {
-        guard data.count >= sampleRate else {
+        guard data.count >= BtConst.SAMPLE_RATE else {
             return SignalToNoiseRatio(
                 totalSNRdB: 0,
                 bandSNR: [:],
@@ -276,14 +262,14 @@ class SignalProcessing {
         }
         
         // Calculate power spectral density using Welch's method
-        let nperseg = min(data.count / 4, sampleRate)
-        let (freqs, psd) = welch(data, fs: Double(sampleRate), nperseg: nperseg)
+        let nperseg = min(data.count / 4, BtConst.SAMPLE_RATE)
+        let (freqs, psd) = welch(data, fs: Double(BtConst.SAMPLE_RATE), nperseg: nperseg)
         
         // Calculate power in signal bands
         var signalPower: Double = 0
         var bandSNR: [String: Double] = [:]
         
-        for (bandName, (low, high)) in signalBands {
+        for (bandName, (low, high)) in BtConst.SIGNAL_BANDS {
             let bandPower = calculateBandPower(freqs: freqs, psd: psd, lowFreq: low, highFreq: high)
             signalPower += bandPower
             bandSNR[bandName] = bandPower
@@ -293,8 +279,8 @@ class SignalProcessing {
         let noisePower = calculateBandPower(
             freqs: freqs,
             psd: psd,
-            lowFreq: noiseBand.0,
-            highFreq: noiseBand.1
+            lowFreq: BtConst.NOISE_BAND.0,
+            highFreq: BtConst.NOISE_BAND.1
         )
         
         // Total SNR
