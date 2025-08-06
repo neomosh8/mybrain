@@ -6,7 +6,7 @@ enum PermissionStatus {
     case unknown, notDetermined, denied, authorized, poweredOff, unsupported
 }
 
-struct DiscoveredDevice {
+struct DiscoveredDevice: Identifiable {
     let id: String
     let name: String
     let rssi: Int
