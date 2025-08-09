@@ -25,7 +25,6 @@ struct AnimatedSubtitleView: View {
                 AnimatedWordsView(
                     paragraphs: paragraphs,
                     currentWordIndex: listeningViewModel.currentWordIndex,
-                    coordinateSpaceName: "subtitleContainer",
                     showOverlay: listeningViewModel.currentWordIndex >= 0,
                     wordFont: .body,
                     spacing: 4,
