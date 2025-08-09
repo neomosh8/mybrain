@@ -171,7 +171,6 @@ public struct AnimatedWordsView: View {
     public let currentWordIndex: Int
     
     // Layout
-    public let coordinateSpaceName: AnyHashable
     public var spacing: CGFloat = 4
     public var lineSpacing: CGFloat = 6
     public var bottomPadding: CGFloat = 50
@@ -194,7 +193,6 @@ public struct AnimatedWordsView: View {
     public init(
         paragraphs: [[WordData]],
         currentWordIndex: Int,
-        coordinateSpaceName: AnyHashable,
         showOverlay: Bool,
         wordFont: Font? = nil,
         spacing: CGFloat = 4,
@@ -205,7 +203,6 @@ public struct AnimatedWordsView: View {
     ) {
         self.paragraphs = paragraphs
         self.currentWordIndex = currentWordIndex
-        self.coordinateSpaceName = coordinateSpaceName
         self.showOverlay = showOverlay
         self.wordFont = wordFont
         self.spacing = spacing
@@ -219,7 +216,6 @@ public struct AnimatedWordsView: View {
     public init(
         paragraphs: [[WordData]],
         currentWordIndex: Int,
-        coordinateSpaceName: AnyHashable,
         showOverlay: Bool,
         wordFont: Font? = nil,
         spacing: CGFloat = 4,
@@ -228,7 +224,6 @@ public struct AnimatedWordsView: View {
     ) {
         self.paragraphs = paragraphs
         self.currentWordIndex = currentWordIndex
-        self.coordinateSpaceName = coordinateSpaceName
         self.showOverlay = showOverlay
         self.wordFont = wordFont
         self.spacing = spacing
@@ -252,8 +247,8 @@ public struct AnimatedWordsView: View {
                         ForEach(paragraphs[pIndex], id: \.originalIndex) { wordData in
                             let isHighlighted = (wordData.originalIndex == currentWordIndex)
                             Text(wordData.attributedString(highlighted: isHighlighted))
-                                .font(wordFont) // Applies only when non-nil (e.g., subtitles)
-                                .captureWordFrame(index: wordData.originalIndex, in: coordinateSpaceName)
+                                .font(wordFont)
+                                .captureWordFrame(index: wordData.originalIndex, in: "container")
                                 .id(wordData.originalIndex)
                         }
                     }
@@ -261,7 +256,7 @@ public struct AnimatedWordsView: View {
                 Spacer().frame(height: bottomPadding)
             }
         }
-        .coordinateSpace(name: coordinateSpaceName)
+        .coordinateSpace(name: "container")
         .onPreferenceChange(WordFrameKey.self) { new in
             setWordFrames(new)
             updateHighlightFrame()
