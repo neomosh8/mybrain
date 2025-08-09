@@ -9,9 +9,7 @@ struct AnimatedSubtitleView: View {
     let currentTime: TimeInterval
     let thoughtId: String
     let chapterNumber: Int
-    
-    private let feedbackService: any FeedbackServiceProtocol
-    
+        
     @State private var paragraphs: [[SubtitleWordData]] = []
     @State private var wordFrames: [Int: CGRect] = [:]
     @State private var highlightFrame: CGRect = .zero
@@ -24,13 +22,11 @@ struct AnimatedSubtitleView: View {
         currentTime: TimeInterval,
         thoughtId: String,
         chapterNumber: Int,
-        feedbackService: any FeedbackServiceProtocol = FeedbackService.shared
     ) {
         self.listeningViewModel = listeningViewModel
         self.currentTime = currentTime
         self.thoughtId = thoughtId
         self.chapterNumber = chapterNumber
-        self.feedbackService = feedbackService
     }
     
     var body: some View {
@@ -50,14 +46,7 @@ struct AnimatedSubtitleView: View {
                         proxy.scrollTo(newIndex, anchor: .center)
                     }
                 }
-                
-//                if newIndex >= 0 {
-//                    if newIndex < listeningViewModel.allWords.count {
-//                        let word = listeningViewModel.allWords[newIndex].text
-//                        sendFeedback(for: word)
-//                    }
-//                }
-                
+     
                 if newIndex >= 0 && newIndex < listeningViewModel.allWords.count {
                     let word = listeningViewModel.allWords[newIndex].text
                     wordBuffer.append(word)
