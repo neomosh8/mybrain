@@ -164,9 +164,10 @@ private extension AnimatedParagraphView {
         let fullRange = text.startIndex..<text.endIndex
         
         tagger.enumerateTags(in: fullRange, unit: .word, scheme: .tokenType) { _, tokenRange in
-            let word = String(text[tokenRange]).trimmingCharacters(in: .punctuationCharacters.union(.whitespacesAndNewlines))
-            
-            if word.count > 1 && word.rangeOfCharacter(from: .alphanumerics) != nil {
+            let raw = String(text[tokenRange])
+            let word = raw.trimmingCharacters(in: .punctuationCharacters.union(.whitespacesAndNewlines))
+
+            if word.rangeOfCharacter(from: .letters) != nil {
                 if let attributedRange = Range(tokenRange, in: attributedContent) {
                     wordRanges.append((range: attributedRange, word: word))
                 }
@@ -192,9 +193,12 @@ private extension AnimatedParagraphView {
                     currentParagraph = []
                 }
             }
+
             let substring = AttributedString(attributedContent[wordRange.range])
             let wordText = String(attributedContent.characters[wordRange.range])
-            let data = WordData(text: wordText, attributes: substring, originalIndex: index)
+            let attrs = substring.runs.first?.attributes ?? AttributeContainer()
+            let data = WordData(originalIndex: index, text: wordText, attributes: attrs)
+
             currentParagraph.append(data)
             words.append(data)
         }
@@ -310,19 +314,9 @@ private extension AnimatedParagraphView {
     }
 }
 
-// MARK: - Supporting Data Models
-extension AnimatedParagraphView {
-    struct WordData: Identifiable {
-        let id = UUID()
-        let text: String
-        let attributes: AttributedString
-        let originalIndex: Int
-    }
-}
-
 // MARK: - Word-by-Word Layout Components
 struct WordByWordTextView: View {
-    let paragraphs: [[AnimatedParagraphView.WordData]]
+    let paragraphs: [[WordData]]
     let currentWordIndex: Int
     let isAnimating: Bool
     
@@ -339,8 +333,12 @@ struct WordByWordTextView: View {
                 ForEach(Array(paragraphs.enumerated()), id: \.offset) { _, paragraph in
                     FlowLayout(spacing: 4, lineSpacing: 6) {
                         ForEach(paragraph) { wordData in
-                            Text(getModifiedAttributedString(for: wordData))
-                                .captureWordFrame(index: wordData.originalIndex, in: "container")
+                            Text(
+                                wordData.attributedString(
+                                    highlighted: isAnimating && wordData.originalIndex == currentWordIndex
+                                )
+                            )
+                            .captureWordFrame(index: wordData.originalIndex, in: "container")
                         }
                     }
                     .padding(.bottom, 8)
@@ -372,16 +370,6 @@ struct WordByWordTextView: View {
                 }
             }
         }
-    }
-    
-    private func getModifiedAttributedString(for wordData: AnimatedParagraphView.WordData) -> AttributedString {
-        var modifiedString = wordData.attributes
-        
-        if isAnimating && wordData.originalIndex == currentWordIndex {
-            modifiedString.foregroundColor = .white
-        }
-        
-        return modifiedString
     }
     
     private func updateHighlightFrame() {
