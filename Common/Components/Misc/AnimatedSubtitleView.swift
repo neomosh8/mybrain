@@ -43,14 +43,7 @@ struct AnimatedSubtitleView: View {
                 
                 if newIndex >= 0 && newIndex < listeningViewModel.allWords.count {
                     let word = listeningViewModel.allWords[newIndex].text
-                    let feedbackValue = bluetoothService.processFeedback(word: word)
-                    
-                    feedbackBuffer.addFeedback(
-                        word: word,
-                        value: feedbackValue,
-                        thoughtId: thoughtId,
-                        chapterNumber: chapterNumber
-                    )
+                    sendFeedback(word: word, thoughtId: thoughtId, chapterNumber: chapterNumber)
                 }
             }
             .onChange(of: listeningViewModel.allWords) { _, _ in
