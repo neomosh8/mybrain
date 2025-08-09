@@ -9,9 +9,7 @@ struct ListeningView: View {
     @StateObject private var listeningViewModel = ListeningViewModel()
     @StateObject private var statusPickerController = BottomSheetPickerController()
     
-    private let networkService = NetworkServiceManager.shared
     @EnvironmentObject var backgroundManager: BackgroundManager
-    private let feedbackService: any FeedbackServiceProtocol = FeedbackService.shared
     
     @State private var thoughtStatus: ThoughtStatus?
     @State private var isCheckingStatus = true
