@@ -1,7 +1,6 @@
 import SwiftUI
 
 // MARK: - Flow Layout
-/// A simple word-wrapping layout used by both AnimatedParagraphView and AnimatedSubtitleView.
 struct FlowLayout: Layout {
     let spacing: CGFloat
     let lineSpacing: CGFloat
