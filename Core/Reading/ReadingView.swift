@@ -7,9 +7,7 @@ struct ReadingView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel = ReadingViewModel()
     @StateObject private var statusPickerController = BottomSheetPickerController()
-    
-    private let networkService = NetworkServiceManager.shared
-    
+        
     @State private var thoughtStatus: ThoughtStatus?
     @State private var isCheckingStatus = true
     @State private var cancellables = Set<AnyCancellable>()
@@ -174,7 +172,6 @@ struct ReadingView: View {
                         chapterNumber: viewModel.chapters[index].chapterNumber ?? 0,
                         wordInterval: $viewModel.readingSpeed,
                         isCurrentChapter: viewModel.currentChapterIndex == index,
-                        feedbackService: FeedbackService.shared,
                         onFinished: {
                             viewModel.onChapterFinished(index)
                         },
