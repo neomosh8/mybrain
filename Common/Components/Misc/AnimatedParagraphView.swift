@@ -91,16 +91,6 @@ struct AnimatedParagraphView: View {
 // MARK: - Content Setup Methods
 private extension AnimatedParagraphView {
     func setupContent() {
-        parseHTMLContent()
-        
-        if isCurrentChapter && !wordRanges.isEmpty {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                startAnimation()
-            }
-        }
-    }
-    
-    func parseHTMLContent() {
         guard let data = htmlString.data(using: .utf8) else { return }
         
         let options: [NSAttributedString.DocumentReadingOptionKey: Any] = [
@@ -127,6 +117,13 @@ private extension AnimatedParagraphView {
             attributedContent = AttributedString(plainText)
             extractWordRanges()
             buildWordDataArray()
+        }
+        
+        
+        if isCurrentChapter && !wordRanges.isEmpty {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                startAnimation()
+            }
         }
     }
     
