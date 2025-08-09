@@ -10,7 +10,6 @@ class ProfileManager: ObservableObject {
     @Published var currentProfile: UserProfileData?
     @Published var isProfileLoaded = false
     
-    private let networkService = NetworkServiceManager.shared
     private var cancellables = Set<AnyCancellable>()
     
     private init() {}
