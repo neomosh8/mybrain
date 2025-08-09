@@ -65,13 +65,6 @@ struct AnimatedParagraphView: View {
             }
             setupPlaybackObserver()
         }
-        .onChange(of: isCurrentChapter) { _, newValue in
-            if newValue && !isAnimating && !wordRanges.isEmpty && !isPaused {
-                startAnimation()
-            } else if !newValue && isAnimating {
-                stopAnimation()
-            }
-        }
         .onChange(of: wordInterval) { _, _ in
             if isAnimating && !isPaused {
                 animationTimer?.cancel()
