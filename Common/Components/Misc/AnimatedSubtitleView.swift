@@ -38,7 +38,7 @@ struct AnimatedSubtitleView: View {
                 .padding()
             }
             .onChange(of: listeningViewModel.currentWordIndex) { _, newIndex in
-                if newIndex >= 10 {
+                if newIndex >= 15 {
                     withAnimation(.easeInOut(duration: 0.3)) {
                         proxy.scrollTo(newIndex, anchor: .center)
                     }
