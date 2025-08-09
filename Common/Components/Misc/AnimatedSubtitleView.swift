@@ -61,9 +61,6 @@ struct AnimatedSubtitleView: View {
                         chapterNumber: chapterNumber
                     )
                 }
-                
-                
-                updateHighlightFrame()
             }
             .onChange(of: listeningViewModel.allWords) { _, _ in
                 buildParagraphs()
@@ -71,9 +68,6 @@ struct AnimatedSubtitleView: View {
             .onAppear {
                 buildParagraphs()
             }
-        }
-        .onChange(of: wordFrames) { _, _ in
-            updateHighlightFrame()
         }
     }
     
@@ -143,14 +137,5 @@ struct AnimatedSubtitleView: View {
         }
         
         paragraphs = newParagraphs
-    }
-    
-    private func updateHighlightFrame() {
-        guard listeningViewModel.currentWordIndex >= 0,
-              let frame = wordFrames[listeningViewModel.currentWordIndex] else {
-            highlightFrame = .zero
-            return
-        }
-        highlightFrame = frame
     }
 }
