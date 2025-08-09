@@ -29,6 +29,7 @@ class ReadingViewModel: ObservableObject {
     }
     
     func cleanup() {
+        feedbackBuffer.flushBuffer()
         cancellables.removeAll()
     }
     
@@ -57,6 +58,7 @@ class ReadingViewModel: ObservableObject {
             currentChapterIndex = nextIndex
         } else if isLastChapter {
             hasCompletedAllChapters = true
+            feedbackBuffer.flushBuffer()
         }
     }
     
