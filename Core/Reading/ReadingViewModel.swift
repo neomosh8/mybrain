@@ -87,7 +87,6 @@ class ReadingViewModel: ObservableObject {
                let complete = completeData.complete,
                complete {
                 isLastChapter = true
-                hasCompletedAllChapters = true
             }
             isLoadingChapter = false
 
