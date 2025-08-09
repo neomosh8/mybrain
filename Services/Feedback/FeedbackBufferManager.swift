@@ -35,7 +35,6 @@ class FeedbackBufferManager: ObservableObject {
     
     // MARK: - Public Methods
     
-    /// Add feedback to buffer and trigger batch if needed
     func addFeedback(
         word: String,
         value: Double,
@@ -52,13 +51,11 @@ class FeedbackBufferManager: ObservableObject {
         
         buffer.append(item)
         
-        // Send batch if buffer is full
         if buffer.count >= bufferLimit {
             sendBatchFeedback()
         }
     }
     
-    /// Force send current buffer
     func flushBuffer() {
         guard !buffer.isEmpty else { return }
         sendBatchFeedback()
@@ -85,7 +82,6 @@ class FeedbackBufferManager: ObservableObject {
             "\(item.thoughtId)-\(item.chapterNumber)"
         }
         
-        // Send each group as a batch
         for (_, items) in groupedFeedback {
             guard let firstItem = items.first else { continue }
             
@@ -97,17 +93,9 @@ class FeedbackBufferManager: ObservableObject {
                     chapterNumber: firstItem.chapterNumber,
                     feedbacks: feedbacks
                 )
-                
-                switch result {
-                case .success:
-                    print("Batch feedback sent: \(feedbacks.count) items")
-                case .failure(let error):
-                    print("Batch feedback failed: \(error.localizedDescription)")
-                }
             }
         }
         
-        // Clear buffer after sending
         buffer.removeAll()
     }
 }
