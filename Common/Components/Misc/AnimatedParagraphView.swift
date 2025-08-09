@@ -13,10 +13,7 @@ struct AnimatedParagraphView: View {
     
     var onFinished: () -> Void
     var onHalfway: () -> Void
-    
-    // Dependencies
-    private let feedbackService: any FeedbackServiceProtocol
-    
+        
     @State private var attributedContent: AttributedString = AttributedString()
     @State private var wordRanges: [(range: Range<AttributedString.Index>, word: String)] = []
     @State private var currentWordIndex: Int = 0
@@ -37,7 +34,6 @@ struct AnimatedParagraphView: View {
         chapterNumber: Int,
         wordInterval: Binding<TimeInterval>,
         isCurrentChapter: Bool = false,
-        feedbackService: any FeedbackServiceProtocol = FeedbackService.shared,
         onFinished: @escaping () -> Void = {},
         onHalfway: @escaping () -> Void = {}
     ) {
@@ -46,7 +42,6 @@ struct AnimatedParagraphView: View {
         self.chapterNumber = chapterNumber
         self._wordInterval = wordInterval
         self.isCurrentChapter = isCurrentChapter
-        self.feedbackService = feedbackService
         self.onFinished = onFinished
         self.onHalfway = onHalfway
     }
