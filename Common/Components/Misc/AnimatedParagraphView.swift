@@ -13,7 +13,7 @@ struct AnimatedParagraphView: View {
     
     var onFinished: () -> Void
     var onHalfway: () -> Void
-        
+    
     @State private var attributedContent: AttributedString = AttributedString()
     @State private var wordRanges: [(range: Range<AttributedString.Index>, word: String)] = []
     @State private var currentWordIndex: Int = 0
@@ -49,10 +49,15 @@ struct AnimatedParagraphView: View {
     // MARK: - Body
     var body: some View {
         ScrollView {
-            WordByWordTextView(
+            AnimatedWordsView(
                 paragraphs: paragraphs,
                 currentWordIndex: currentWordIndex,
-                isAnimating: isAnimating
+                coordinateSpaceName: "container",
+                showOverlay: isAnimating,
+                wordFont: nil,
+                spacing: 4,
+                lineSpacing: 6,
+                bottomPadding: 70
             )
             .padding()
         }
@@ -166,7 +171,7 @@ private extension AnimatedParagraphView {
         tagger.enumerateTags(in: fullRange, unit: .word, scheme: .tokenType) { _, tokenRange in
             let raw = String(text[tokenRange])
             let word = raw.trimmingCharacters(in: .punctuationCharacters.union(.whitespacesAndNewlines))
-
+            
             if word.rangeOfCharacter(from: .letters) != nil {
                 if let attributedRange = Range(tokenRange, in: attributedContent) {
                     wordRanges.append((range: attributedRange, word: word))
@@ -193,12 +198,12 @@ private extension AnimatedParagraphView {
                     currentParagraph = []
                 }
             }
-
+            
             let substring = AttributedString(attributedContent[wordRange.range])
             let wordText = String(attributedContent.characters[wordRange.range])
             let attrs = substring.runs.first?.attributes ?? AttributeContainer()
             let data = WordData(originalIndex: index, text: wordText, attributes: attrs)
-
+            
             currentParagraph.append(data)
             words.append(data)
         }
@@ -311,73 +316,5 @@ private extension AnimatedParagraphView {
             thoughtId: thoughtId,
             chapterNumber: chapterNumber
         )
-    }
-}
-
-// MARK: - Word-by-Word Layout Components
-struct WordByWordTextView: View {
-    let paragraphs: [[WordData]]
-    let currentWordIndex: Int
-    let isAnimating: Bool
-    
-    @State private var wordFrames: [Int: CGRect] = [:]
-    @State private var highlightFrame: CGRect = .zero
-    
-    var body: some View {
-        ZStack(alignment: .topLeading) {
-            if isAnimating && highlightFrame != .zero {
-                HighlightOverlay(frame: highlightFrame)
-            }
-            
-            VStack(alignment: .leading, spacing: 6) {
-                ForEach(Array(paragraphs.enumerated()), id: \.offset) { _, paragraph in
-                    FlowLayout(spacing: 4, lineSpacing: 6) {
-                        ForEach(paragraph) { wordData in
-                            Text(
-                                wordData.attributedString(
-                                    highlighted: isAnimating && wordData.originalIndex == currentWordIndex
-                                )
-                            )
-                            .captureWordFrame(index: wordData.originalIndex, in: "container")
-                        }
-                    }
-                    .padding(.bottom, 8)
-                }
-                
-                Spacer()
-                    .frame(height: 70)
-            }
-            .coordinateSpace(name: "container")
-            .onPreferenceChange(WordFrameKey.self) { frames in
-                wordFrames = frames
-                updateHighlightFrame()
-            }
-        }
-        .onAppear {
-            if isAnimating {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    updateHighlightFrame()
-                }
-            }
-        }
-        .onChange(of: currentWordIndex) { _, _ in
-            updateHighlightFrame()
-        }
-        .onChange(of: isAnimating) { _, newValue in
-            if newValue {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    updateHighlightFrame()
-                }
-            }
-        }
-    }
-    
-    private func updateHighlightFrame() {
-        guard isAnimating,
-              let frame = wordFrames[currentWordIndex] else {
-            highlightFrame = .zero
-            return
-        }
-        highlightFrame = frame
     }
 }
