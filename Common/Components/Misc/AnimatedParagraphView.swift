@@ -51,9 +51,7 @@ struct AnimatedParagraphView: View {
             AnimatedWordsView(
                 paragraphs: paragraphs,
                 currentWordIndex: currentWordIndex,
-                coordinateSpaceName: "container",
                 showOverlay: isAnimating,
-                wordFont: nil,
                 spacing: 4,
                 lineSpacing: 6,
                 bottomPadding: 70
