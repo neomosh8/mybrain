@@ -49,12 +49,16 @@ struct AnimatedSubtitleView: View {
      
                 if newIndex >= 0 && newIndex < listeningViewModel.allWords.count {
                     let word = listeningViewModel.allWords[newIndex].text
-                    wordBuffer.append(word)
+                    let feedbackValue = bluetoothService.processFeedback(word: word)
                     
-                    if wordBuffer.count >= batchSize {
-                        sendBatchFeedback()
-                    }
+                    feedbackBuffer.addFeedback(
+                        word: word,
+                        value: feedbackValue,
+                        thoughtId: thoughtId,
+                        chapterNumber: chapterNumber
+                    )
                 }
+
                 
                 updateHighlightFrame()
             }
@@ -63,11 +67,6 @@ struct AnimatedSubtitleView: View {
             }
             .onAppear {
                 buildParagraphs()
-            }
-            .onDisappear {
-                if !wordBuffer.isEmpty {
-                    sendBatchFeedback()
-                }
             }
         }
     }
@@ -148,45 +147,6 @@ struct AnimatedSubtitleView: View {
         }
         highlightFrame = frame
     }
-    
-    private func sendFeedback(for word: String) {
-        Task.detached(priority: .background) {
-            let result = await feedbackService.submitFeedback(
-                thoughtId: thoughtId,
-                chapterNumber: chapterNumber,
-                word: word
-            )
-            
-            switch result {
-            case .success(_):
-                break
-            case .failure(let error):
-                print("Subtitle feedback submission failed: \(error.localizedDescription)")
-            }
-        }
-    }
-    
-    private func sendBatchFeedback() {
-        guard !wordBuffer.isEmpty else { return }
-        
-        let wordsToSend = wordBuffer
-        wordBuffer.removeAll()
-        
-        Task.detached(priority: .background) {
-            let result = await feedbackService.submitBatchFeedback(
-                thoughtId: thoughtId,
-                chapterNumber: chapterNumber,
-                words: wordsToSend
-            )
-            
-            switch result {
-            case .success(_):
-                break
-            case .failure(let error):
-                print("Batch feedback submission failed: \(error.localizedDescription)")
-            }
-        }
-    }
 }
 
 // MARK: - Supporting Views
@@ -258,5 +218,19 @@ struct SubtitleWordFrameKey: PreferenceKey {
     
     static func reduce(value: inout [Int: CGRect], nextValue: () -> [Int: CGRect]) {
         value.merge(nextValue()) { _, new in new }
+    }
+}
+
+
+private extension AnimatedSubtitleView {
+    func sendFeedback(for word: String, thoughtId: String, chapterNumber: Int) {
+        let feedbackValue = bluetoothService.processFeedback(word: word)
+        
+        feedbackBuffer.addFeedback(
+            word: word,
+            value: feedbackValue,
+            thoughtId: thoughtId,
+            chapterNumber: chapterNumber
+        )
     }
 }
