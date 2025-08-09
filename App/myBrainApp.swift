@@ -30,8 +30,6 @@ struct myBrainApp: App {
 }
 
 class AppDelegate: NSObject, UIApplicationDelegate {
-    private let networkService = NetworkServiceManager.shared
-    
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         if networkService.hasValidToken {
             networkService.connectWebSocketIfAuthenticated()
