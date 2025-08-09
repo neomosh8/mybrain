@@ -121,3 +121,43 @@ extension View {
         )
     }
 }
+
+
+
+/// Unified model for both timer-driven and audio-synced words.
+public struct WordData: Identifiable, Hashable {
+    public let id = UUID()
+    public let originalIndex: Int
+    public let text: String
+
+    /// Styling attributes carried from paragraph parsing (Paragraph view uses these).
+    public var attributes: AttributeContainer
+
+    /// Audio timestamps (Subtitle view uses these). `nil` in paragraph mode.
+    public var startTime: TimeInterval?
+    public var endTime: TimeInterval?
+
+    public init(
+        originalIndex: Int,
+        text: String,
+        attributes: AttributeContainer = AttributeContainer(),
+        startTime: TimeInterval? = nil,
+        endTime: TimeInterval? = nil
+    ) {
+        self.originalIndex = originalIndex
+        self.text = text
+        self.attributes = attributes
+        self.startTime = startTime
+        self.endTime = endTime
+    }
+}
+
+public extension WordData {
+    /// Convenience when you need an `AttributedString` from the stored `attributes`.
+    func attributedString(highlighted: Bool = false) -> AttributedString {
+        var s = AttributedString(text)
+        s.mergeAttributes(attributes)
+        if highlighted { s.foregroundColor = .white }
+        return s
+    }
+}
