@@ -9,11 +9,11 @@ struct AnimatedSubtitleView: View {
     let currentTime: TimeInterval
     let thoughtId: String
     let chapterNumber: Int
-        
+    
     @State private var paragraphs: [[WordData]] = []
     @State private var wordFrames: [Int: CGRect] = [:]
     @State private var highlightFrame: CGRect = .zero
-        
+    
     init(
         listeningViewModel: ListeningViewModel,
         currentTime: TimeInterval,
@@ -29,9 +29,15 @@ struct AnimatedSubtitleView: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                SubtitleTextView(
+                AnimatedWordsView(
                     paragraphs: paragraphs,
                     currentWordIndex: listeningViewModel.currentWordIndex,
+                    coordinateSpaceName: "subtitleContainer",
+                    showOverlay: listeningViewModel.currentWordIndex >= 0,
+                    wordFont: .body,
+                    spacing: 4,
+                    lineSpacing: 6,
+                    bottomPadding: 50,
                     wordFrames: $wordFrames,
                     highlightFrame: $highlightFrame
                 )
@@ -43,7 +49,7 @@ struct AnimatedSubtitleView: View {
                         proxy.scrollTo(newIndex, anchor: .center)
                     }
                 }
-     
+                
                 if newIndex >= 0 && newIndex < listeningViewModel.allWords.count {
                     let word = listeningViewModel.allWords[newIndex].text
                     let feedbackValue = bluetoothService.processFeedback(word: word)
@@ -55,7 +61,7 @@ struct AnimatedSubtitleView: View {
                         chapterNumber: chapterNumber
                     )
                 }
-
+                
                 
                 updateHighlightFrame()
             }
@@ -146,43 +152,5 @@ struct AnimatedSubtitleView: View {
             return
         }
         highlightFrame = frame
-    }
-}
-
-// MARK: - Supporting Views
-struct SubtitleTextView: View {
-    let paragraphs: [[WordData]]
-    let currentWordIndex: Int
-    @Binding var wordFrames: [Int: CGRect]
-    @Binding var highlightFrame: CGRect
-    
-    var body: some View {
-        ZStack(alignment: .topLeading) {
-            if currentWordIndex >= 0 && highlightFrame != .zero {
-                HighlightOverlay(frame: highlightFrame)
-            }
-            
-            VStack(alignment: .leading, spacing: 6) {
-                ForEach(Array(paragraphs.enumerated()), id: \.offset) { _, paragraph in
-                    FlowLayout(spacing: 4, lineSpacing: 6) {
-                        ForEach(paragraph) { wordData in
-                            Text(wordData.text)
-                                .font(.body)
-                                .foregroundColor(wordData.originalIndex == currentWordIndex ? .white : .primary)
-                                .captureWordFrame(index: wordData.originalIndex, in: "subtitleContainer")
-                                .id(wordData.originalIndex)
-                        }
-                    }
-                    .padding(.bottom, 8)
-                }
-                
-                Spacer()
-                    .frame(height: 50)
-            }
-        }
-        .coordinateSpace(name: "subtitleContainer")
-        .onPreferenceChange(WordFrameKey.self) { frames in
-            wordFrames = frames
-        }
     }
 }
