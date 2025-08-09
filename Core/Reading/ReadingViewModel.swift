@@ -3,7 +3,6 @@ import Combine
 
 @MainActor
 class ReadingViewModel: ObservableObject {
-    private let networkService = NetworkServiceManager.shared
     private var cancellables = Set<AnyCancellable>()
     
     // Chapter state
