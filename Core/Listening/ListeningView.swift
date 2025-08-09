@@ -182,7 +182,6 @@ struct ListeningView: View {
         VStack(spacing: 20) {
             AnimatedSubtitleView(
                 listeningViewModel: listeningViewModel,
-                currentTime: listeningViewModel.currentTime,
                 thoughtId: thought.id,
                 chapterNumber: listeningViewModel.chapterManager.currentChapter?.number ?? 1
             )
