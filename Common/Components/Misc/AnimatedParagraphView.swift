@@ -299,20 +299,14 @@ private extension AnimatedParagraphView {
 // MARK: - Feedback Methods
 private extension AnimatedParagraphView {
     func sendFeedback(for word: String) {
-        Task.detached(priority: .background) {
-            let result = await feedbackService.submitFeedback(
-                thoughtId: thoughtId,
-                chapterNumber: chapterNumber,
-                word: word
-            )
-            
-            switch result {
-            case .success(_):
-                break
-            case .failure(let error):
-                print("Feedback submission failed: \(error.localizedDescription)")
-            }
-        }
+        let feedbackValue = bluetoothService.processFeedback(word: word)
+        
+        feedbackBuffer.addFeedback(
+            word: word,
+            value: feedbackValue,
+            thoughtId: thoughtId,
+            chapterNumber: chapterNumber
+        )
     }
 }
 
