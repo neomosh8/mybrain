@@ -10,13 +10,10 @@ struct AnimatedSubtitleView: View {
     let thoughtId: String
     let chapterNumber: Int
         
-    @State private var paragraphs: [[SubtitleWordData]] = []
+    @State private var paragraphs: [[WordData]] = []
     @State private var wordFrames: [Int: CGRect] = [:]
     @State private var highlightFrame: CGRect = .zero
-    
-    @State private var wordBuffer: [String] = []
-    private let batchSize = 10
-    
+        
     init(
         listeningViewModel: ListeningViewModel,
         currentTime: TimeInterval,
@@ -69,6 +66,9 @@ struct AnimatedSubtitleView: View {
                 buildParagraphs()
             }
         }
+        .onChange(of: wordFrames) { _, _ in
+            updateHighlightFrame()
+        }
     }
     
     private func buildParagraphs() {
@@ -78,16 +78,16 @@ struct AnimatedSubtitleView: View {
         
         let commonUppercaseWords: Set<String> = ["I", "I'm", "I'll", "I've", "I'd", "Dr", "Mr", "Mrs", "Ms"]
         
-        var currentParagraph: [SubtitleWordData] = []
-        var newParagraphs: [[SubtitleWordData]] = []
+        var currentParagraph: [WordData] = []
+        var newParagraphs: [[WordData]] = []
         var textIndex = allText.startIndex
         
         for (index, wordTimestamp) in listeningViewModel.allWords.enumerated() {
-            let wordData = SubtitleWordData(
+            let wordData = WordData(
+                originalIndex: index,
                 text: wordTimestamp.text,
                 startTime: wordTimestamp.start,
-                endTime: wordTimestamp.end,
-                originalIndex: index
+                endTime: wordTimestamp.end
             )
             
             let word = wordTimestamp.text
@@ -151,7 +151,7 @@ struct AnimatedSubtitleView: View {
 
 // MARK: - Supporting Views
 struct SubtitleTextView: View {
-    let paragraphs: [[SubtitleWordData]]
+    let paragraphs: [[WordData]]
     let currentWordIndex: Int
     @Binding var wordFrames: [Int: CGRect]
     @Binding var highlightFrame: CGRect
@@ -166,7 +166,7 @@ struct SubtitleTextView: View {
                 ForEach(Array(paragraphs.enumerated()), id: \.offset) { _, paragraph in
                     FlowLayout(spacing: 4, lineSpacing: 6) {
                         ForEach(paragraph) { wordData in
-                            Text(getModifiedText(for: wordData))
+                            Text(wordData.text)
                                 .font(.body)
                                 .foregroundColor(wordData.originalIndex == currentWordIndex ? .white : .primary)
                                 .captureWordFrame(index: wordData.originalIndex, in: "subtitleContainer")
@@ -184,32 +184,5 @@ struct SubtitleTextView: View {
         .onPreferenceChange(WordFrameKey.self) { frames in
             wordFrames = frames
         }
-    }
-    
-    private func getModifiedText(for wordData: SubtitleWordData) -> String {
-        return wordData.text
-    }
-}
-
-struct SubtitleWordData: Identifiable {
-    let id = UUID()
-    let text: String
-    let startTime: TimeInterval
-    let endTime: TimeInterval
-    let originalIndex: Int
-}
-
-
-
-private extension AnimatedSubtitleView {
-    func sendFeedback(for word: String, thoughtId: String, chapterNumber: Int) {
-        let feedbackValue = bluetoothService.processFeedback(word: word)
-        
-        feedbackBuffer.addFeedback(
-            word: word,
-            value: feedbackValue,
-            thoughtId: thoughtId,
-            chapterNumber: chapterNumber
-        )
     }
 }
