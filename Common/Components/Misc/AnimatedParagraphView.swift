@@ -25,7 +25,6 @@ struct AnimatedParagraphView: View {
     @State private var playbackObserver: AnyCancellable?
     
     @State private var paragraphs: [[WordData]] = []
-    @State private var words: [WordData] = []
     
     // MARK: - Initialization
     init(
@@ -183,7 +182,6 @@ private extension AnimatedParagraphView {
     
     func buildWordDataArray() {
         paragraphs = []
-        words = []
         
         var currentParagraph: [WordData] = []
         
@@ -205,7 +203,6 @@ private extension AnimatedParagraphView {
             let data = WordData(originalIndex: index, text: wordText, attributes: attrs)
             
             currentParagraph.append(data)
-            words.append(data)
         }
         if !currentParagraph.isEmpty {
             paragraphs.append(currentParagraph)
