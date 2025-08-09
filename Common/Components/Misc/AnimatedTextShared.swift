@@ -76,3 +76,48 @@ struct WordFrameKey: PreferenceKey {
         value.merge(nextValue()) { _, new in new }
     }
 }
+
+
+/// A reusable gradient pill sized and positioned from a CGRect.
+struct HighlightOverlay: View {
+    var frame: CGRect
+    var cornerRadius: CGFloat = 4
+    var extraWidth: CGFloat = 5
+    var extraHeight: CGFloat = 3
+    var opacity: Double = 0.8
+    var gradient: LinearGradient = LinearGradient(
+        gradient: Gradient(colors: [Color.blue, Color.cyan]),
+        startPoint: .leading,
+        endPoint: .trailing
+    )
+    var animation: Animation = .spring(response: 0.3, dampingFraction: 0.8)
+
+    var body: some View {
+        // Do nothing when there is no target frame
+        if frame != .zero {
+            RoundedRectangle(cornerRadius: cornerRadius)
+                .fill(gradient)
+                .opacity(opacity)
+                .frame(width: frame.width + extraWidth, height: frame.height + extraHeight)
+                .position(x: frame.midX, y: frame.midY)
+                .animation(animation, value: frame)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+        }
+    }
+}
+
+// MARK: - Capture word frames (shared)
+extension View {
+    /// Records the view's frame (in the given named coordinate space) into `WordFrameKey` under the provided index.
+    func captureWordFrame(index: Int, in spaceName: AnyHashable) -> some View {
+        background(
+            GeometryReader { proxy in
+                Color.clear.preference(
+                    key: WordFrameKey.self,
+                    value: [index: proxy.frame(in: .named(spaceName)).integral]
+                )
+            }
+        )
+    }
+}
