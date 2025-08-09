@@ -8,7 +8,6 @@ class ThoughtsViewModel: ObservableObject {
     @Published var errorMessage: String?
     
     // MARK: - Private Properties
-    private let networkService = NetworkServiceManager.shared
     private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Public Methods
