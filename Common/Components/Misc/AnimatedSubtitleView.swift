@@ -4,22 +4,17 @@ import NaturalLanguage
 struct AnimatedSubtitleView: View {
     @ObservedObject var listeningViewModel: ListeningViewModel
     
-    let currentTime: TimeInterval
     let thoughtId: String
     let chapterNumber: Int
     
     @State private var paragraphs: [[WordData]] = []
-    @State private var wordFrames: [Int: CGRect] = [:]
-    @State private var highlightFrame: CGRect = .zero
     
     init(
         listeningViewModel: ListeningViewModel,
-        currentTime: TimeInterval,
         thoughtId: String,
         chapterNumber: Int,
     ) {
         self.listeningViewModel = listeningViewModel
-        self.currentTime = currentTime
         self.thoughtId = thoughtId
         self.chapterNumber = chapterNumber
     }
@@ -35,9 +30,7 @@ struct AnimatedSubtitleView: View {
                     wordFont: .body,
                     spacing: 4,
                     lineSpacing: 6,
-                    bottomPadding: 50,
-                    wordFrames: $wordFrames,
-                    highlightFrame: $highlightFrame
+                    bottomPadding: 50
                 )
                 .padding()
             }
