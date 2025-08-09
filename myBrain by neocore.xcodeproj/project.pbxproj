@@ -46,7 +46,6 @@
 		7468256F2DDCE58B0089AE37 /* ImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7468256E2DDCE5880089AE37 /* ImageLoader.swift */; };
 		746FB2E12E369C4600204028 /* ToggleRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 746FB2E02E369C4500204028 /* ToggleRow.swift */; };
 		747377F72E26CC2100C50D04 /* ReadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747377F62E26CC1F00C50D04 /* ReadingView.swift */; };
-		747A2D9B2E2BCD2F00CE9B80 /* FeedbackServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747A2D9A2E2BCD2C00CE9B80 /* FeedbackServiceProtocol.swift */; };
 		747A2D9D2E2BCD3400CE9B80 /* FeedbackService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747A2D9C2E2BCD3100CE9B80 /* FeedbackService.swift */; };
 		747A54B32DFDC0B400BD9541 /* ThoughtCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747A54B22DFDC0A900BD9541 /* ThoughtCard.swift */; };
 		747E83BF2E31E3AF00F28F50 /* MockBluetoothService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747E83BE2E31E3AA00F28F50 /* MockBluetoothService.swift */; };
@@ -66,6 +65,7 @@
 		74A6ADE82E4310CF0054DB5E /* BluetoothConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74A6ADE72E4310CE0054DB5E /* BluetoothConstants.swift */; };
 		74AA48072E221C3700B6D017 /* ActionRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74AA48062E221C3600B6D017 /* ActionRow.swift */; };
 		74B3FDAD2E1CD6AF00173269 /* BottomSheetPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74B3FDAC2E1CD6AC00173269 /* BottomSheetPicker.swift */; };
+		74B513C52E4729AC00562633 /* FeedbackBufferManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74B513C42E4729AB00562633 /* FeedbackBufferManager.swift */; };
 		74BC7E582E000DB400A9C2F4 /* NetworkServiceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74BC7E572E000DAD00A9C2F4 /* NetworkServiceManager.swift */; };
 		74BC7E5A2E000DB900A9C2F4 /* HTTPNetworkService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74BC7E592E000DB700A9C2F4 /* HTTPNetworkService.swift */; };
 		74BC7E5C2E000DC100A9C2F4 /* WebSocketNetworkService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74BC7E5B2E000DBE00A9C2F4 /* WebSocketNetworkService.swift */; };
@@ -159,7 +159,6 @@
 		746FB2E02E369C4500204028 /* ToggleRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToggleRow.swift; sourceTree = "<group>"; };
 		747377F62E26CC1F00C50D04 /* ReadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingView.swift; sourceTree = "<group>"; };
 		7479BFD92E1263F100F18A48 /* ServerAPI.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ServerAPI.md; sourceTree = "<group>"; };
-		747A2D9A2E2BCD2C00CE9B80 /* FeedbackServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackServiceProtocol.swift; sourceTree = "<group>"; };
 		747A2D9C2E2BCD3100CE9B80 /* FeedbackService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackService.swift; sourceTree = "<group>"; };
 		747A54B22DFDC0A900BD9541 /* ThoughtCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtCard.swift; sourceTree = "<group>"; };
 		747E83BE2E31E3AA00F28F50 /* MockBluetoothService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockBluetoothService.swift; sourceTree = "<group>"; };
@@ -179,6 +178,7 @@
 		74A6ADE72E4310CE0054DB5E /* BluetoothConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothConstants.swift; sourceTree = "<group>"; };
 		74AA48062E221C3600B6D017 /* ActionRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionRow.swift; sourceTree = "<group>"; };
 		74B3FDAC2E1CD6AC00173269 /* BottomSheetPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomSheetPicker.swift; sourceTree = "<group>"; };
+		74B513C42E4729AB00562633 /* FeedbackBufferManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackBufferManager.swift; sourceTree = "<group>"; };
 		74BC7E572E000DAD00A9C2F4 /* NetworkServiceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkServiceManager.swift; sourceTree = "<group>"; };
 		74BC7E592E000DB700A9C2F4 /* HTTPNetworkService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPNetworkService.swift; sourceTree = "<group>"; };
 		74BC7E5B2E000DBE00A9C2F4 /* WebSocketNetworkService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSocketNetworkService.swift; sourceTree = "<group>"; };
@@ -498,8 +498,8 @@
 		747A2D992E2BCC9800CE9B80 /* Feedback */ = {
 			isa = PBXGroup;
 			children = (
+				74B513C42E4729AB00562633 /* FeedbackBufferManager.swift */,
 				747A2D9C2E2BCD3100CE9B80 /* FeedbackService.swift */,
-				747A2D9A2E2BCD2C00CE9B80 /* FeedbackServiceProtocol.swift */,
 			);
 			path = Feedback;
 			sourceTree = "<group>";
@@ -745,12 +745,12 @@
 				74A6ADE82E4310CF0054DB5E /* BluetoothConstants.swift in Sources */,
 				74D58B382E152780008B62DC /* AppNavigationBar.swift in Sources */,
 				748286222E409A3F0058C2C0 /* ResponseParser.swift in Sources */,
-				747A2D9B2E2BCD2F00CE9B80 /* FeedbackServiceProtocol.swift in Sources */,
 				746822642E2F75D3007AB029 /* ListeningView.swift in Sources */,
 				74B3FDAD2E1CD6AF00173269 /* BottomSheetPicker.swift in Sources */,
 				748286242E409A660058C2C0 /* QualityAnalyzer.swift in Sources */,
 				74BC7E622E000DEF00A9C2F4 /* WebSocketProtocols.swift in Sources */,
 				74C2860D2DB4C32400CF836B /* GoogleAuthManager.swift in Sources */,
+				74B513C52E4729AC00562633 /* FeedbackBufferManager.swift in Sources */,
 				74BC7E662E000E0000A9C2F4 /* RequestModels.swift in Sources */,
 				6844270E2D13D862002E9BC6 /* AuthViewModel.swift in Sources */,
 				684427032D13D580002E9BC6 /* myBrainApp.swift in Sources */,
