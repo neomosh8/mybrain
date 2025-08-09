@@ -20,7 +20,6 @@ class AuthViewModel: ObservableObject {
     // MARK: - Private Properties
     
     private var cancellables = Set<AnyCancellable>()
-    private let networkService = NetworkServiceManager.shared
     
     // MARK: - Initialization
     
