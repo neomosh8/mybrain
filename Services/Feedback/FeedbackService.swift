@@ -1,30 +1,58 @@
 import Foundation
 import Combine
 
-class FeedbackService: FeedbackServiceProtocol {
+// MARK: - Feedback Models
+
+struct FeedbackResponse {
+    let success: Bool
+    let message: String
+    let thoughtId: String?
+    let chapterNumber: Int?
+    let word: String?
+}
+
+enum FeedbackError: Error, LocalizedError {
+    case invalidWord
+    case bluetoothServiceUnavailable
+    case webSocketNotConnected
+    case submissionFailed(String)
     
+    var errorDescription: String? {
+        switch self {
+        case .invalidWord:
+            return "Invalid word provided for feedback"
+        case .bluetoothServiceUnavailable:
+            return "Bluetooth service is not available"
+        case .webSocketNotConnected:
+            return "WebSocket connection is not available"
+        case .submissionFailed(let message):
+            return "Feedback submission failed: \(message)"
+        }
+    }
+}
+
+
+class FeedbackService {
     // MARK: - Singleton
     static let shared = FeedbackService()
-        
+    
     // MARK: - Private Properties
     private let webSocketService: WebSocketAPI
-    private let bluetoothService: BTService
     
     // MARK: - Initialization
     private init(
         webSocketService: WebSocketAPI = NetworkServiceManager.shared.webSocket,
-        bluetoothService: BTService = BTService.shared
     ) {
         self.webSocketService = webSocketService
-        self.bluetoothService = bluetoothService
     }
     
-    // MARK: - FeedbackServiceProtocol Implementation
+    // MARK: - FeedbackService Implementation
     
     func submitFeedback(
         thoughtId: String,
         chapterNumber: Int,
-        word: String
+        word: String,
+        value: Double
     ) async -> Result<FeedbackResponse, FeedbackError> {
         
         let cleanWord = word.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -32,8 +60,6 @@ class FeedbackService: FeedbackServiceProtocol {
             return .failure(.invalidWord)
         }
         
-        let feedbackValue = bluetoothService.processFeedback(word: cleanWord)
-
         guard webSocketService.isConnected else {
             return .failure(.webSocketNotConnected)
         }
@@ -42,7 +68,7 @@ class FeedbackService: FeedbackServiceProtocol {
             thoughtId: thoughtId,
             chapterNumber: chapterNumber,
             word: cleanWord,
-            value: feedbackValue
+            value: value
         )
         
         return .success(FeedbackResponse(
@@ -57,21 +83,11 @@ class FeedbackService: FeedbackServiceProtocol {
     func submitBatchFeedback(
         thoughtId: String,
         chapterNumber: Int,
-        words: [String]
+        feedbacks: [(word: String, value: Double)]
     ) async -> Result<FeedbackResponse, FeedbackError> {
         
-        let cleanWords = words.compactMap { word in
-            let cleaned = word.trimmingCharacters(in: .whitespacesAndNewlines)
-            return cleaned.isEmpty ? nil : cleaned
-        }
-        
-        guard !cleanWords.isEmpty else {
+        guard !feedbacks.isEmpty else {
             return .failure(.invalidWord)
-        }
-        
-        let feedbacks = cleanWords.map { word in
-            let feedbackValue = bluetoothService.processFeedback(word: word)
-            return (word: word, value: feedbackValue)
         }
         
         guard webSocketService.isConnected else {
@@ -89,9 +105,7 @@ class FeedbackService: FeedbackServiceProtocol {
             message: "Batch feedback sent",
             thoughtId: thoughtId,
             chapterNumber: chapterNumber,
-            word: cleanWords.first
+            word: feedbacks.first?.word
         ))
     }
-
 }
-
