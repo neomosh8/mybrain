@@ -181,7 +181,7 @@ struct SubtitleTextView: View {
                                 .background(
                                     GeometryReader { proxy in
                                         Color.clear
-                                            .preference(key: SubtitleWordFrameKey.self, value: [wordData.originalIndex: proxy.frame(in: .named("subtitleContainer"))])
+                                            .preference(key: WordFrameKey.self, value: [wordData.originalIndex: proxy.frame(in: .named("subtitleContainer"))])
                                     }
                                 )
                                 .id(wordData.originalIndex)
@@ -195,7 +195,7 @@ struct SubtitleTextView: View {
             }
         }
         .coordinateSpace(name: "subtitleContainer")
-        .onPreferenceChange(SubtitleWordFrameKey.self) { frames in
+        .onPreferenceChange(WordFrameKey.self) { frames in
             wordFrames = frames
         }
     }
@@ -213,13 +213,6 @@ struct SubtitleWordData: Identifiable {
     let originalIndex: Int
 }
 
-struct SubtitleWordFrameKey: PreferenceKey {
-    static var defaultValue: [Int: CGRect] = [:]
-    
-    static func reduce(value: inout [Int: CGRect], nextValue: () -> [Int: CGRect]) {
-        value.merge(nextValue()) { _, new in new }
-    }
-}
 
 
 private extension AnimatedSubtitleView {
