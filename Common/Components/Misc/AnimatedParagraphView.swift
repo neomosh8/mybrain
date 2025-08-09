@@ -332,16 +332,7 @@ struct WordByWordTextView: View {
     var body: some View {
         ZStack(alignment: .topLeading) {
             if isAnimating && highlightFrame != .zero {
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(LinearGradient(
-                        gradient: Gradient(colors: [Color.blue, Color.cyan]),
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    ))
-                    .opacity(0.8)
-                    .frame(width: highlightFrame.width + 5, height: highlightFrame.height + 3)
-                    .position(x: highlightFrame.midX, y: highlightFrame.midY)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: highlightFrame)
+                HighlightOverlay(frame: highlightFrame)
             }
             
             VStack(alignment: .leading, spacing: 6) {
@@ -349,12 +340,7 @@ struct WordByWordTextView: View {
                     FlowLayout(spacing: 4, lineSpacing: 6) {
                         ForEach(paragraph) { wordData in
                             Text(getModifiedAttributedString(for: wordData))
-                                .background(
-                                    GeometryReader { proxy in
-                                        Color.clear
-                                            .preference(key: WordFrameKey.self, value: [wordData.originalIndex: proxy.frame(in: .named("container"))])
-                                    }
-                                )
+                                .captureWordFrame(index: wordData.originalIndex, in: "container")
                         }
                     }
                     .padding(.bottom, 8)
