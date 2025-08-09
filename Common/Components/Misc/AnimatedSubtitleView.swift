@@ -159,16 +159,7 @@ struct SubtitleTextView: View {
     var body: some View {
         ZStack(alignment: .topLeading) {
             if currentWordIndex >= 0 && highlightFrame != .zero {
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(LinearGradient(
-                        gradient: Gradient(colors: [Color.blue, Color.cyan]),
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    ))
-                    .opacity(0.8)
-                    .frame(width: highlightFrame.width + 5, height: highlightFrame.height + 3)
-                    .position(x: highlightFrame.midX, y: highlightFrame.midY)
-                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: highlightFrame)
+                HighlightOverlay(frame: highlightFrame)
             }
             
             VStack(alignment: .leading, spacing: 6) {
@@ -178,12 +169,7 @@ struct SubtitleTextView: View {
                             Text(getModifiedText(for: wordData))
                                 .font(.body)
                                 .foregroundColor(wordData.originalIndex == currentWordIndex ? .white : .primary)
-                                .background(
-                                    GeometryReader { proxy in
-                                        Color.clear
-                                            .preference(key: WordFrameKey.self, value: [wordData.originalIndex: proxy.frame(in: .named("subtitleContainer"))])
-                                    }
-                                )
+                                .captureWordFrame(index: wordData.originalIndex, in: "subtitleContainer")
                                 .id(wordData.originalIndex)
                         }
                     }
