@@ -39,7 +39,6 @@ class ListeningViewModel: ObservableObject {
     private var currentThought: Thought?
     
     // MARK: - Dependencies
-    private let networkService = NetworkServiceManager.shared
     private let backgroundManager = BackgroundManager.shared
     
     // MARK: - Private State
