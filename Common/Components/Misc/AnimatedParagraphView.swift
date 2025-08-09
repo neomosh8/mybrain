@@ -16,7 +16,7 @@ struct AnimatedParagraphView: View {
     
     @State private var attributedContent: AttributedString = AttributedString()
     @State private var wordRanges: [(range: Range<AttributedString.Index>, word: String)] = []
-    @State private var currentWordIndex: Int = 0
+    @State private var currentWordIndex: Int = -1
     @State private var isAnimating: Bool = false
     @State private var animationTimer: DispatchSourceTimer?
     @State private var hasSetupContent: Bool = false
@@ -81,6 +81,11 @@ struct AnimatedParagraphView: View {
                 resumeAnimationFromCurrentPosition()
             }
         }
+        .onChange(of: currentWordIndex) { _, newIndex in
+            if newIndex >= 0 && newIndex < wordRanges.count {
+                sendFeedback(word: wordRanges[newIndex].word, thoughtId: thoughtId, chapterNumber: chapterNumber)
+            }
+        }
         .onDisappear {
             stopAnimation()
             playbackObserver?.cancel()
@@ -130,31 +135,29 @@ private extension AnimatedParagraphView {
     func overrideFontFamilyOnly() {
         for run in attributedContent.runs {
             let runRange = run.range
-            
+
             if let originalFont = run.uiKit.font {
                 let originalSize = originalFont.pointSize
                 let traits = originalFont.fontDescriptor.symbolicTraits
-                
+
                 var weight: Font.Weight = .regular
                 var isItalic = false
-                
-                if traits.contains(.traitBold) {
-                    weight = .bold
-                }
-                if traits.contains(.traitItalic) {
-                    isItalic = true
-                }
-                
-                var newFont = Font.system(size: originalSize, weight: weight)
-                if isItalic {
-                    newFont = newFont.italic()
-                }
-                
+
+                if traits.contains(.traitBold)   { weight = .bold }
+                if traits.contains(.traitItalic) { isItalic = true }
+
+                let newFont = Font.system(size: originalSize, weight: weight)
                 attributedContent[runRange].font = newFont
+
+                if isItalic {
+                    var intents = attributedContent[runRange].inlinePresentationIntent
+                    intents?.insert(.emphasized)
+                    attributedContent[runRange].inlinePresentationIntent = intents
+                }
             }
         }
     }
-    
+
     func extractWordRanges() {
         wordRanges.removeAll()
         
@@ -237,10 +240,6 @@ private extension AnimatedParagraphView {
         isAnimating = true
         isPaused = false
         
-        if currentWordIndex == 0 {
-            sendFeedback(for: wordRanges[0].word)
-        }
-        
         startAnimationTimer()
     }
     
@@ -249,9 +248,6 @@ private extension AnimatedParagraphView {
         
         if !isAnimating {
             isAnimating = true
-            if currentWordIndex == 0 {
-                sendFeedback(for: wordRanges[0].word)
-            }
         }
         
         startAnimationTimer()
@@ -277,8 +273,6 @@ private extension AnimatedParagraphView {
                 if self.currentWordIndex == halfwayPoint {
                     self.onHalfway()
                 }
-                
-                self.sendFeedback(for: self.wordRanges[self.currentWordIndex].word)
             }
         }
         
@@ -299,16 +293,3 @@ private extension AnimatedParagraphView {
     }
 }
 
-// MARK: - Feedback Methods
-private extension AnimatedParagraphView {
-    func sendFeedback(for word: String) {
-        let feedbackValue = bluetoothService.processFeedback(word: word)
-        
-        feedbackBuffer.addFeedback(
-            word: word,
-            value: feedbackValue,
-            thoughtId: thoughtId,
-            chapterNumber: chapterNumber
-        )
-    }
-}
