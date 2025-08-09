@@ -88,7 +88,7 @@ class FeedbackBufferManager: ObservableObject {
             let feedbacks = items.map { (word: $0.word, value: $0.value) }
             
             Task {
-                let result = await feedbackService.submitBatchFeedback(
+                await feedbackService.submitBatchFeedback(
                     thoughtId: firstItem.thoughtId,
                     chapterNumber: firstItem.chapterNumber,
                     feedbacks: feedbacks
