@@ -345,7 +345,14 @@ class ListeningViewModel: ObservableObject {
            let thoughtId = currentThought?.id {
             let word = allWords[idx].text
             let chapterNum = chapterManager.currentChapter?.number ?? currentChapterNumber
-            sendFeedback(word: word, thoughtId: thoughtId, chapterNumber: chapterNum)
+            let feedbackValue = bluetoothService.processFeedback(word: word)
+            
+            feedbackBuffer.addFeedback(
+                word: word,
+                value: feedbackValue,
+                thoughtId: thoughtId,
+                chapterNumber: chapterNum
+            )
         }
 
     }
