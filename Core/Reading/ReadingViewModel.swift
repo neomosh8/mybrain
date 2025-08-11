@@ -268,13 +268,9 @@ class ReadingViewModel: ObservableObject {
             return
         }
         
-        print("currentWordIndex: \(currentWordIndex)")
-        print("word: \(indexToWord[currentWordIndex] ?? "???")")
-        
         // Emit feedback once per word
         if let word = indexToWord[currentWordIndex] {
             let chapterNum = (currentChapterIndex ?? -1) + 1
-            print("chapterNum: \(chapterNum)")
             sendFeedback(word: word, thoughtId: thoughtId, chapterNumber: chapterNum)
         }
         
