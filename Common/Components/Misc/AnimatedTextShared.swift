@@ -115,8 +115,14 @@ public struct WordData: Identifiable, Hashable {
         self.startTime = startTime
         self.endTime = endTime
     }
+    
+    func attributedString(highlighted: Bool = false) -> AttributedString {
+        var s = AttributedString(text)
+        s.mergeAttributes(attributes)
+        if highlighted { s.foregroundColor = .white }
+        return s
+    }
 }
-
 
 // MARK: - Word-Flow View
 public struct AnimatedWordsView: View {
@@ -198,15 +204,5 @@ extension View {
                 )
             }
         )
-    }
-}
-
-public extension WordData {
-    /// Convenience when you need an `AttributedString` from the stored `attributes`.
-    func attributedString(highlighted: Bool = false) -> AttributedString {
-        var s = AttributedString(text)
-        s.mergeAttributes(attributes)
-        if highlighted { s.foregroundColor = .white }
-        return s
     }
 }
