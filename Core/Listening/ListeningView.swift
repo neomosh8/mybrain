@@ -6,7 +6,7 @@ struct ListeningView: View {
     let thought: Thought
     
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var listeningViewModel = ListeningViewModel()
+    @StateObject private var viewModel = ListeningViewModel()
     @StateObject private var statusPickerController = BottomSheetPickerController()
     
     @EnvironmentObject var backgroundManager: BackgroundManager
@@ -21,19 +21,19 @@ struct ListeningView: View {
     @State private var previousWordIndex: Int = -1
     
     private var canTogglePlayback: Bool {
-        return !listeningViewModel.isFetchingLinks &&
-        listeningViewModel.player != nil &&
+        return !viewModel.isFetchingLinks &&
+        viewModel.player != nil &&
         !isCheckingStatus &&
-        !listeningViewModel.hasCompletedPlayback
+        !viewModel.hasCompletedPlayback
     }
     
     
     private var playPauseIcon: String {
-        return listeningViewModel.isPlaying ? "pause.fill" : "play.fill"
+        return viewModel.isPlaying ? "pause.fill" : "play.fill"
     }
     
     private var playPauseText: String {
-        return listeningViewModel.isPlaying ? "Pause" : "Play"
+        return viewModel.isPlaying ? "Pause" : "Play"
     }
     
     var body: some View {
@@ -82,7 +82,7 @@ struct ListeningView: View {
             checkThoughtStatus()
         }
         .onDisappear {
-            listeningViewModel.cleanup()
+            viewModel.cleanup()
             
             NotificationCenter.default.post(
                 name: .thoughtProgressUpdated,
@@ -104,13 +104,13 @@ struct ListeningView: View {
             return "Loading..."
         }
         
-        if let currentChapter = listeningViewModel.chapterManager.currentChapter {
+        if let currentChapter = viewModel.chapterManager.currentChapter {
             let totalChapters = status.progress.total
             return "Chapter \(currentChapter.number) of \(totalChapters)"
         }
         
         let totalChapters = status.progress.total
-        if listeningViewModel.chapterManager.chapters.isEmpty {
+        if viewModel.chapterManager.chapters.isEmpty {
             return "Preparing audio..."
         } else {
             return "Chapter 1 of \(totalChapters)"
@@ -131,13 +131,13 @@ struct ListeningView: View {
     private var mainListeningInterface: some View {
         VStack(spacing: 0) {
             ZStack {
-                if listeningViewModel.hasCompletedPlayback {
+                if viewModel.hasCompletedPlayback {
                     ChapterCompletionView(thoughtId: thought.id)
-                } else if listeningViewModel.isFetchingLinks {
+                } else if viewModel.isFetchingLinks {
                     loadingContentView
-                } else if listeningViewModel.player != nil {
+                } else if viewModel.player != nil {
                     listeningContent
-                } else if let error = listeningViewModel.playerError {
+                } else if let error = viewModel.playerError {
                     errorView(error)
                 } else {
                     readyView
@@ -160,13 +160,13 @@ struct ListeningView: View {
     
     private var loadingContentView: some View {
         VStack(spacing: 16) {
-            if listeningViewModel.isFetchingLinks {
+            if viewModel.isFetchingLinks {
                 ProgressView("Fetching streaming links...")
                     .tint(.gray)
                     .foregroundColor(.black)
             } else {
                 Button("Start Listening") {
-                    listeningViewModel.startListening(for: thought)
+                    viewModel.startListening(for: thought)
                 }
                 .buttonStyle(.borderedProminent)
             }
@@ -181,9 +181,8 @@ struct ListeningView: View {
     private var listeningContent: some View {
         VStack(spacing: 20) {
             AnimatedSubtitleView(
-                listeningViewModel: listeningViewModel,
-                thoughtId: thought.id,
-                chapterNumber: listeningViewModel.chapterManager.currentChapter?.number ?? 1
+                paragraphs: $viewModel.paragraphs,
+                currentWordIndex: $viewModel.currentWordIndex,
             )
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("NewChapterWordsFromAudio"))) { notification in
@@ -198,13 +197,13 @@ struct ListeningView: View {
         if let userInfo = notification.userInfo,
            let words = userInfo["words"] as? [[String: Any]] {
             
-            listeningViewModel.loadWordsFromChapterAudio(words: words)
+            viewModel.loadWordsFromChapterAudio(words: words)
         }
     }
     
     private func handleTimeUpdate(_ notification: Notification) {
         if let globalTime = notification.object as? Double {
-            listeningViewModel.updateCurrentTime(globalTime)
+            viewModel.updateCurrentTime(globalTime)
         }
     }
     
@@ -217,7 +216,7 @@ struct ListeningView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                Text("Duration: \(formatDuration(listeningViewModel.currentTime))")
+                Text("Duration: \(formatDuration(viewModel.currentTime))")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -262,7 +261,7 @@ struct ListeningView: View {
             Button(action: {
                 if canTogglePlayback {
                     withAnimation(.easeInOut(duration: 0.2)) {
-                        listeningViewModel.togglePlayback()
+                        viewModel.togglePlayback()
                     }
                 }
             }) {
@@ -393,7 +392,7 @@ struct ListeningView: View {
                 .multilineTextAlignment(.center)
             
             Button("Retry") {
-                listeningViewModel.startListening(for: thought)
+                viewModel.startListening(for: thought)
             }
             .buttonStyle(.borderedProminent)
         }
@@ -407,7 +406,7 @@ struct ListeningView: View {
                 .foregroundColor(.primary)
             
             Button("Start Listening") {
-                listeningViewModel.startListening(for: thought)
+                viewModel.startListening(for: thought)
             }
             .buttonStyle(.borderedProminent)
         }
@@ -456,7 +455,7 @@ struct ListeningView: View {
     }
     
     private func setupListening() {
-        listeningViewModel.startListening(for: thought)
+        viewModel.startListening(for: thought)
     }
     
     private func resetListeningProgress() {
