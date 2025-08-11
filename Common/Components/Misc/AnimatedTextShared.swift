@@ -32,12 +32,7 @@ struct FlowLayout: Layout {
         }
     }
     
-    private func layout(
-        sizes: [CGSize],
-        spacing: CGFloat,
-        lineSpacing: CGFloat,
-        containerWidth: CGFloat
-    ) -> (offsets: [CGPoint], size: CGSize) {
+    private func layout(sizes: [CGSize], spacing: CGFloat, lineSpacing: CGFloat, containerWidth: CGFloat) -> (offsets: [CGPoint], size: CGSize) {
         var offsets: [CGPoint] = []
         var currentRowY: CGFloat = 0
         var currentRowX: CGFloat = 0
@@ -63,7 +58,6 @@ struct FlowLayout: Layout {
 }
 
 // MARK: - Preference Key
-/// Collects the on-screen frames for words keyed by their original index.
 struct WordFrameKey: PreferenceKey {
     static var defaultValue: [Int: CGRect] = [:]
     static func reduce(value: inout [Int: CGRect], nextValue: () -> [Int: CGRect]) {
@@ -71,8 +65,7 @@ struct WordFrameKey: PreferenceKey {
     }
 }
 
-
-/// A reusable gradient pill sized and positioned from a CGRect.
+// MARK: - Gradient Pill
 struct HighlightOverlay: View {
     var frame: CGRect
     var cornerRadius: CGFloat = 4
@@ -87,7 +80,6 @@ struct HighlightOverlay: View {
     var animation: Animation = .spring(response: 0.3, dampingFraction: 0.8)
     
     var body: some View {
-        // Do nothing when there is no target frame
         if frame != .zero {
             RoundedRectangle(cornerRadius: cornerRadius)
                 .fill(gradient)
@@ -101,33 +93,12 @@ struct HighlightOverlay: View {
     }
 }
 
-// MARK: - Capture word frames (shared)
-extension View {
-    /// Records the view's frame (in the given named coordinate space) into `WordFrameKey` under the provided index.
-    func captureWordFrame(index: Int, in spaceName: AnyHashable) -> some View {
-        background(
-            GeometryReader { proxy in
-                Color.clear.preference(
-                    key: WordFrameKey.self,
-                    value: [index: proxy.frame(in: .named(spaceName)).integral]
-                )
-            }
-        )
-    }
-}
-
-
-
-/// Unified model for both timer-driven and audio-synced words.
+// MARK: - Unified model
 public struct WordData: Identifiable, Hashable {
     public let id = UUID()
     public let originalIndex: Int
     public let text: String
-    
-    /// Styling attributes carried from paragraph parsing (Paragraph view uses these).
     public var attributes: AttributeContainer
-    
-    /// Audio timestamps (Subtitle view uses these). `nil` in paragraph mode.
     public var startTime: TimeInterval?
     public var endTime: TimeInterval?
     
@@ -146,18 +117,8 @@ public struct WordData: Identifiable, Hashable {
     }
 }
 
-public extension WordData {
-    /// Convenience when you need an `AttributedString` from the stored `attributes`.
-    func attributedString(highlighted: Bool = false) -> AttributedString {
-        var s = AttributedString(text)
-        s.mergeAttributes(attributes)
-        if highlighted { s.foregroundColor = .white }
-        return s
-    }
-}
 
-
-/// A reusable word-flow view used by both the paragraph and subtitle screens.
+// MARK: - Word-Flow View
 public struct AnimatedWordsView: View {
     let bottomPadding: CGFloat = 50
     
@@ -167,13 +128,13 @@ public struct AnimatedWordsView: View {
     
     // Overlay gating
     public var showOverlay: Bool = true
-        
+    
     // Internal backing state when bindings are not provided
     @State private var wordFrames: [Int: CGRect] = [:]
     @State private var highlightFrame: CGRect = .zero
     
     // MARK: - Initializers
-
+    
     public init(
         paragraphs: [[WordData]],
         currentWordIndex: Int,
@@ -209,7 +170,7 @@ public struct AnimatedWordsView: View {
         .coordinateSpace(name: "container")
         .onPreferenceChange(WordFrameKey.self) { new in
             wordFrames = new
-
+            
             if let frame = wordFrames[currentWordIndex] {
                 highlightFrame = frame.integral
             } else {
@@ -223,5 +184,29 @@ public struct AnimatedWordsView: View {
                 highlightFrame = .zero
             }
         }
+    }
+}
+
+// MARK: - Capture word frames
+extension View {
+    func captureWordFrame(index: Int, in spaceName: AnyHashable) -> some View {
+        background(
+            GeometryReader { proxy in
+                Color.clear.preference(
+                    key: WordFrameKey.self,
+                    value: [index: proxy.frame(in: .named(spaceName)).integral]
+                )
+            }
+        )
+    }
+}
+
+public extension WordData {
+    /// Convenience when you need an `AttributedString` from the stored `attributes`.
+    func attributedString(highlighted: Bool = false) -> AttributedString {
+        var s = AttributedString(text)
+        s.mergeAttributes(attributes)
+        if highlighted { s.foregroundColor = .white }
+        return s
     }
 }
