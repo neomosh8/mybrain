@@ -2,13 +2,8 @@ import SwiftUI
 
 // MARK: - Flow Layout
 struct FlowLayout: Layout {
-    let spacing: CGFloat
-    let lineSpacing: CGFloat
-    
-    init(spacing: CGFloat = 8, lineSpacing: CGFloat = 6) {
-        self.spacing = spacing
-        self.lineSpacing = lineSpacing
-    }
+    let spacing: CGFloat = 4
+    let lineSpacing: CGFloat = 6
     
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let sizes = subviews.map { $0.sizeThatFits(.unspecified) }
@@ -162,19 +157,13 @@ public extension WordData {
 }
 
 
-
-
 /// A reusable word-flow view used by both the paragraph and subtitle screens.
 public struct AnimatedWordsView: View {
+    let bottomPadding: CGFloat = 50
+    
     // Data / state
     public let paragraphs: [[WordData]]
     public let currentWordIndex: Int
-    
-    // Layout
-    public var spacing: CGFloat = 4
-    public var lineSpacing: CGFloat = 6
-    public var bottomPadding: CGFloat = 50
-    public var wordFont: Font? = nil
     
     // Overlay gating
     public var showOverlay: Bool = true
@@ -194,20 +183,12 @@ public struct AnimatedWordsView: View {
         paragraphs: [[WordData]],
         currentWordIndex: Int,
         showOverlay: Bool,
-        wordFont: Font? = nil,
-        spacing: CGFloat = 4,
-        lineSpacing: CGFloat = 6,
-        bottomPadding: CGFloat = 50,
         wordFrames: Binding<[Int: CGRect]>,
         highlightFrame: Binding<CGRect>
     ) {
         self.paragraphs = paragraphs
         self.currentWordIndex = currentWordIndex
         self.showOverlay = showOverlay
-        self.wordFont = wordFont
-        self.spacing = spacing
-        self.lineSpacing = lineSpacing
-        self.bottomPadding = bottomPadding
         self.wordFramesBinding = wordFrames
         self.highlightFrameBinding = highlightFrame
     }
@@ -217,18 +198,10 @@ public struct AnimatedWordsView: View {
         paragraphs: [[WordData]],
         currentWordIndex: Int,
         showOverlay: Bool,
-        wordFont: Font? = nil,
-        spacing: CGFloat = 4,
-        lineSpacing: CGFloat = 6,
-        bottomPadding: CGFloat = 50
     ) {
         self.paragraphs = paragraphs
         self.currentWordIndex = currentWordIndex
         self.showOverlay = showOverlay
-        self.wordFont = wordFont
-        self.spacing = spacing
-        self.lineSpacing = lineSpacing
-        self.bottomPadding = bottomPadding
         self.wordFramesBinding = nil
         self.highlightFrameBinding = nil
     }
@@ -243,11 +216,10 @@ public struct AnimatedWordsView: View {
             
             VStack(alignment: .leading, spacing: 12) {
                 ForEach(paragraphs.indices, id: \.self) { pIndex in
-                    FlowLayout(spacing: spacing, lineSpacing: lineSpacing) {
+                    FlowLayout() {
                         ForEach(paragraphs[pIndex], id: \.originalIndex) { wordData in
                             let isHighlighted = (wordData.originalIndex == currentWordIndex)
                             Text(wordData.attributedString(highlighted: isHighlighted))
-                                .font(wordFont)
                                 .captureWordFrame(index: wordData.originalIndex, in: "container")
                                 .id(wordData.originalIndex)
                         }
