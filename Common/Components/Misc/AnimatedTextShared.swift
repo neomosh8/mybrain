@@ -303,16 +303,3 @@ public struct AnimatedWordsView: View {
         }
     }
 }
-
-
-// MARK: - Feedback (shared)
-public func sendFeedback(word: String, thoughtId: String, chapterNumber: Int) {
-    let feedbackValue = bluetoothService.processFeedback(word: word)
-    
-    feedbackBuffer.addFeedback(
-        word: word,
-        value: feedbackValue,
-        thoughtId: thoughtId,
-        chapterNumber: chapterNumber
-    )
-}
