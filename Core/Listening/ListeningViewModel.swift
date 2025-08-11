@@ -1,8 +1,8 @@
-
 import Foundation
 import AVFoundation
 import Combine
 import MediaPlayer
+import NaturalLanguage
 
 @MainActor
 class ListeningViewModel: ObservableObject {
@@ -25,6 +25,7 @@ class ListeningViewModel: ObservableObject {
     @Published var durationsSoFar: Double = 0.0
     
     // MARK: - Subtitle
+    @Published var paragraphs: [[WordData]] = []
     @Published var allWords: [WordTimestamp] = []
     @Published var currentWordIndex: Int = -1
     private var lastUpdateTime: TimeInterval = -1
@@ -68,6 +69,69 @@ class ListeningViewModel: ObservableObject {
     //    }
     
     // MARK: - Public Interface
+    
+    func buildParagraphs() {
+        let allText = allWords.map { $0.text }.joined(separator: " ")
+        let tagger = NLTagger(tagSchemes: [.nameType, .lexicalClass])
+        tagger.string = allText
+        
+        let commonUppercaseWords: Set<String> = ["I", "I'm", "I'll", "I've", "I'd", "Dr", "Mr", "Mrs", "Ms"]
+        
+        var currentParagraph: [WordData] = []
+        var newParagraphs: [[WordData]] = []
+        var textIndex = allText.startIndex
+        
+        for (index, wordTimestamp) in allWords.enumerated() {
+            let wordData = WordData(
+                originalIndex: index,
+                text: wordTimestamp.text,
+                startTime: wordTimestamp.start,
+                endTime: wordTimestamp.end
+            )
+            
+            let word = wordTimestamp.text
+            let firstChar = word.first
+            let isUppercase = firstChar?.isUppercase == true
+            
+            if let wordRange = allText.range(of: word, range: textIndex..<allText.endIndex) {
+                var shouldStartNewParagraph = false
+                
+                if isUppercase && !currentParagraph.isEmpty {
+                    if !commonUppercaseWords.contains(word) {
+                        tagger.enumerateTags(in: wordRange, unit: .word, scheme: .nameType) { tag, _ in
+                            shouldStartNewParagraph = !(tag == .personalName || tag == .placeName || tag == .organizationName)
+                            return false
+                        }
+                        
+                        if shouldStartNewParagraph {
+                            tagger.enumerateTags(in: wordRange, unit: .word, scheme: .lexicalClass) { tag, _ in
+                                if tag == .noun && word.count > 3 {
+                                    shouldStartNewParagraph = false
+                                }
+                                return false
+                            }
+                        }
+                    }
+                }
+                
+                if shouldStartNewParagraph {
+                    newParagraphs.append(currentParagraph)
+                    currentParagraph = []
+                }
+                
+                textIndex = wordRange.upperBound
+            }
+            
+            currentParagraph.append(wordData)
+        }
+        
+        if !currentParagraph.isEmpty {
+            newParagraphs.append(currentParagraph)
+        }
+        
+        paragraphs = newParagraphs
+    }
+
     
     func startListening(for thought: Thought) {
         currentThought = thought
@@ -268,6 +332,18 @@ class ListeningViewModel: ObservableObject {
         }
         
         currentWordIndex = newIndex ?? previousWordIndex
+        
+        // emit feedback
+        if let idx = newIndex,
+           idx != previousWordIndex,
+           idx >= 0,
+           idx < allWords.count,
+           let thoughtId = currentThought?.id {
+            let word = allWords[idx].text
+            let chapterNum = chapterManager.currentChapter?.number ?? currentChapterNumber
+            sendFeedback(word: word, thoughtId: thoughtId, chapterNumber: chapterNum)
+        }
+
     }
     
     
