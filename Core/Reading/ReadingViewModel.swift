@@ -19,7 +19,6 @@ class ReadingViewModel: ObservableObject {
     @Published var displayedChapterCount = 0
     @Published var currentChapterIndex: Int?
     @Published var readingSpeed: Double = 0.3
-    @Published var sliderPosition = CGPoint(x: 100, y: 200)
     @Published var isLoadingChapter = false
     
     // Internal
