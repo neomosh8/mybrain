@@ -151,7 +151,7 @@ struct ReadingView: View {
                             }
                         }
                     ),
-                    in: 0.1...0.5
+                    in: 0.1...0.4
                 )
                 .accentColor(.primary)
                 .disabled(!canTogglePlayback)
