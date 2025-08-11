@@ -27,12 +27,6 @@ struct AnimatedSubtitleView: View {
                     }
                 }
             }
-            .onChange(of: listeningViewModel.allWords) { _, _ in
-                listeningViewModel.buildParagraphs()
-            }
-            .onAppear {
-                listeningViewModel.buildParagraphs()
-            }
         }
     }
 }
