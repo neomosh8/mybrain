@@ -17,9 +17,7 @@ struct ReadingView: View {
     @State private var showMenuPopup = false
     
     private var canTogglePlayback: Bool {
-        return !viewModel.isLoadingChapter &&
-        !viewModel.chapters.isEmpty &&
-        !isCheckingStatus
+        return !viewModel.chapters.isEmpty && !isCheckingStatus
     }
     
     private var playPauseIcon: String { viewModel.isPlaying ? "pause.fill" : "play.fill" }
