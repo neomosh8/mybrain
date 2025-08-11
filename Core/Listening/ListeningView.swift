@@ -180,10 +180,24 @@ struct ListeningView: View {
     
     private var listeningContent: some View {
         VStack(spacing: 20) {
-            AnimatedSubtitleView(
-                paragraphs: $viewModel.paragraphs,
-                currentWordIndex: $viewModel.currentWordIndex,
-            )
+            ScrollViewReader { proxy in
+                ScrollView {
+                    AnimatedWordsView(
+                        paragraphs: viewModel.paragraphs,
+                        currentWordIndex: viewModel.currentWordIndex,
+                        showOverlay: viewModel.currentWordIndex >= 0
+                    )
+                    .padding()
+                }
+                .onChange(of: viewModel.currentWordIndex) { _, newIndex in
+                    if newIndex >= 15 {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            proxy.scrollTo(newIndex, anchor: .center)
+                        }
+                    }
+                }
+            }
+            .background(Color("ParagraphBackground"))
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("NewChapterWordsFromAudio"))) { notification in
             handleNewChapterWords(notification)
