@@ -8,16 +8,25 @@ struct AnimatedParagraphView: View {
     var bottomPadding: CGFloat = 70
 
     var body: some View {
-        ScrollView {
-            AnimatedWordsView(
-                paragraphs: paragraphs,
-                currentWordIndex: currentWordIndex,
-                showOverlay: currentWordIndex >= 0,
-                spacing: spacing,
-                lineSpacing: lineSpacing,
-                bottomPadding: bottomPadding
-            )
-            .padding()
+        ScrollViewReader { proxy in
+            ScrollView {
+                AnimatedWordsView(
+                    paragraphs: paragraphs,
+                    currentWordIndex: currentWordIndex,
+                    showOverlay: currentWordIndex >= 0,
+                    spacing: spacing,
+                    lineSpacing: lineSpacing,
+                    bottomPadding: bottomPadding
+                )
+                .padding()
+            }
+            .onChange(of: currentWordIndex) { _, newIndex in
+                if newIndex >= 15 {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        proxy.scrollTo(newIndex, anchor: .center)
+                    }
+                }
+            }
         }
     }
 }
