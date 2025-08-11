@@ -175,7 +175,9 @@ class ListeningViewModel: ObservableObject {
         playerError = nil
         chapterManager.chapters.removeAll()
         chapterManager.currentChapter = nil
-        pendingChapterWords.removeAll() // Add this line
+        pendingChapterWords.removeAll()
+        allWords.removeAll()
+        paragraphs = []
     }
     
     private func fetchStreamingLinks(for thought: Thought) {
@@ -300,6 +302,8 @@ class ListeningViewModel: ObservableObject {
             allWords.append(contentsOf: newWords)
             allWords.sort { $0.start < $1.start }
             
+            buildParagraphs()
+
             print("🎵 Total words now: \(allWords.count)")
             print("🎵 First word: \(allWords.first?.text ?? "none"), Last word: \(allWords.last?.text ?? "none")")
             
