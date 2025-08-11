@@ -167,33 +167,13 @@ public struct AnimatedWordsView: View {
     
     // Overlay gating
     public var showOverlay: Bool = true
-    
-    // External state (optional). If nil, the view manages its own state.
-    private var wordFramesBinding: Binding<[Int: CGRect]>?
-    private var highlightFrameBinding: Binding<CGRect>?
-    
+        
     // Internal backing state when bindings are not provided
-    @State private var _wordFrames: [Int: CGRect] = [:]
-    @State private var _highlightFrame: CGRect = .zero
+    @State private var wordFrames: [Int: CGRect] = [:]
+    @State private var highlightFrame: CGRect = .zero
     
     // MARK: - Initializers
-    
-    /// Use this when the parent wants to **own** frames/highlightFrame (e.g., subtitle screen).
-    public init(
-        paragraphs: [[WordData]],
-        currentWordIndex: Int,
-        showOverlay: Bool,
-        wordFrames: Binding<[Int: CGRect]>,
-        highlightFrame: Binding<CGRect>
-    ) {
-        self.paragraphs = paragraphs
-        self.currentWordIndex = currentWordIndex
-        self.showOverlay = showOverlay
-        self.wordFramesBinding = wordFrames
-        self.highlightFrameBinding = highlightFrame
-    }
-    
-    /// Use this when the view can **manage its own** frames/highlightFrame (e.g., paragraph screen).
+
     public init(
         paragraphs: [[WordData]],
         currentWordIndex: Int,
@@ -202,8 +182,6 @@ public struct AnimatedWordsView: View {
         self.paragraphs = paragraphs
         self.currentWordIndex = currentWordIndex
         self.showOverlay = showOverlay
-        self.wordFramesBinding = nil
-        self.highlightFrameBinding = nil
     }
     
     // MARK: - Body
@@ -230,48 +208,20 @@ public struct AnimatedWordsView: View {
         }
         .coordinateSpace(name: "container")
         .onPreferenceChange(WordFrameKey.self) { new in
-            setWordFrames(new)
-            updateHighlightFrame()
+            wordFrames = new
+
+            if let frame = wordFrames[currentWordIndex] {
+                highlightFrame = frame.integral
+            } else {
+                highlightFrame = .zero
+            }
         }
         .onChange(of: currentWordIndex) { _, _ in
-            updateHighlightFrame()
-        }
-    }
-    
-    // MARK: - Local helpers
-    
-    // Accessors that unify internal state vs external bindings
-    private var wordFrames: [Int: CGRect] {
-        get { wordFramesBinding?.wrappedValue ?? _wordFrames }
-        nonmutating set {
-            if let b = wordFramesBinding {
-                b.wrappedValue = newValue
+            if let frame = wordFrames[currentWordIndex] {
+                highlightFrame = frame.integral
             } else {
-                _wordFrames = newValue
+                highlightFrame = .zero
             }
-        }
-    }
-    
-    private var highlightFrame: CGRect {
-        get { highlightFrameBinding?.wrappedValue ?? _highlightFrame }
-        nonmutating set {
-            if let b = highlightFrameBinding {
-                b.wrappedValue = newValue
-            } else {
-                _highlightFrame = newValue
-            }
-        }
-    }
-    
-    private func setWordFrames(_ new: [Int: CGRect]) {
-        wordFrames = new
-    }
-    
-    private func updateHighlightFrame() {
-        if let frame = wordFrames[currentWordIndex] {
-            highlightFrame = frame.integral
-        } else {
-            highlightFrame = .zero
         }
     }
 }
