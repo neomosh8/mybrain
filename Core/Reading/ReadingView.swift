@@ -91,10 +91,23 @@ struct ReadingView: View {
                 } else if viewModel.chapters.isEmpty {
                     loadingContentView
                 } else {
-                    AnimatedParagraphView(
-                        paragraphs: $viewModel.paragraphs,
-                        currentWordIndex: $viewModel.currentWordIndex,
-                    )
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            AnimatedWordsView(
+                                paragraphs: viewModel.paragraphs,
+                                currentWordIndex: viewModel.currentWordIndex,
+                                showOverlay: viewModel.currentWordIndex >= 0
+                            )
+                            .padding()
+                        }
+                        .onChange(of: viewModel.currentWordIndex) { _, newIndex in
+                            if newIndex >= 15 {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    proxy.scrollTo(newIndex, anchor: .center)
+                                }
+                            }
+                        }
+                    }
                     .background(Color("ParagraphBackground"))
                 }
                 
