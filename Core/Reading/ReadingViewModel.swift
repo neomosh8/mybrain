@@ -271,7 +271,14 @@ class ReadingViewModel: ObservableObject {
         // Emit feedback once per word
         if let word = indexToWord[currentWordIndex] {
             let chapterNum = (currentChapterIndex ?? -1) + 1
-            sendFeedback(word: word, thoughtId: thoughtId, chapterNumber: chapterNum)
+            let feedbackValue = bluetoothService.processFeedback(word: word)
+            
+            feedbackBuffer.addFeedback(
+                word: word,
+                value: feedbackValue,
+                thoughtId: thoughtId,
+                chapterNumber: chapterNum
+            )
         }
         
         // Halfway trigger / end-of-chapter trigger based on ranges
