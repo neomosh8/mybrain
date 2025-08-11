@@ -114,6 +114,9 @@ class ReadingViewModel: ObservableObject {
         if displayedChapterCount == 1 {
             currentChapterIndex = 0
             isPlaying = true
+        }
+        
+        if isPlaying, animationTimer == nil {
             startTimerIfNeeded()
         }
     }
@@ -240,10 +243,7 @@ class ReadingViewModel: ObservableObject {
     private func startTimerIfNeeded() {
         guard animationTimer == nil else { return }
         guard totalWordCount > 0 else { return }
-        
-        // Start from the beginning if needed
-        if currentWordIndex < 0 { currentWordIndex = 0 }
-        
+                
         let timer = DispatchSource.makeTimerSource(queue: DispatchQueue.global(qos: .userInteractive))
         timer.schedule(deadline: .now() + readingSpeed, repeating: readingSpeed)
         timer.setEventHandler { [weak self] in
@@ -264,7 +264,12 @@ class ReadingViewModel: ObservableObject {
         currentWordIndex += 1
         
         if currentWordIndex >= totalWordCount {
-            onChapterFinished(currentChapterIndex ?? (chapters.last?.chapterNumber ?? 0))
+            if isLastChapter {
+                onChapterFinished(currentChapterIndex ?? (chapters.last?.chapterNumber ?? 0))
+            } else {
+                stopTimer()
+            }
+
             return
         }
         
