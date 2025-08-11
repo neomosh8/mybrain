@@ -288,7 +288,7 @@ class ReadingViewModel: ObservableObject {
         
         // Halfway trigger / end-of-chapter trigger based on ranges
         if let (chapNum, range) = chapterAndRange(containing: currentWordIndex) {
-            let halfway = range.lowerBound + (range.count / 2)
+            let halfway = range.lowerBound + (range.count * 2 / 3)
             if currentWordIndex == halfway { onChapterHalfway(chapNum) }
             if currentWordIndex == range.upperBound - 1 {
                 if let idx = chapters.firstIndex(where: { ($0.chapterNumber ?? 0) == chapNum }) {
