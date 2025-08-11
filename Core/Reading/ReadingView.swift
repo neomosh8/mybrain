@@ -7,7 +7,7 @@ struct ReadingView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel = ReadingViewModel()
     @StateObject private var statusPickerController = BottomSheetPickerController()
-        
+    
     @State private var thoughtStatus: ThoughtStatus?
     @State private var isCheckingStatus = true
     @State private var cancellables = Set<AnyCancellable>()
@@ -18,17 +18,12 @@ struct ReadingView: View {
     
     private var canTogglePlayback: Bool {
         return !viewModel.isLoadingChapter &&
-               !viewModel.chapters.isEmpty &&
-               !isCheckingStatus
+        !viewModel.chapters.isEmpty &&
+        !isCheckingStatus
     }
-
-    private var playPauseIcon: String {
-        return viewModel.isPlaying ? "pause.fill" : "play.fill"
-    }
-
-    private var playPauseText: String {
-        return viewModel.isPlaying ? "Pause" : "Play"
-    }
+    
+    private var playPauseIcon: String { viewModel.isPlaying ? "pause.fill" : "play.fill" }
+    private var playPauseText: String { viewModel.isPlaying ? "Pause" : "Play" }
     
     var body: some View {
         ZStack {
@@ -36,48 +31,30 @@ struct ReadingView: View {
                 loadingStatusView
             } else {
                 mainReadingInterface
-                
                 statusPickerOverlay
             }
         }
         .appNavigationBar(
             title: thought.name,
             subtitle: chapterSubtitle,
-            onBackTap: {
-                dismiss()
-            }
+            onBackTap: { dismiss() }
         ) {
             PopupMenuButton(isPresented: $showMenuPopup)
         }
-        .overlay{
+        .overlay {
             if showMenuPopup {
                 PopupMenu(
                     isPresented: $showMenuPopup,
                     menuItems: [
-                        PopupMenuItem(
-                            icon: "chart.bar.xaxis",
-                            title: "Focus Chart",
-                            isOn: showFocusChart
-                        ) {
-                            showFocusChart.toggle()
-                        },
-                        PopupMenuItem(
-                            icon: "speedometer",
-                            title: "Speed Slider",
-                            isOn: showSpeedSlider
-                        ) {
-                            showSpeedSlider.toggle()
-                        }
+                        PopupMenuItem(icon: "chart.bar.xaxis", title: "Focus Chart", isOn: showFocusChart) { showFocusChart.toggle() },
+                        PopupMenuItem(icon: "speedometer", title: "Speed Slider", isOn: showSpeedSlider) { showSpeedSlider.toggle() }
                     ]
                 )
             }
         }
-        .onAppear {
-            checkThoughtStatus()
-        }
+        .onAppear { checkThoughtStatus() }
         .onDisappear {
             viewModel.cleanup()
-            
             NotificationCenter.default.post(
                 name: .thoughtProgressUpdated,
                 object: nil,
@@ -86,31 +63,21 @@ struct ReadingView: View {
         }
     }
     
-    // MARK: - Computed Properties
-    
-    private var floatingFocusChart: some View {
-        FloatingFocusChart()
-            .zIndex(1000)
-    }
+    // MARK: - Computed
+    private var floatingFocusChart: some View { FloatingFocusChart().zIndex(1000) }
     
     private var chapterSubtitle: String {
         guard let status = thoughtStatus,
-              let currentChapter = viewModel.currentChapterIndex else {
-            return "Loading..."
-        }
-        
+              let currentChapter = viewModel.currentChapterIndex else { return "Loading..." }
         let currentChapterNumber = currentChapter + 1
         let totalChapters = status.progress.total
-        
         return "Chapter \(currentChapterNumber) of \(totalChapters)"
     }
     
     private var loadingStatusView: some View {
         VStack(spacing: 16) {
-            ProgressView()
-                .tint(.gray)
-            Text("Checking reading status...")
-                .foregroundColor(.black)
+            ProgressView().tint(.gray)
+            Text("Checking reading status...").foregroundColor(.black)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color("EInkBackground"))
@@ -124,16 +91,15 @@ struct ReadingView: View {
                 } else if viewModel.chapters.isEmpty {
                     loadingContentView
                 } else {
-                    readingContent
+                    AnimatedParagraphView(
+                        paragraphs: $viewModel.paragraphs,
+                        currentWordIndex: $viewModel.currentWordIndex,
+                    )
+                    .background(Color("ParagraphBackground"))
                 }
                 
-                if showSpeedSlider {
-                    readingSpeedControl
-                }
-                
-                if showFocusChart {
-                    floatingFocusChart
-                }
+                if showSpeedSlider { readingSpeedControl }
+                if showFocusChart { floatingFocusChart }
             }
             .frame(maxHeight: .infinity)
             
@@ -149,61 +115,36 @@ struct ReadingView: View {
                     .tint(.gray)
                     .foregroundColor(.black)
             } else {
-                Button("Load Content") {
-                    viewModel.requestNextChapter()
-                }
-                .buttonStyle(.borderedProminent)
+                Button("Load Content") { viewModel.requestNextChapter() }
+                    .buttonStyle(.borderedProminent)
             }
         }
         .padding()
         .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(.ultraThinMaterial)
+            RoundedRectangle(cornerRadius: 10).fill(.ultraThinMaterial)
         )
-    }
-    
-    private var readingContent: some View {
-        ScrollView {
-            LazyVStack(spacing: 1) {
-                ForEach(0..<viewModel.displayedChapterCount, id: \.self) { index in
-                    AnimatedParagraphView(
-                        htmlString: viewModel.chapters[index].content ?? "",
-                        thoughtId: thought.id,
-                        chapterNumber: viewModel.chapters[index].chapterNumber ?? 0,
-                        wordInterval: $viewModel.readingSpeed,
-                        isCurrentChapter: viewModel.currentChapterIndex == index,
-                        onFinished: {
-                            viewModel.onChapterFinished(index)
-                        },
-                        onHalfway: {
-                            viewModel.onChapterHalfway()
-                        }
-                    )
-                    .background(Color("ParagraphBackground"))
-                }
-            }
-        }
     }
     
     private var readingSpeedControl: some View {
         VStack {
             Spacer()
-            
             HStack {
-                Image(systemName: "tortoise")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                Slider(value: Binding(
-                    get: { 0.6 - viewModel.readingSpeed },
-                    set: { viewModel.readingSpeed = 0.6 - $0 }
-                ), in: 0.1...0.5)
+                Image(systemName: "tortoise").font(.caption).foregroundColor(.secondary)
+                Slider(
+                    value: Binding(
+                        get: { 0.6 - viewModel.readingSpeed },
+                        set: { viewModel.readingSpeed = 0.6 - $0
+                            if viewModel.isPlaying {
+                                viewModel.togglePlayback()
+                                viewModel.togglePlayback()
+                            }
+                        }
+                    ),
+                    in: 0.1...0.5
+                )
                 .accentColor(.primary)
                 .disabled(!canTogglePlayback)
-                
-                Image(systemName: "hare")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                Image(systemName: "hare").font(.caption).foregroundColor(.secondary)
             }
             .opacity(canTogglePlayback ? 1.0 : 0.6)
             .animation(.easeInOut(duration: 0.2), value: canTogglePlayback)
@@ -221,78 +162,52 @@ struct ReadingView: View {
     
     private var bottomControlBar: some View {
         HStack(spacing: 16) {
-            Button(action: {
-                // TODO: Add bookmark functionality
-            }) {
+            Button(action: {}) {
                 HStack(spacing: 6) {
-                    Image(systemName: "bookmark")
-                        .font(.system(size: 16, weight: .medium))
-                    Text("Bookmark")
-                        .font(.system(size: 15, weight: .medium))
+                    Image(systemName: "bookmark").font(.system(size: 16, weight: .medium))
+                    Text("Bookmark").font(.system(size: 15, weight: .medium))
                 }
                 .foregroundColor(Color(.black).opacity(0.9))
                 .frame(width: 120, height: 40)
                 .background(
                     RoundedRectangle(cornerRadius: 8)
                         .fill(Color(.systemGray6))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color(.systemGray4), lineWidth: 0.5)
-                        )
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color(.systemGray4), lineWidth: 0.5))
                 )
             }
             .opacity(0)
             
-            Button(action: {
+            Button {
                 if canTogglePlayback {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        viewModel.togglePlayback()
-                    }
+                    withAnimation(.easeInOut(duration: 0.2)) { viewModel.togglePlayback() }
                 }
-            }) {
+            } label: {
                 HStack(spacing: 6) {
-                    ZStack {
-                        Image(systemName: playPauseIcon)
-                            .font(.system(size: 16, weight: .medium))
-                            .animation(.easeInOut(duration: 0.1), value: playPauseIcon)
-                    }
-                    .frame(width: 10)
-                    
-                    ZStack {
-                        Text(playPauseText)
-                            .font(.system(size: 15, weight: .medium))
-                            .animation(.easeInOut(duration: 0.1), value: playPauseText)
-                    }
-                    .frame(width: 50)
+                    ZStack { Image(systemName: playPauseIcon).font(.system(size: 16, weight: .medium)) }
+                        .frame(width: 10)
+                    ZStack { Text(playPauseText).font(.system(size: 15, weight: .medium)) }
+                        .frame(width: 50)
                 }
                 .foregroundColor(canTogglePlayback ? .white : .gray)
                 .frame(width: 90, height: 40)
                 .background(
                     RoundedRectangle(cornerRadius: 8)
                         .fill(canTogglePlayback ? Color.blue : Color.gray.opacity(0.3))
-                        .animation(.easeInOut(duration: 0.1), value: canTogglePlayback)
                 )
             }
             .disabled(!canTogglePlayback)
             
-            Button(action: {
-                // TODO: Add chapters functionality
-            }) {
+            Button(action: {}) {
                 HStack(spacing: 6) {
-                    Image(systemName: "list.bullet")
-                        .font(.system(size: 16, weight: .medium))
-                    Text("Chapters")
-                        .font(.system(size: 15, weight: .medium))
+                    Image(systemName: "list.bullet").font(.system(size: 16, weight: .medium))
+                    Text("Chapters").font(.system(size: 15, weight: .medium))
                 }
                 .foregroundColor(Color(.black).opacity(0.9))
                 .frame(width: 120, height: 40)
                 .background(
                     RoundedRectangle(cornerRadius: 8)
                         .fill(Color(.systemGray6))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color(.systemGray4), lineWidth: 0.5)
-                        )
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color(.systemGray4), lineWidth: 0.5))
                 )
             }
             .opacity(0)
@@ -306,23 +221,18 @@ struct ReadingView: View {
                 .ignoresSafeArea(edges: .bottom)
         )
     }
-
+    
     private var statusPickerOverlay: some View {
         BottomSheetPicker(
             title: "Reading Options",
             controller: statusPickerController,
-            onDismiss: {
-                setupReading()
-            }
+            onDismiss: { setupReading() }
         ) {
             VStack(spacing: 0) {
                 statusMessage
                     .padding(.horizontal, 20)
                     .padding(.vertical, 16)
-                
-                Divider()
-                    .background(Color.secondary.opacity(0.2))
-                
+                Divider().background(Color.secondary.opacity(0.2))
                 actionButtons
                     .padding(.horizontal, 20)
                     .padding(.vertical, 16)
@@ -341,30 +251,22 @@ struct ReadingView: View {
         VStack(spacing: 12) {
             if thoughtStatus?.status == "in_progress" {
                 Button("Resume Reading") {
-                    statusPickerController.close()
-                    setupReading()
+                    statusPickerController.close(); setupReading()
                 }
                 .buttonStyle(PrimaryActionButtonStyle())
                 
-                Button("Restart from Beginning") {
-                    resetReadingProgress()
-                }
-                .buttonStyle(SecondaryActionButtonStyle())
+                Button("Restart from Beginning") { resetReadingProgress() }
+                    .buttonStyle(SecondaryActionButtonStyle())
             } else {
-                Button("Start Reading") {
-                    resetReadingProgress()
-                }
-                .buttonStyle(PrimaryActionButtonStyle())
+                Button("Start Reading") { resetReadingProgress() }
+                    .buttonStyle(PrimaryActionButtonStyle())
             }
         }
     }
     
-    // MARK: - Helper Properties
+    // MARK: - Networking helpers (unchanged)
     private var overlayMessage: String {
-        guard let status = thoughtStatus?.status else {
-            return "Ready to start reading \"\(thought.name)\""
-        }
-        
+        guard let status = thoughtStatus?.status else { return "Ready to start reading \"\(thought.name)\"" }
         switch status {
         case "in_progress":
             return "You're in the middle of reading \"\(thought.name)\". Would you like to continue where you left off?"
@@ -375,15 +277,12 @@ struct ReadingView: View {
         }
     }
     
-    // MARK: - Action Methods
     private func checkThoughtStatus() {
         isCheckingStatus = true
-        
         networkService.thoughts.getThoughtStatus(thoughtId: thought.id)
             .receive(on: DispatchQueue.main)
             .sink { result in
                 self.isCheckingStatus = false
-                
                 switch result {
                 case .success(let status):
                     self.thoughtStatus = status
@@ -392,21 +291,17 @@ struct ReadingView: View {
                     } else {
                         self.setupReading()
                     }
-                case .failure(let error):
-                    print(error)
+                case .failure:
                     self.setupReading()
                 }
             }
             .store(in: &cancellables)
     }
     
-    private func setupReading() {
-        viewModel.setup(for: thought)
-    }
+    private func setupReading() { viewModel.setup(for: thought) }
     
     private func resetReadingProgress() {
         statusPickerController.close()
-        
         networkService.thoughts.resetThoughtProgress(thoughtId: thought.id)
             .receive(on: DispatchQueue.main)
             .sink { result in
