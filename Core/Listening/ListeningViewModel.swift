@@ -46,6 +46,8 @@ class ListeningViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private var playbackProgressObserver: Any?
     private var playerItemObservation: AnyCancellable?
+    private var timeControlObs: AnyCancellable?
+    private var accessLogObs: AnyCancellable?
     private var startTime: Date?
     private var searchIndex: Int = 0
     private var wordStarts: [Double] = []
@@ -252,18 +254,21 @@ class ListeningViewModel: ObservableObject {
         }
         
         masterPlaylistURL = url
-        
         cleanupPlayer()
+        
+        configureAudioSession()
         
         let playerItem = AVPlayerItem(url: url)
         player = AVPlayer(playerItem: playerItem)
         player?.automaticallyWaitsToMinimizeStalling = false
 
         setupPlayerObservations()
-        configureAudioSession()
         
         listeningState = .ready
         startTime = Date()
+        
+        isPlaying = true
+        player?.playImmediately(atRate: 1.0)
         
         resumePlayback()
         
@@ -413,15 +418,28 @@ class ListeningViewModel: ObservableObject {
         playerItemObservation = player.currentItem?.publisher(for: \.status)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] status in
-                switch status {
-                case .failed:
-                    self?.playerError = player.currentItem?.error
-                case .readyToPlay:
-                    break
-                default:
-                    break
+                if status == .readyToPlay, self?.isPlaying == true {
+                    self?.player?.play()
                 }
             }
+        
+        timeControlObs = player.publisher(for: \.timeControlStatus)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] status in
+                guard let self else { return }
+                if self.isPlaying, status != .playing {
+                    self.player?.play()
+                }
+            }
+        
+        accessLogObs = NotificationCenter.default.publisher(
+            for: .AVPlayerItemNewAccessLogEntry,
+            object: player.currentItem
+        )
+        .receive(on: DispatchQueue.main)
+        .sink { [weak self] _ in
+            if self?.isPlaying == true { self?.player?.play() }
+        }
         
         let timeObserver = player.addPeriodicTimeObserver(
             forInterval: CMTime(seconds: 0.1, preferredTimescale: CMTimeScale(NSEC_PER_SEC)),
