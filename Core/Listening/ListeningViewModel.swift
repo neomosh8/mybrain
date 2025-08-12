@@ -8,7 +8,6 @@ import NaturalLanguage
 class ListeningViewModel: ObservableObject {
     // MARK: - Audio Player State
     @Published var player: AVPlayer?
-    @Published var masterPlaylistURL: URL?
     @Published var isPlaying = false
     @Published var isFetchingLinks = false
     @Published var playerError: Error?
@@ -38,16 +37,14 @@ class ListeningViewModel: ObservableObject {
 
     // MARK: - Thought Context
     private var currentThought: Thought?
-    
-    // MARK: - Dependencies
-    private let backgroundManager = BackgroundManager.shared
-    
+        
     // MARK: - Private State
+    private var didEndToken: NSObjectProtocol?
     private var cancellables = Set<AnyCancellable>()
     private var playbackProgressObserver: Any?
     private var playerItemObservation: AnyCancellable?
     private var timeControlObs: AnyCancellable?
-    private var startTime: Date?
+    private var accessLogObs: AnyCancellable?
     private var searchIndex: Int = 0
     private var wordStarts: [Double] = []
     
@@ -252,7 +249,6 @@ class ListeningViewModel: ObservableObject {
             return
         }
         
-        masterPlaylistURL = url
         cleanupPlayer()
         
         configureAudioSession()
@@ -264,13 +260,10 @@ class ListeningViewModel: ObservableObject {
         setupPlayerObservations()
         
         listeningState = .ready
-        startTime = Date()
         
         isPlaying = true
         player?.playImmediately(atRate: 1.0)
-        
-        resumePlayback()
-        
+                
         // Send any pending words now that player is ready
         if !pendingChapterWords.isEmpty {
             print("🎵 Sending \(pendingChapterWords.count) pending words from Chapter 1")
@@ -317,7 +310,7 @@ class ListeningViewModel: ObservableObject {
             print("🎵 Total words now: \(allWords.count)")
             print("🎵 First word: \(allWords.first?.text ?? "none"), Last word: \(allWords.last?.text ?? "none")")
             
-            if newWords.first != nil {
+            if !newWords.isEmpty {
                 lastUpdateTime = -1
                 
                 DispatchQueue.main.async {
@@ -394,6 +387,11 @@ class ListeningViewModel: ObservableObject {
             playbackProgressObserver = nil
         }
         
+        if let token = didEndToken {
+            NotificationCenter.default.removeObserver(token)
+            didEndToken = nil
+        }
+        
         playerItemObservation?.cancel()
         playerItemObservation = nil
         
@@ -431,6 +429,15 @@ class ListeningViewModel: ObservableObject {
                 }
             }
         
+        accessLogObs = NotificationCenter.default.publisher(
+            for: .AVPlayerItemNewAccessLogEntry,
+            object: player.currentItem
+        )
+        .receive(on: DispatchQueue.main)
+        .sink { [weak self] _ in
+            if self?.isPlaying == true { self?.player?.play() }
+        }
+        
         let timeObserver = player.addPeriodicTimeObserver(
             forInterval: CMTime(seconds: 0.1, preferredTimescale: CMTimeScale(NSEC_PER_SEC)),
             queue: .main
@@ -441,7 +448,7 @@ class ListeningViewModel: ObservableObject {
         }
         playbackProgressObserver = timeObserver
         
-        NotificationCenter.default.addObserver(
+        didEndToken = NotificationCenter.default.addObserver(
             forName: .AVPlayerItemDidPlayToEndTime,
             object: player.currentItem,
             queue: .main
@@ -498,7 +505,6 @@ class ListeningViewModel: ObservableObject {
     private func handleChapterAudioResponse(data: [String: Any]?) {
         guard let data = data,
               let chapterAudioData = ChapterAudioResponseData(from: data) else {
-            print("❌ Failed to parse chapter_audio data")
             return
         }
         
@@ -528,8 +534,6 @@ class ListeningViewModel: ObservableObject {
         }
         
         if let words = chapterAudioData.words {
-            print("🎵 Sending \(words.count) words to subtitle system")
-            // Adjust word timings to account for previous chapters
             let adjustedWords = words.compactMap { wordData -> [String: Any]? in
                 guard let text = wordData["text"] as? String,
                       let start = wordData["start"] as? Double,
@@ -537,7 +541,6 @@ class ListeningViewModel: ObservableObject {
                     return nil
                 }
                 
-                // Add the chapter offset to word timings
                 let chapterOffset = durationsSoFar - (chapterAudioData.audioDuration ?? 0.0)
                 
                 return [
@@ -546,7 +549,7 @@ class ListeningViewModel: ObservableObject {
                     "end": end + chapterOffset
                 ]
             }
-            // If player is ready, send immediately
+
             if player != nil {
                 DispatchQueue.main.async {
                     NotificationCenter.default.post(
@@ -556,7 +559,6 @@ class ListeningViewModel: ObservableObject {
                     )
                 }
             } else {
-                print("🎵 Player not ready, storing words for later")
                 pendingChapterWords = adjustedWords
             }
         }
