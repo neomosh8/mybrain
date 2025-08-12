@@ -1,10 +1,14 @@
 import SwiftUI
 import SwiftData
 
+enum MainTab: Int, Hashable {
+    case home = 0, profile = 1, device = 2, settings = 3
+}
+
 struct MainTabView: View {
     @Environment(\.modelContext) private var modelContext
-    @State private var selectedTab = 0
-    
+
+    @State private var selectedTab: MainTab = .home
     @State private var thoughtsViewModel: ThoughtsViewModel?
     
     var body: some View {
@@ -35,13 +39,13 @@ struct MainTabView: View {
     @ViewBuilder
     private func currentTabContent(thoughtsViewModel: ThoughtsViewModel) -> some View {
         switch selectedTab {
-        case 0:
+        case MainTab.home:
             NavigationStack {
                 HomeView(
                     thoughtsViewModel: thoughtsViewModel,
                     onNavigateToDevice: {
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            selectedTab = 2
+                            selectedTab = MainTab.device
                         }
                     }
                 )
@@ -50,12 +54,12 @@ struct MainTabView: View {
                     removal: .move(edge: .trailing).combined(with: .opacity)
                 ))
             }
-        case 1:
+        case MainTab.profile:
             NavigationStack {
                 ProfileView(
                     onNavigateToHome: {
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            selectedTab = 0
+                            selectedTab = MainTab.home
                         }
                     })
                 .transition(.asymmetric(
@@ -63,12 +67,12 @@ struct MainTabView: View {
                     removal: .move(edge: .trailing).combined(with: .opacity)
                 ))
             }
-        case 2:
+        case MainTab.device:
             NavigationStack {
                 DeviceView(
                     onNavigateToHome: {
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            selectedTab = 0
+                            selectedTab = MainTab.home
                         }
                     })
                     .transition(.asymmetric(
@@ -76,12 +80,12 @@ struct MainTabView: View {
                         removal: .move(edge: .trailing).combined(with: .opacity)
                     ))
             }
-        case 3:
+        case MainTab.settings:
             NavigationStack {
                 SettingsView(
                     onNavigateToHome: {
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            selectedTab = 0
+                            selectedTab = MainTab.home
                         }
                     })
                     .transition(.asymmetric(
@@ -95,7 +99,7 @@ struct MainTabView: View {
                     thoughtsViewModel: thoughtsViewModel,
                     onNavigateToDevice: {
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            selectedTab = 2
+                            selectedTab = MainTab.device
                         }
                     }
                 )
@@ -108,7 +112,7 @@ struct MainTabView: View {
             ForEach(TabItem.allCases, id: \.self) { tab in
                 Button(action: {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        selectedTab = tab.rawValue
+                        selectedTab = MainTab(rawValue: tab.rawValue) ?? .home
                     }
                 }) {
                     VStack(spacing: 4) {
@@ -124,13 +128,13 @@ struct MainTabView: View {
                                     .font(.system(size: 20, weight: .medium))
                             }
                         }
-                        .foregroundColor(selectedTab == tab.rawValue ? .white : .white.opacity(0.6))
+                        .foregroundColor(selectedTab == MainTab(rawValue: tab.rawValue) ? .white : .white.opacity(0.6))
                         .frame(width: 24, height: 24)
-                        .scaleEffect(selectedTab == tab.rawValue ? 1.1 : 1.0)
+                        .scaleEffect(selectedTab == MainTab(rawValue: tab.rawValue) ? 1.1 : 1.0)
                         
                         Text(tab.title)
                             .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(selectedTab == tab.rawValue ? .white : .white.opacity(0.6))
+                            .foregroundColor(selectedTab == MainTab(rawValue: tab.rawValue) ? .white : .white.opacity(0.6))
                     }
                     .frame(maxWidth: .infinity)
                 }
