@@ -13,24 +13,6 @@ enum ListeningState {
     case completed
 }
 
-// MARK: - Streaming Response Models
-
-struct StreamingLinksResponse {
-    let masterPlaylist: String
-    let audioPlaylist: String?
-    let subtitlesPlaylist: String?
-    
-    init?(from data: [String: Any]) {
-        guard let masterPlaylist = data["master_playlist"] as? String else {
-            return nil
-        }
-        
-        self.masterPlaylist = masterPlaylist
-        self.audioPlaylist = data["audio_playlist"] as? String
-        self.subtitlesPlaylist = data["subtitles_playlist"] as? String
-    }
-}
-
 struct ChapterResponse {
     let chapterNumber: Int
     let title: String?
@@ -48,24 +30,6 @@ struct ChapterResponse {
         self.audioDuration = data["audio_duration"] as? Double
         self.generationTime = data["generation_time"] as? Double
         self.isComplete = data["complete"] as? Bool ?? false
-    }
-}
-
-// MARK: - Audio Progress Tracking
-
-struct AudioProgress {
-    let currentTime: TimeInterval
-    let duration: TimeInterval
-    let chapterNumber: Int
-    let totalChapters: Int?
-    
-    var progress: Double {
-        guard duration > 0 else { return 0 }
-        return currentTime / duration
-    }
-    
-    var remainingTime: TimeInterval {
-        return max(0, duration - currentTime)
     }
 }
 
@@ -180,67 +144,6 @@ enum ListeningError: LocalizedError {
     }
 }
 
-// MARK: - Playback Configuration
-
-struct AudioPlaybackConfig {
-    let bufferDuration: TimeInterval
-    let chapterRequestBuffer: TimeInterval
-    let enableBackgroundPlayback: Bool
-    let enableLockScreenControls: Bool
-    
-    static let `default` = AudioPlaybackConfig(
-        bufferDuration: 30.0,
-        chapterRequestBuffer: 60.0,
-        enableBackgroundPlayback: true,
-        enableLockScreenControls: true
-    )
-}
-
-// MARK: - Subtitle Integration Models
-
-struct SubtitleSegment {
-    let startTime: TimeInterval
-    let endTime: TimeInterval
-    let text: String
-    let chapterNumber: Int
-    
-    var duration: TimeInterval {
-        return endTime - startTime
-    }
-    
-    func contains(time: TimeInterval) -> Bool {
-        return time >= startTime && time <= endTime
-    }
-}
-
-struct SubtitleSegmentLink: Equatable {
-    let urlString: String
-    let minStart: Double
-    let maxEnd: Double
-    
-    
-    static func == (lhs: SubtitleSegmentLink, rhs: SubtitleSegmentLink) -> Bool {
-        return lhs.urlString == rhs.urlString &&
-        lhs.minStart == rhs.minStart &&
-        lhs.maxEnd == rhs.maxEnd
-    }
-}
-
-struct SubtitlePlaylist {
-    let segments: [SubtitleSegment]
-    let totalDuration: TimeInterval
-    
-    func getActiveSubtitle(at time: TimeInterval) -> SubtitleSegment? {
-        return segments.first { $0.contains(time: time) }
-    }
-    
-    func getSubtitles(in range: ClosedRange<TimeInterval>) -> [SubtitleSegment] {
-        return segments.filter { subtitle in
-            subtitle.startTime <= range.upperBound && subtitle.endTime >= range.lowerBound
-        }
-    }
-}
-
 struct WordTimestamp: Equatable {
     let id = UUID()
     let start: Double
@@ -250,36 +153,5 @@ struct WordTimestamp: Equatable {
     
     static func == (lhs: WordTimestamp, rhs: WordTimestamp) -> Bool {
         return lhs.start == rhs.start && lhs.end == rhs.end && lhs.text == rhs.text
-    }
-}
-
-struct SubtitleSegmentData {
-    let paragraph: String
-    let words: [WordTimestamp]
-    let minStart: Double
-    let maxEnd: Double
-    
-    var duration: Double {
-        maxEnd - minStart
-    }
-}
-
-struct WordGroup: Identifiable {
-    let id = UUID()
-    let words: [WordTimestamp]
-    let startIndex: Int
-}
-
-extension Array where Element == WordTimestamp {
-    func createWordGroups(wordsPerGroup: Int = 15) -> [WordGroup] {
-        var groups: [WordGroup] = []
-        
-        for i in stride(from: 0, to: self.count, by: wordsPerGroup) {
-            let endIndex = Swift.min(i + wordsPerGroup, self.count)
-            let groupWords = Array(self[i..<endIndex])
-            groups.append(WordGroup(words: groupWords, startIndex: i))
-        }
-        
-        return groups
     }
 }
