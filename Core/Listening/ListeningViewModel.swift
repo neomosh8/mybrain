@@ -566,17 +566,9 @@ class ListeningViewModel: ObservableObject {
                     )
                 }
             } else {
-                // Store for later when player is ready
                 print("🎵 Player not ready, storing words for later")
                 pendingChapterWords = adjustedWords
             }
-        }
-        
-        print("🎵 Debug - Player exists: \(player != nil)")
-        print("🎵 Debug - isPlaying: \(isPlaying)")
-        print("🎵 Debug - isCurrentlyStalled: \(isCurrentlyStalled)")
-        if let player = player {
-            print("🎵 Debug - Player rate: \(player.rate)")
         }
 
         if let player = player,
@@ -585,9 +577,7 @@ class ListeningViewModel: ObservableObject {
             print("🎵 Player is stalled but new chapter \(receivedChapterNumber) is ready, resuming playback...")
             
             isCurrentlyStalled = false
-            
-            print("🎵 Forcing playback to continue...")
-            
+                        
             player.play()
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
@@ -613,8 +603,6 @@ class ListeningViewModel: ObservableObject {
                             }
                         }
                     }
-                } else {
-                    print("🎵 ✅ Playback resumed successfully")
                 }
             }
         }
