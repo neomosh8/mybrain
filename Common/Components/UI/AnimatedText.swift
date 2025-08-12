@@ -136,7 +136,6 @@ public struct AnimatedWordsView: View {
     public var showOverlay: Bool = true
     
     // Internal backing state when bindings are not provided
-    @State private var wordFrames: [Int: CGRect] = [:]
     @State private var highlightFrame: CGRect = .zero
     
     // MARK: - Initializers
@@ -165,8 +164,20 @@ public struct AnimatedWordsView: View {
                         ForEach(paragraphs[pIndex], id: \.originalIndex) { wordData in
                             let isHighlighted = (wordData.originalIndex == currentWordIndex)
                             Text(wordData.attributedString(highlighted: isHighlighted))
-                                .captureWordFrame(index: wordData.originalIndex, in: "container")
                                 .id(wordData.originalIndex)
+                                .background(
+                                    Group {
+                                        if isHighlighted {
+                                            GeometryReader { proxy in
+                                                Color.clear
+                                                    .preference(
+                                                        key: WordFrameKey.self,
+                                                        value: [wordData.originalIndex: proxy.frame(in: .named("container")).integral]
+                                                    )
+                                            }
+                                        }
+                                    }
+                                )
                         }
                     }
                 }
@@ -175,20 +186,12 @@ public struct AnimatedWordsView: View {
         }
         .coordinateSpace(name: "container")
         .onPreferenceChange(WordFrameKey.self) { new in
-            wordFrames = new
-            
-            if let frame = wordFrames[currentWordIndex] {
+            if let frame = new[currentWordIndex] {
                 highlightFrame = frame.integral
-            } else {
-                highlightFrame = .zero
             }
         }
         .onChange(of: currentWordIndex) { _, _ in
-            if let frame = wordFrames[currentWordIndex] {
-                highlightFrame = frame.integral
-            } else {
-                highlightFrame = .zero
-            }
+            if highlightFrame == .zero { }
         }
     }
 }
