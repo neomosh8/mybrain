@@ -255,7 +255,7 @@ class ListeningViewModel: ObservableObject {
         
         let playerItem = AVPlayerItem(url: url)
         player = AVPlayer(playerItem: playerItem)
-        player?.automaticallyWaitsToMinimizeStalling = false
+        player?.automaticallyWaitsToMinimizeStalling = true
 
         setupPlayerObservations()
         
