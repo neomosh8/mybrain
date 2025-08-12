@@ -127,15 +127,9 @@ public struct WordData: Identifiable, Hashable {
 // MARK: - Word-Flow View
 public struct AnimatedWordsView: View {
     let bottomPadding: CGFloat = 50
-    
-    // Data / state
     public let paragraphs: [[WordData]]
     public let currentWordIndex: Int
-    
-    // Overlay gating
     public var showOverlay: Bool = true
-    
-    // Internal backing state when bindings are not provided
     @State private var highlightFrame: CGRect = .zero
     
     // MARK: - Initializers
