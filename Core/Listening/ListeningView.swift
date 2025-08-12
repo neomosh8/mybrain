@@ -19,6 +19,7 @@ struct ListeningView: View {
     @State private var showDurationTimer = true
     @State private var showMenuPopup = false
     @State private var previousWordIndex: Int = -1
+    @State private var lastScrollTime: Date = .distantPast
     
     private var canTogglePlayback: Bool {
         return !viewModel.isFetchingLinks &&
@@ -190,11 +191,21 @@ struct ListeningView: View {
                     .padding()
                 }
                 .onChange(of: viewModel.currentWordIndex) { _, newIndex in
-                    if newIndex >= 15 {
-                        withAnimation(.easeInOut(duration: 0.3)) {
+                    guard newIndex >= 15 else { return }
+                    let now = Date()
+
+                    guard now.timeIntervalSince(lastScrollTime) > 0.16 else { return }
+                    lastScrollTime = now
+
+                    let animate = !viewModel.isCurrentlyStalled
+                    if animate {
+                        withAnimation(.easeInOut(duration: 0.25)) {
                             proxy.scrollTo(newIndex, anchor: .center)
                         }
+                    } else {
+                        proxy.scrollTo(newIndex, anchor: .center)
                     }
+
                 }
             }
             .background(Color("ParagraphBackground"))
