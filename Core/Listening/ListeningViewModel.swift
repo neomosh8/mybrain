@@ -34,8 +34,8 @@ class ListeningViewModel: ObservableObject {
     private var requestedChapters: Set<Int> = []
     @Published var currentChapterNumber: Int = 1
     private var pendingChapterWords: [[String: Any]] = []
-    private var isCurrentlyStalled = false
-    
+    @Published var isCurrentlyStalled = false
+
     // MARK: - Thought Context
     private var currentThought: Thought?
     
@@ -47,6 +47,8 @@ class ListeningViewModel: ObservableObject {
     private var playbackProgressObserver: Any?
     private var playerItemObservation: AnyCancellable?
     private var startTime: Date?
+    private var searchIndex: Int = 0
+    private var wordStarts: [Double] = []
     
     init() {
         setupWebSocketSubscriptions()
@@ -255,7 +257,8 @@ class ListeningViewModel: ObservableObject {
         
         let playerItem = AVPlayerItem(url: url)
         player = AVPlayer(playerItem: playerItem)
-        
+        player?.automaticallyWaitsToMinimizeStalling = false
+
         setupPlayerObservations()
         configureAudioSession()
         
@@ -301,6 +304,9 @@ class ListeningViewModel: ObservableObject {
         if !newWords.isEmpty {
             allWords.append(contentsOf: newWords)
             allWords.sort { $0.start < $1.start }
+            wordStarts = allWords.map { $0.start }
+            if currentWordIndex >= 0 { searchIndex = currentWordIndex }
+            else { searchIndex = min(searchIndex, max(allWords.count - 1, 0)) }
             
             buildParagraphs()
 
@@ -321,42 +327,61 @@ class ListeningViewModel: ObservableObject {
         }
     }
     
-    func updateCurrentTime(_ globalTime: Double) {
-        guard abs(globalTime - lastUpdateTime) > 0.05 else { return }
-        lastUpdateTime = globalTime
-        
-        let previousWordIndex = currentWordIndex
-        
-        let newIndex = allWords.firstIndex { word in
-            if word.start == word.end {
-                return abs(globalTime - word.start) < 0.05
-            } else {
-                return globalTime >= word.start && globalTime <= word.end
+    func updateCurrentTime(_ t: Double) {
+        // keep the existing 50ms gate if you like
+        guard abs(t - lastUpdateTime) > 0.08 else { return }
+        lastUpdateTime = t
+        guard !allWords.isEmpty else { return }
+
+        // fast path: advance forward
+        var i = min(searchIndex, allWords.count - 1)
+        if t >= allWords[i].end {
+            // walk forward until we enclose t or pass it
+            while i + 1 < allWords.count, t >= allWords[i].end { i += 1 }
+            if allWords[i].start <= t, t <= allWords[i].end {
+                applyIndexIfChanged(i, at: t); return
+            }
+            // overshot t → fall back to local binary search around i
+        } else if t < allWords[i].start {
+            // time moved backwards (scrub/seek) → binary search
+            i = insertionIndex(in: wordStarts, for: t)
+            i = max(0, min(i, allWords.count - 1))
+        }
+        // small local window scan around i
+        let lo = max(0, i - 2), hi = min(allWords.count - 1, i + 2)
+        for j in lo...hi {
+            let w = allWords[j]
+            if (w.start == w.end && abs(t - w.start) < 0.08) || (t >= w.start && t <= w.end) {
+                applyIndexIfChanged(j, at: t); return
             }
         }
-        
-        currentWordIndex = newIndex ?? previousWordIndex
-        
-        // emit feedback
-        if let idx = newIndex,
-           idx != previousWordIndex,
-           idx >= 0,
-           idx < allWords.count,
-           let thoughtId = currentThought?.id {
-            let word = allWords[idx].text
-            let chapterNum = chapterManager.currentChapter?.number ?? currentChapterNumber
-            let feedbackValue = bluetoothService.processFeedback(word: word)
-            
-            feedbackBuffer.addFeedback(
-                word: word,
-                value: feedbackValue,
-                thoughtId: thoughtId,
-                chapterNumber: chapterNum
-            )
-        }
-
+        // no change
     }
-    
+
+    @inline(__always)
+    private func insertionIndex(in sorted: [Double], for x: Double) -> Int {
+        var l = 0, r = sorted.count
+        while l < r {
+            let m = (l + r) >> 1
+            if sorted[m] < x { l = m + 1 } else { r = m }
+        }
+        return l
+    }
+
+    @inline(__always)
+    private func applyIndexIfChanged(_ idx: Int, at t: Double) {
+        let prev = currentWordIndex
+        if idx != prev {
+            currentWordIndex = idx
+            // emit feedback only when index changed (existing logic)
+            if idx >= 0, idx < allWords.count, let thoughtId = currentThought?.id {
+                let word = allWords[idx].text
+                let chapterNum = chapterManager.currentChapter?.number ?? currentChapterNumber
+                let v = bluetoothService.processFeedback(word: word)
+                feedbackBuffer.addFeedback(word: word, value: v, thoughtId: thoughtId, chapterNumber: chapterNum)
+            }
+        }
+    }
     
     
     private func cleanupPlayer() {
@@ -419,12 +444,11 @@ class ListeningViewModel: ObservableObject {
         }
         
         NotificationCenter.default.publisher(for: AVPlayerItem.playbackStalledNotification)
-            .sink { _ in
+            .sink { [weak self] _ in
                 print("🎵 Playback stalled (likely waiting for next chapter)")
-                self.isCurrentlyStalled = true
+                self?.isCurrentlyStalled = true
             }
             .store(in: &cancellables)
-
     }
     
     private func monitorPlaybackProgress(currentTime: CMTime) {
@@ -490,7 +514,7 @@ class ListeningViewModel: ObservableObject {
             )
             chapterManager.addChapter(chapterInfo)
             
-            let requestDelay = audioDuration - generationTime
+            let requestDelay = audioDuration - generationTime * 2
             nextChapterRequestTime = durationsSoFar + requestDelay
             durationsSoFar += audioDuration
         }
@@ -565,6 +589,7 @@ class ListeningViewModel: ObservableObject {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                             if player.rate > 0 {
                                 print("🎵 ✅ Playback successfully resumed")
+                                self.isCurrentlyStalled = false
                             } else {
                                 print("🎵 ⚠️ Playback still stalled - HLS might need more time to update")
                             }
