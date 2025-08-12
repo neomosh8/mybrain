@@ -8,9 +8,7 @@ struct ListeningView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel = ListeningViewModel()
     @StateObject private var statusPickerController = BottomSheetPickerController()
-    
-    @EnvironmentObject var backgroundManager: BackgroundManager
-    
+        
     @State private var thoughtStatus: ThoughtStatus?
     @State private var isCheckingStatus = true
     @State private var cancellables = Set<AnyCancellable>()
@@ -18,7 +16,6 @@ struct ListeningView: View {
     @State private var showFocusChart = true
     @State private var showDurationTimer = true
     @State private var showMenuPopup = false
-    @State private var previousWordIndex: Int = -1
     @State private var lastScrollTime: Date = .distantPast
     
     private var canTogglePlayback: Bool {
