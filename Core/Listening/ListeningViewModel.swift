@@ -47,7 +47,6 @@ class ListeningViewModel: ObservableObject {
     private var playbackProgressObserver: Any?
     private var playerItemObservation: AnyCancellable?
     private var timeControlObs: AnyCancellable?
-    private var accessLogObs: AnyCancellable?
     private var startTime: Date?
     private var searchIndex: Int = 0
     private var wordStarts: [Double] = []
@@ -431,15 +430,6 @@ class ListeningViewModel: ObservableObject {
                     self.player?.play()
                 }
             }
-        
-        accessLogObs = NotificationCenter.default.publisher(
-            for: .AVPlayerItemNewAccessLogEntry,
-            object: player.currentItem
-        )
-        .receive(on: DispatchQueue.main)
-        .sink { [weak self] _ in
-            if self?.isPlaying == true { self?.player?.play() }
-        }
         
         let timeObserver = player.addPeriodicTimeObserver(
             forInterval: CMTime(seconds: 0.1, preferredTimescale: CMTimeScale(NSEC_PER_SEC)),
