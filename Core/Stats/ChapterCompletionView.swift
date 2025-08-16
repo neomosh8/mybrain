@@ -1,12 +1,11 @@
 import SwiftUI
 import Combine
 
-/// A simple struct to store each feedback data point for plotting.
 struct FeedbackPoint: Identifiable {
     let id = UUID()
-    let index: Int      // e.g. 1, 2, 3, ...
-    let label: String   // e.g. "example1"
-    let value: Double   // e.g. 0.7
+    let index: Int
+    let label: String
+    let value: Double
 }
 
 struct ChapterCompletionView: View {
