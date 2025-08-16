@@ -88,16 +88,14 @@ struct ListeningView: View {
                 userInfo: ["thoughtId": thought.id]
             )
         }
-        .overlay {
-            if viewModel.hasCompletedAllChapters {
-                ChapterCompletionView(
-                    thoughtId: thought.id,
-                    thoughtName: thought.name,
-                    onDismiss: {
-                        dismiss()
-                    }
-                )
-            }
+        .fullScreenCover(isPresented: .constant(viewModel.hasCompletedAllChapters)) {
+            ChapterCompletionView(
+                thoughtId: thought.id,
+                thoughtName: thought.name,
+                onDismiss: {
+                    dismiss()
+                }
+            )
         }
     }
     
