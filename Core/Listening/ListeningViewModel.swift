@@ -19,7 +19,7 @@ class ListeningViewModel: ObservableObject {
     
     // MARK: - Chapter Progress State
     @Published var lastChapterComplete = false
-    @Published var hasCompletedPlayback = false
+    @Published var hasCompletedAllChapters = false
     @Published var nextChapterRequestTime: Double?
     @Published var durationsSoFar: Double = 0.0
     
@@ -135,7 +135,7 @@ class ListeningViewModel: ObservableObject {
     
     func startListening(for thought: Thought) {
         currentThought = thought
-        hasCompletedPlayback = false
+        hasCompletedAllChapters = false
         resetState()
         fetchStreamingLinks(for: thought)
     }
@@ -169,7 +169,7 @@ class ListeningViewModel: ObservableObject {
         requestedChapters.removeAll()
         currentChapterNumber = 1
         lastChapterComplete = false
-        hasCompletedPlayback = false
+        hasCompletedAllChapters = false
         nextChapterRequestTime = nil
         durationsSoFar = 0.0
         playerError = nil
@@ -216,7 +216,7 @@ class ListeningViewModel: ObservableObject {
                let complete = completeData.complete,
                complete {
                 lastChapterComplete = true
-                hasCompletedPlayback = true
+                hasCompletedAllChapters = true
             }
             
         default:
@@ -605,7 +605,7 @@ class ListeningViewModel: ObservableObject {
     private func handlePlaybackCompletion() {
         DispatchQueue.main.async {
             if self.lastChapterComplete {
-                self.hasCompletedPlayback = true
+                self.hasCompletedAllChapters = true
                 self.isPlaying = false
             }
         }

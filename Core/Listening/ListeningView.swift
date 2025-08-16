@@ -22,7 +22,7 @@ struct ListeningView: View {
         return !viewModel.isFetchingLinks &&
         viewModel.player != nil &&
         !isCheckingStatus &&
-        !viewModel.hasCompletedPlayback
+        !viewModel.hasCompletedAllChapters
     }
     
     
@@ -129,7 +129,7 @@ struct ListeningView: View {
     private var mainListeningInterface: some View {
         VStack(spacing: 0) {
             ZStack {
-                if viewModel.hasCompletedPlayback {
+                if viewModel.hasCompletedAllChapters {
                     ChapterCompletionView(thoughtId: thought.name)
                 } else if viewModel.isFetchingLinks {
                     loadingContentView

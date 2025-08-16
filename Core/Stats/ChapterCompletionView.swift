@@ -24,7 +24,7 @@ struct ChapterCompletionView: View {
     @State private var selectedPoint: FeedbackPoint? = nil
     
     @State private var cancellables = Set<AnyCancellable>()
-
+    
     var body: some View {
         ZStack {
             // EInkBackground
