@@ -10,6 +10,8 @@ struct FeedbackPoint: Identifiable {
 
 struct ChapterCompletionView: View {
     let thoughtId: String
+    let thoughtName: String
+    let onDismiss: () -> Void
     
     // For the animated circle fill
     @State private var fillAmount: CGFloat = 0.0
@@ -51,6 +53,16 @@ struct ChapterCompletionView: View {
                     
                     // 2) Centered content: checkmark & message
                     VStack(spacing: 16) {
+                        HStack {
+                            Spacer()
+                            Button("Close") {
+                                onDismiss()
+                            }
+                            .foregroundColor(.white)
+                        }
+                        .padding()
+
+                        
                         if showCheckmark {
                             Image(systemName: "checkmark.circle.fill")
                                 .resizable()
@@ -94,7 +106,7 @@ struct ChapterCompletionView: View {
                             }
                         }
                         
-                        Text("You have finished exploring Thought \(thoughtId)")
+                        Text("You have finished exploring \"\(thoughtName)\"")
                             .font(.title2)
                             .foregroundColor(.white)
                             .multilineTextAlignment(.center)
