@@ -130,7 +130,13 @@ struct ListeningView: View {
         VStack(spacing: 0) {
             ZStack {
                 if viewModel.hasCompletedAllChapters {
-                    ChapterCompletionView(thoughtId: thought.name)
+                    ChapterCompletionView(
+                        thoughtId: thought.id,
+                        thoughtName: thought.name,
+                        onDismiss: {
+                            dismiss()
+                        }
+                    )
                 } else if viewModel.isFetchingLinks {
                     loadingContentView
                 } else if viewModel.player != nil {
