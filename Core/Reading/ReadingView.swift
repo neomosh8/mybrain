@@ -59,6 +59,17 @@ struct ReadingView: View {
                 userInfo: ["thoughtId": thought.id]
             )
         }
+        .overlay {
+            if viewModel.hasCompletedAllChapters {
+                ChapterCompletionView(
+                    thoughtId: thought.id,
+                    thoughtName: thought.name,
+                    onDismiss: {
+                        dismiss()
+                    }
+                )
+            }
+        }
     }
     
     // MARK: - Computed
@@ -84,15 +95,7 @@ struct ReadingView: View {
     private var mainReadingInterface: some View {
         VStack(spacing: 0)  {
             ZStack {
-                if viewModel.hasCompletedAllChapters {
-                    ChapterCompletionView(
-                        thoughtId: thought.id,
-                        thoughtName: thought.name,
-                        onDismiss: {
-                            dismiss()
-                        }
-                    )
-                } else if viewModel.chapters.isEmpty {
+                if viewModel.chapters.isEmpty {
                     loadingContentView
                 } else {
                     ScrollViewReader { proxy in
