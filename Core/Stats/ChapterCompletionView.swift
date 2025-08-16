@@ -21,6 +21,7 @@ struct ChapterCompletionView: View {
     @State private var selectedPoint: FeedbackPoint? = nil
     @State private var cancellables = Set<AnyCancellable>()
     @State private var showChart = false
+    @State private var isDismissing = false
     
     var body: some View {
         NavigationView {
@@ -67,6 +68,10 @@ struct ChapterCompletionView: View {
             HStack {
                 Button("Close") {
                     withAnimation(.easeInOut(duration: 0.4)) {
+                        isDismissing = true
+                    }
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                         onDismiss()
                     }
                 }
