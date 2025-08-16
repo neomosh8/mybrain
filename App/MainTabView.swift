@@ -93,17 +93,6 @@ struct MainTabView: View {
                         removal: .move(edge: .trailing).combined(with: .opacity)
                     ))
             }
-        default:
-            NavigationStack {
-                HomeView(
-                    thoughtsViewModel: thoughtsViewModel,
-                    onNavigateToDevice: {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            selectedTab = MainTab.device
-                        }
-                    }
-                )
-            }
         }
     }
     
