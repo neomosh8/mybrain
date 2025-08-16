@@ -15,6 +15,7 @@ struct ChapterCompletionView: View {
     
     @State private var fillAmount: CGFloat = 0.0
     @State private var showCheckmark = false
+    @State private var showFeedbackCard = false
     @State private var isLoadingFeedback = false
     @State private var feedbackPoints: [FeedbackPoint] = []
     @State private var selectedPoint: FeedbackPoint? = nil
@@ -39,7 +40,12 @@ struct ChapterCompletionView: View {
                         showCheckmark = true
                     }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                        requestFeedbacks()
+                        withAnimation(.easeInOut(duration: 0.5)) {
+                            showFeedbackCard = true
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            requestFeedbacks()
+                        }
                     }
                 }
             }
@@ -83,7 +89,7 @@ struct ChapterCompletionView: View {
             .padding(.vertical, 16)
             
             Divider()
-                .background(Color.green.opacity(0.3))
+                .background(Color.secondary.opacity(0.3))
             
             ScrollView {
                 VStack(spacing: 24) {
@@ -121,76 +127,86 @@ struct ChapterCompletionView: View {
                     }
                     .padding(.top, 40)
                     
-                    VStack(spacing: 16) {
-                        Text("Your Focus Journey")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.primary)
-                        
-                        VStack {
-                            if isLoadingFeedback {
-                                VStack(spacing: 16) {
-                                    ProgressView()
-                                        .progressViewStyle(CircularProgressViewStyle(tint: .green))
-                                        .scaleEffect(1.2)
-                                    
-                                    Text("Loading your focus data...")
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(.green)
-                                }
-                                .frame(height: 200)
-                            } else if !feedbackPoints.isEmpty && showChart {
-                                VStack {
-                                    FeedbackPlotView(
-                                        feedbackPoints: feedbackPoints,
-                                        selectedPoint: $selectedPoint,
-                                        testMode: false
-                                    )
-                                    .frame(height: 200)
-                                    .opacity(showChart ? 1.0 : 0.0)
-                                    .scaleEffect(showChart ? 1.0 : 0.8)
-                                    .animation(.easeInOut(duration: 0.6), value: showChart)
-                                    
-                                    if let selected = selectedPoint {
-                                        selectedPointInfo(for: selected)
-                                            .opacity(showChart ? 1.0 : 0.0)
-                                            .animation(.easeInOut(duration: 0.6).delay(0.3), value: showChart)
-                                    }
-                                }
-                            } else if !feedbackPoints.isEmpty {
-                                VStack {
-                                    Rectangle()
-                                        .fill(Color.clear)
-                                        .frame(height: 200)
-                                }
-                            } else {
-                                VStack(spacing: 16) {
-                                    Image(systemName: "chart.line.uptrend.xyaxis")
-                                        .font(.system(size: 40))
-                                        .foregroundColor(.green.opacity(0.6))
-                                    
-                                    Text("No focus data available")
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(.green.opacity(0.8))
-                                }
-                                .frame(height: 200)
-                            }
-                        }
-                        .padding(20)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color.green.opacity(0.6))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .stroke(Color.green, lineWidth: 1)
-                                )
-                        )
+                    if showFeedbackCard {
+                        feedbackCard
+                            .opacity(showFeedbackCard ? 1.0 : 0.0)
+                            .scaleEffect(showFeedbackCard ? 1.0 : 0.8)
+                            .animation(.easeInOut(duration: 0.5), value: showFeedbackCard)
                     }
-                    .padding(.horizontal, 20)
                     
                     Spacer(minLength: 40)
                 }
             }
         }
+    }
+    
+    private var feedbackCard: some View {
+        VStack(spacing: 20) {
+            if isLoadingFeedback {
+                VStack(spacing: 16) {
+                    Text("Analyzing Your Focus Journey")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.white)
+                    
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .scaleEffect(1.3)
+                }
+            } else if feedbackPoints.isEmpty {
+                VStack(spacing: 16) {
+                    Text("No Focus Data Available")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.white)
+                    
+                    Image(systemName: "brain.head.profile")
+                        .font(.system(size: 40))
+                        .foregroundColor(.white.opacity(0.8))
+                    
+                    Text("We couldn't capture focus data for this session")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white.opacity(0.9))
+                        .multilineTextAlignment(.center)
+                }
+            } else {
+                VStack(spacing: 16) {
+                    Text("Your Focus Journey")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.white)
+                    
+                    if showChart {
+                        VStack {
+                            FeedbackPlotView(
+                                feedbackPoints: feedbackPoints,
+                                selectedPoint: $selectedPoint,
+                                testMode: false
+                            )
+                            .frame(height: 200)
+                            .opacity(showChart ? 1.0 : 0.0)
+                            .scaleEffect(showChart ? 1.0 : 0.8)
+                            .animation(.easeInOut(duration: 0.6), value: showChart)
+                            
+                            if let selected = selectedPoint {
+                                selectedPointInfo(for: selected)
+                                    .opacity(showChart ? 1.0 : 0.0)
+                                    .animation(.easeInOut(duration: 0.6).delay(0.3), value: showChart)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 300)
+        .padding(24)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.green.opacity(0.5))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.green.opacity(0.7), lineWidth: 1)
+                )
+        )
+        .padding(.horizontal, 16)
     }
     
     private func selectedPointInfo(for point: FeedbackPoint) -> some View {
@@ -210,11 +226,11 @@ struct ChapterCompletionView: View {
                             .joined(separator: ", ")
                     )
                     .font(.subheadline)
-                    .foregroundColor(.white)
+                    .foregroundColor(.white.opacity(0.9))
                 } else {
                     Text("No further keys")
                         .font(.subheadline)
-                        .foregroundColor(.white)
+                        .foregroundColor(.white.opacity(0.9))
                 }
             }
         }
@@ -229,10 +245,11 @@ struct ChapterCompletionView: View {
                 switch result {
                 case .success(let response):
                     self.parseFeedbackFromHTTP(response)
-            
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                        withAnimation {
-                            self.showChart = true
+                    if !self.feedbackPoints.isEmpty {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            withAnimation {
+                                self.showChart = true
+                            }
                         }
                     }
                 case .failure(let error):
@@ -295,9 +312,11 @@ struct ChapterCompletionView: View {
         
         feedbackPoints = tempPoints
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-            withAnimation {
-                self.showChart = true
+        if !feedbackPoints.isEmpty {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                withAnimation {
+                    self.showChart = true
+                }
             }
         }
     }
