@@ -88,6 +88,17 @@ struct ListeningView: View {
                 userInfo: ["thoughtId": thought.id]
             )
         }
+        .overlay {
+            if viewModel.hasCompletedAllChapters {
+                ChapterCompletionView(
+                    thoughtId: thought.id,
+                    thoughtName: thought.name,
+                    onDismiss: {
+                        dismiss()
+                    }
+                )
+            }
+        }
     }
     
     // MARK: - Computed Properties
@@ -129,15 +140,7 @@ struct ListeningView: View {
     private var mainListeningInterface: some View {
         VStack(spacing: 0) {
             ZStack {
-                if viewModel.hasCompletedAllChapters {
-                    ChapterCompletionView(
-                        thoughtId: thought.id,
-                        thoughtName: thought.name,
-                        onDismiss: {
-                            dismiss()
-                        }
-                    )
-                } else if viewModel.isFetchingLinks {
+                if viewModel.isFetchingLinks {
                     loadingContentView
                 } else if viewModel.player != nil {
                     listeningContent
