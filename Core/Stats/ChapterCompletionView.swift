@@ -13,123 +13,33 @@ struct ChapterCompletionView: View {
     let thoughtName: String
     let onDismiss: () -> Void
     
-    // For the animated circle fill
     @State private var fillAmount: CGFloat = 0.0
-    // For showing the checkmark
     @State private var showCheckmark = false
-    
-    // Loading state (for feedback request)
     @State private var isLoadingFeedback = false
-    
-    // Feedback data & selection
     @State private var feedbackPoints: [FeedbackPoint] = []
     @State private var selectedPoint: FeedbackPoint? = nil
-    
     @State private var cancellables = Set<AnyCancellable>()
+    @State private var showChart = false
     
     var body: some View {
-        ZStack {
-            // EInkBackground
-            Color("EInkBackground")
-                .ignoresSafeArea()
-            
-            GeometryReader { geo in
-                ZStack {
-                    // 1) Growing green circle from bottom-center
-                    let baseRadius = sqrt(
-                        pow(geo.size.width / 2, 2) + pow(geo.size.height, 2)
-                    )
-                    let maxRadius = baseRadius * 1.3
-                    let currentRadius = fillAmount * maxRadius
-                    
-                    Circle()
-                        .fill(Color.green.opacity(0.6))
-                        .frame(
-                            width: currentRadius * 2,
-                            height: currentRadius * 2
-                        )
-                        .position(x: geo.size.width / 2, y: geo.size.height)
-                        .animation(.easeInOut(duration: 2), value: fillAmount)
-                    
-                    // 2) Centered content: checkmark & message
-                    VStack(spacing: 16) {
-                        HStack {
-                            Spacer()
-                            Button("Close") {
-                                onDismiss()
-                            }
-                            .foregroundColor(.white)
-                        }
-                        .padding()
-
-                        
-                        if showCheckmark {
-                            Image(systemName: "checkmark.circle.fill")
-                                .resizable()
-                                .scaledToFit()
-                                .foregroundColor(.white)
-                                .frame(width: 100, height: 100)
-                                .onAppear {
-                                    let impact = UIImpactFeedbackGenerator(
-                                        style: .heavy
-                                    )
-                                    impact.impactOccurred()
-                                }
-                                .transition(.scale)
-                            
-                            // Instead of the old inline feedbackPlot:
-                            if isLoadingFeedback {
-                                ProgressView("Loading feedback...")
-                                    .progressViewStyle(
-                                        CircularProgressViewStyle(tint: .white)
-                                    )
-                                    .scaleEffect(1.3, anchor: .center)
-                                    .padding(.top, 16)
-                            } else if feedbackPoints.isEmpty {
-                                Text("No feedback data")
-                                    .foregroundColor(.white)
-                                    .padding(.top, 16)
-                            } else {
-                                // Use FeedbackPlotView
-                                FeedbackPlotView(
-                                    feedbackPoints: feedbackPoints,
-                                    selectedPoint: $selectedPoint, testMode: false
-                                )
-                                .frame(height: 200)
-                                .padding(.horizontal)
-                                .padding(.top, 16)
-                                
-                                // selectedPoint info
-                                if let selected = selectedPoint {
-                                    selectedPointInfo(for: selected)
-                                }
-                            }
-                        }
-                        
-                        Text("You have finished exploring \"\(thoughtName)\"")
-                            .font(.title2)
-                            .foregroundColor(.white)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 16)
-                    }
-                    .padding()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+        NavigationView {
+            ZStack {
+                mainContent
+            }
+        }
+        .navigationBarHidden(true)
+        .transition(.move(edge: .top).combined(with: .opacity))
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                withAnimation {
+                    fillAmount = 1.0
                 }
-                .onAppear {
-                    // Animation logic...
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        withAnimation {
-                            fillAmount = 1.0
-                        }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                            withAnimation(.spring()) {
-                                showCheckmark = true
-                            }
-                            DispatchQueue.main
-                                .asyncAfter(deadline: .now() + 0.6) {
-                                    requestFeedbacks()
-                                }
-                        }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    withAnimation(.spring()) {
+                        showCheckmark = true
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                        requestFeedbacks()
                     }
                 }
             }
@@ -146,16 +56,150 @@ struct ChapterCompletionView: View {
         }
     }
     
-    // Displays selected point + next 5
+    private var mainContent: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Button("Close") {
+                    withAnimation(.easeInOut(duration: 0.4)) {
+                        onDismiss()
+                    }
+                }
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.secondary)
+                
+                Spacer()
+                
+                Text("Thought Complete")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                Text("")
+                    .font(.system(size: 16, weight: .semibold))
+                    .frame(width: 50)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            
+            Divider()
+                .background(Color.green.opacity(0.3))
+            
+            ScrollView {
+                VStack(spacing: 24) {
+                    VStack(spacing: 20) {
+                        ZStack {
+                            Circle()
+                                .trim(from: 0, to: fillAmount)
+                                .stroke(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [Color.green.opacity(0.3), Color.green]),
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                                )
+                                .frame(width: 120, height: 120)
+                                .rotationEffect(.degrees(-90))
+                                .animation(.easeInOut(duration: 2.0), value: fillAmount)
+                            
+                            if showCheckmark {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 40, weight: .bold))
+                                    .foregroundColor(.green)
+                                    .scaleEffect(showCheckmark ? 1.0 : 0.3)
+                                    .opacity(showCheckmark ? 1.0 : 0.0)
+                                    .animation(.spring(response: 0.6, dampingFraction: 0.8), value: showCheckmark)
+                            }
+                        }
+                        
+                        Text("You have finished exploring Thought \"\(thoughtName)\"")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.primary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 20)
+                    }
+                    .padding(.top, 40)
+                    
+                    VStack(spacing: 16) {
+                        Text("Your Focus Journey")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.primary)
+                        
+                        VStack {
+                            if isLoadingFeedback {
+                                VStack(spacing: 16) {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .green))
+                                        .scaleEffect(1.2)
+                                    
+                                    Text("Loading your focus data...")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.green)
+                                }
+                                .frame(height: 200)
+                            } else if !feedbackPoints.isEmpty && showChart {
+                                VStack {
+                                    FeedbackPlotView(
+                                        feedbackPoints: feedbackPoints,
+                                        selectedPoint: $selectedPoint,
+                                        testMode: false
+                                    )
+                                    .frame(height: 200)
+                                    .opacity(showChart ? 1.0 : 0.0)
+                                    .scaleEffect(showChart ? 1.0 : 0.8)
+                                    .animation(.easeInOut(duration: 0.6), value: showChart)
+                                    
+                                    if let selected = selectedPoint {
+                                        selectedPointInfo(for: selected)
+                                            .opacity(showChart ? 1.0 : 0.0)
+                                            .animation(.easeInOut(duration: 0.6).delay(0.3), value: showChart)
+                                    }
+                                }
+                            } else if !feedbackPoints.isEmpty {
+                                VStack {
+                                    Rectangle()
+                                        .fill(Color.clear)
+                                        .frame(height: 200)
+                                }
+                            } else {
+                                VStack(spacing: 16) {
+                                    Image(systemName: "chart.line.uptrend.xyaxis")
+                                        .font(.system(size: 40))
+                                        .foregroundColor(.green.opacity(0.6))
+                                    
+                                    Text("No focus data available")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.green.opacity(0.8))
+                                }
+                                .frame(height: 200)
+                            }
+                        }
+                        .padding(20)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.green.opacity(0.6))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color.green, lineWidth: 1)
+                                )
+                        )
+                    }
+                    .padding(.horizontal, 20)
+                    
+                    Spacer(minLength: 40)
+                }
+            }
+        }
+    }
+    
     private func selectedPointInfo(for point: FeedbackPoint) -> some View {
         VStack(spacing: 8) {
             Text("Selected: \(point.label) = \(point.value, specifier: "%.2f")")
                 .font(.headline)
                 .foregroundColor(.white)
             
-            if let idx = feedbackPoints.firstIndex(
-                where: { $0.id == point.id
-                }) {
+            if let idx = feedbackPoints.firstIndex(where: { $0.id == point.id }) {
                 let nextStart = idx + 1
                 let nextEnd = min(idx + 6, feedbackPoints.count)
                 let nextSlice = feedbackPoints[nextStart..<nextEnd]
@@ -176,11 +220,7 @@ struct ChapterCompletionView: View {
         }
         .padding(.vertical, 8)
     }
-}
 
-// MARK: - Network / Parsing
-extension ChapterCompletionView {
-    
     private func requestFeedbacks() {
         isLoadingFeedback = true
         networkService.thoughts.getThoughtFeedbacks(thoughtId: thoughtId)
@@ -189,6 +229,12 @@ extension ChapterCompletionView {
                 switch result {
                 case .success(let response):
                     self.parseFeedbackFromHTTP(response)
+            
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                        withAnimation {
+                            self.showChart = true
+                        }
+                    }
                 case .failure(let error):
                     print("Failed to get feedbacks: \(error)")
                 }
@@ -221,7 +267,6 @@ extension ChapterCompletionView {
         feedbackPoints = tempPoints
     }
     
-    
     private func parseFeedbackResponse(_ jsonObject: [String: Any]) {
         isLoadingFeedback = false
         guard let dataDict = jsonObject["data"] as? [String: Any] else {
@@ -249,5 +294,11 @@ extension ChapterCompletionView {
         }
         
         feedbackPoints = tempPoints
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            withAnimation {
+                self.showChart = true
+            }
+        }
     }
 }
