@@ -85,7 +85,7 @@ struct ReadingView: View {
         VStack(spacing: 0)  {
             ZStack {
                 if viewModel.hasCompletedAllChapters {
-                    ChapterCompletionView(thoughtId: thought.id)
+                    ChapterCompletionView(thoughtId: thought.name)
                 } else if viewModel.chapters.isEmpty {
                     loadingContentView
                 } else {
