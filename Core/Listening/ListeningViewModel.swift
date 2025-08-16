@@ -473,6 +473,16 @@ class ListeningViewModel: ObservableObject {
         if let currentItem = player?.currentItem {
             let totalDuration = currentItem.duration.seconds
             self.duration = totalDuration.isFinite ? totalDuration : 0.0
+            
+            if totalDuration > 0 && currentSeconds >= totalDuration - 1.0 {
+                let nextChapterNumber = currentChapterNumber + 1
+                if !requestedChapters.contains(nextChapterNumber) &&
+                   (nextChapterRequestTime == nil || currentSeconds > nextChapterRequestTime! + 10.0) {
+                    lastChapterComplete = true
+                    hasCompletedAllChapters = true
+                    print("🎵 Reached end of audio - marking as complete")
+                }
+            }
         }
         
         chapterManager.updateCurrentChapter(for: currentSeconds)
@@ -531,6 +541,11 @@ class ListeningViewModel: ObservableObject {
             let requestDelay = max(audioDuration - generationTime * 2 , 5.0)
             nextChapterRequestTime = durationsSoFar + requestDelay
             durationsSoFar += audioDuration
+            
+            if let isLast = data["is_last"] as? Bool, isLast {
+                lastChapterComplete = true
+                print("🎵 This is the last chapter - will complete after playback")
+            }
         }
         
         if let words = chapterAudioData.words {
