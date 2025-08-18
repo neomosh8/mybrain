@@ -18,6 +18,7 @@ class ListeningViewModel: ObservableObject {
     @Published var duration: Double = 0.0
     
     // MARK: - Chapter Progress State
+    @Published var isOnLastChapter = false
     @Published var hasCompletedAllChapters = false
     @Published var nextChapterRequestTime: Double?
     @Published var durationsSoFar: Double = 0.0
@@ -212,7 +213,8 @@ class ListeningViewModel: ObservableObject {
             if let completeData = ChapterCompleteResponseData(from: data),
                let complete = completeData.complete,
                complete {
-                hasCompletedAllChapters = true
+                isOnLastChapter = true
+                nextChapterRequestTime = nil
             }
             
         default:
@@ -450,7 +452,12 @@ class ListeningViewModel: ObservableObject {
             queue: .main
         ) { [weak self] _ in
             Task { @MainActor in
-                self?.isPlaying = false
+                guard let self = self else { return }
+                self.isPlaying = false
+                
+                if self.isOnLastChapter {
+                    self.hasCompletedAllChapters = true
+                }
             }
         }
         
@@ -479,6 +486,14 @@ class ListeningViewModel: ObservableObject {
         )
         
         checkForNextChapterRequest(currentTime: currentSeconds)
+        
+        if isOnLastChapter,
+           duration > 0,
+           currentTime.seconds >= (duration - 0.25),
+           !hasCompletedAllChapters {
+            pausePlayback()
+            hasCompletedAllChapters = true
+        }
     }
     
     private func checkForNextChapterRequest(currentTime: Double) {
@@ -486,7 +501,9 @@ class ListeningViewModel: ObservableObject {
         
         let nextChapterNumber = currentChapterNumber + 1
         
-        if currentTime >= requestTime && !requestedChapters.contains(nextChapterNumber) && !hasCompletedAllChapters {
+        if currentTime >= requestTime,
+           !requestedChapters.contains(nextChapterNumber),
+           !isOnLastChapter {
             requestedChapters.insert(nextChapterNumber)
             requestNextChapter()
             print("🎵 ✅ Requesting chapter \(nextChapterNumber) at time \(currentTime) (threshold: \(requestTime))")
