@@ -18,7 +18,6 @@ class ListeningViewModel: ObservableObject {
     @Published var duration: Double = 0.0
     
     // MARK: - Chapter Progress State
-    @Published var lastChapterComplete = false
     @Published var hasCompletedAllChapters = false
     @Published var nextChapterRequestTime: Double?
     @Published var durationsSoFar: Double = 0.0
@@ -135,7 +134,6 @@ class ListeningViewModel: ObservableObject {
     
     func startListening(for thought: Thought) {
         currentThought = thought
-        hasCompletedAllChapters = false
         resetState()
         fetchStreamingLinks(for: thought)
     }
@@ -168,7 +166,6 @@ class ListeningViewModel: ObservableObject {
     private func resetState() {
         requestedChapters.removeAll()
         currentChapterNumber = 1
-        lastChapterComplete = false
         hasCompletedAllChapters = false
         nextChapterRequestTime = nil
         durationsSoFar = 0.0
@@ -215,7 +212,6 @@ class ListeningViewModel: ObservableObject {
             if let completeData = ChapterCompleteResponseData(from: data),
                let complete = completeData.complete,
                complete {
-                lastChapterComplete = true
                 hasCompletedAllChapters = true
             }
             
@@ -454,7 +450,7 @@ class ListeningViewModel: ObservableObject {
             queue: .main
         ) { [weak self] _ in
             Task { @MainActor in
-                self?.handlePlaybackCompletion()
+                self?.isPlaying = false
             }
         }
         
@@ -490,7 +486,7 @@ class ListeningViewModel: ObservableObject {
         
         let nextChapterNumber = currentChapterNumber + 1
         
-        if currentTime >= requestTime && !requestedChapters.contains(nextChapterNumber) && !lastChapterComplete {
+        if currentTime >= requestTime && !requestedChapters.contains(nextChapterNumber) && !hasCompletedAllChapters {
             requestedChapters.insert(nextChapterNumber)
             requestNextChapter()
             print("🎵 ✅ Requesting chapter \(nextChapterNumber) at time \(currentTime) (threshold: \(requestTime))")
@@ -596,17 +592,6 @@ class ListeningViewModel: ObservableObject {
                         }
                     }
                 }
-            }
-        }
-        
-    }
-    
-    
-    private func handlePlaybackCompletion() {
-        DispatchQueue.main.async {
-            if self.lastChapterComplete {
-                self.hasCompletedAllChapters = true
-                self.isPlaying = false
             }
         }
     }
