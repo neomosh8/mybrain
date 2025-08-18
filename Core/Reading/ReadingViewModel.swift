@@ -16,14 +16,12 @@ class ReadingViewModel: ObservableObject {
     
     // Chapter/UI state
     @Published var chapters: [ChapterTextResponseData] = []
-    @Published var displayedChapterCount = 0
     @Published var currentChapterIndex: Int?
     @Published var readingSpeed: Double = 0.3
     @Published var isLoadingChapter = false
     
     // Internal
     private var thoughtId: String = ""
-    private var hasRequestedNextChapter = false
     
     // Playback timer
     private var animationTimer: DispatchSourceTimer?
@@ -31,11 +29,8 @@ class ReadingViewModel: ObservableObject {
     // Index bookkeeping
     private var totalWordCount: Int = 0
     private var indexToWord: [Int: String] = [:]
-    private var indexToChapter: [Int: Int] = [:]
     private var chapterRanges: [Int: Range<Int>] = [:]
-    
-    private var lastFeedbackIndex: Int = -1
-    
+        
     // MARK: Lifecycle
     func setup(for thought: Thought) {
         self.thoughtId = thought.id
@@ -53,18 +48,11 @@ class ReadingViewModel: ObservableObject {
     func requestNextChapter() {
         guard !isLoadingChapter else { return }
         isLoadingChapter = true
-        hasRequestedNextChapter = false
         
         networkService.webSocket.requestNextChapter(
             thoughtId: thoughtId,
             generateAudio: false
         )
-    }
-    
-    func onChapterHalfway(_ chapterNumber: Int) {
-        guard !hasRequestedNextChapter else { return }
-        hasRequestedNextChapter = true
-        requestNextChapter()
     }
     
     func onChapterFinished(_ chapterNumber: Int) {
@@ -109,9 +97,8 @@ class ReadingViewModel: ObservableObject {
         
         appendChapter(html: html, chapterNumber: chapterData.chapterNumber ?? (chapters.count + 1))
         chapters.append(chapterData)
-        displayedChapterCount = chapters.count
         
-        if displayedChapterCount == 1 {
+        if chapters.count == 1 {
             currentChapterIndex = 0
             isPlaying = true
         }
@@ -125,21 +112,16 @@ class ReadingViewModel: ObservableObject {
     private func appendChapter(html: String, chapterNumber: Int) {
         let (newParagraphs, newIndexMap, wordCount) = parseHTMLToWordData(html: html, startOffset: totalWordCount)
         
-        // Append paragraphs (preserve paragraph boundaries)
         if paragraphs.isEmpty {
             paragraphs = newParagraphs
         } else {
-            // Merge by appending each incoming paragraph to the model
             paragraphs.append(contentsOf: newParagraphs)
         }
         
-        // Update maps
         for (globalIndex, (word, chap)) in newIndexMap {
             indexToWord[globalIndex] = word
-            indexToChapter[globalIndex] = chap
         }
         
-        // Record range for this chapter
         let start = totalWordCount
         let end = totalWordCount + wordCount
         chapterRanges[chapterNumber] = start..<end
@@ -147,7 +129,6 @@ class ReadingViewModel: ObservableObject {
     }
     
     private func parseHTMLToWordData(html: String, startOffset: Int) -> ([[WordData]], [Int: (String, Int)], Int) {
-        // Convert HTML -> AttributedString (fallback to plain text)
         let attributed: AttributedString = {
             guard let data = html.data(using: .utf8) else { return AttributedString(html) }
             let options: [NSAttributedString.DocumentReadingOptionKey: Any] = [
@@ -161,7 +142,6 @@ class ReadingViewModel: ObservableObject {
             return AttributedString(html.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression))
         }()
         
-        // Tokenize into words with NLTagger
         let text = String(attributed.characters)
         let tagger = NLTagger(tagSchemes: [.tokenType])
         tagger.string = text
@@ -176,7 +156,6 @@ class ReadingViewModel: ObservableObject {
             return true
         }
         
-        // Build [[WordData]] preserving paragraph breaks (\n)
         var result: [[WordData]] = []
         var currentParagraph: [WordData] = []
         var indexMap: [Int: (String, Int)] = [:]
@@ -191,24 +170,20 @@ class ReadingViewModel: ObservableObject {
                 }
             }
             
-            // Attributes for this word
             let attributedRange = Range(r, in: attributed)!
             let substring = AttributedString(attributed[attributedRange])
             let attrs = substring.runs.first?.attributes ?? AttributeContainer()
             let wordText = String(text[r])
             
-            // Global index = startOffset + local
             let globalIndex = startOffset + i
             let data = WordData(originalIndex: globalIndex, text: wordText, attributes: attrs)
             currentParagraph.append(data)
             
-            // Map for feedback + analytics
-            indexMap[globalIndex] = (String(wordText), /* chapterNumber filled by caller */ 0)
+            indexMap[globalIndex] = (String(wordText), 0)
         }
         
         if !currentParagraph.isEmpty { result.append(currentParagraph) }
         
-        // Caller will rewrite chapter number in indexMap while appending
         return (result, indexMap, wordRanges.count)
     }
     
@@ -289,7 +264,7 @@ class ReadingViewModel: ObservableObject {
         // Halfway trigger / end-of-chapter trigger based on ranges
         if let (chapNum, range) = chapterAndRange(containing: currentWordIndex) {
             let halfway = range.lowerBound + (range.count * 2 / 3)
-            if currentWordIndex == halfway { onChapterHalfway(chapNum) }
+            if currentWordIndex == halfway { requestNextChapter() }
             if currentWordIndex == range.upperBound - 1 {
                 if let idx = chapters.firstIndex(where: { ($0.chapterNumber ?? 0) == chapNum }) {
                     currentChapterIndex = min(idx + 1, chapters.count - 1)
