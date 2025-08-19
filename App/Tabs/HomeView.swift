@@ -694,25 +694,7 @@ struct ModeButton: View {
     }
 }
 
-// MARK: - Content Mode Enum
-enum ContentMode: String, CaseIterable {
-    case reading = "reading"
-    case listening = "listening"
-    
-    var title: String {
-        switch self {
-        case .reading: return "Reading"
-        case .listening: return "Listening"
-        }
-    }
-    
-    var icon: String {
-        switch self {
-        case .reading: return "eye"
-        case .listening: return "headphones"
-        }
-    }
-}
+
 
 // MARK: - Thoughts List Section
 struct ThoughtsListSection: View {
