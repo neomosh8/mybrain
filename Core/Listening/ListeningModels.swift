@@ -19,12 +19,12 @@ struct ChapterResponse {
     let audioDuration: Double?
     let generationTime: Double?
     let isComplete: Bool
-    
+
     init?(from data: [String: Any]) {
         guard let chapterNumber = data["chapter_number"] as? Int else {
             return nil
         }
-        
+
         self.chapterNumber = chapterNumber
         self.title = data["title"] as? String
         self.audioDuration = data["audio_duration"] as? Double
@@ -42,8 +42,15 @@ struct ChapterInfo {
     let startTime: TimeInterval
     let isComplete: Bool
     let generationTime: Double?
-    
-    init(number: Int, title: String? = nil, duration: TimeInterval? = nil, startTime: TimeInterval = 0, isComplete: Bool = false, generationTime: Double? = nil) {
+
+    init(
+        number: Int,
+        title: String? = nil,
+        duration: TimeInterval? = nil,
+        startTime: TimeInterval = 0,
+        isComplete: Bool = false,
+        generationTime: Double? = nil
+    ) {
         self.number = number
         self.title = title
         self.duration = duration
@@ -57,47 +64,47 @@ class ChapterManager: ObservableObject {
     @Published var chapters: [ChapterInfo] = []
     @Published var currentChapter: ChapterInfo?
     @Published var totalDuration: TimeInterval = 0
-    
+
     func addChapter(_ chapter: ChapterInfo) {
         chapters.removeAll { $0.number == chapter.number }
-        
+
         chapters.append(chapter)
         chapters.sort { $0.number < $1.number }
-        
+
         updateTotalDuration()
     }
-    
+
     func updateCurrentChapter(for currentTime: TimeInterval) {
         let activeChapter = chapters.first { chapter in
             let relativeStart = chapter.startTime
             let relativeEnd = relativeStart + (chapter.duration ?? 0)
             return currentTime >= relativeStart && currentTime < relativeEnd
         }
-        
+
         if let activeChapter = activeChapter {
             if currentChapter?.number != activeChapter.number {
-                print("🎵 ChapterManager: Updating current chapter from \(currentChapter?.number ?? 0) to \(activeChapter.number)")
+                print("🎵 Updating current chapter from \(currentChapter?.number ?? 0) to \(activeChapter.number)")
                 currentChapter = activeChapter
             }
         } else if currentChapter == nil && !chapters.isEmpty {
             currentChapter = chapters.first
         }
     }
-    
+
     private func updateTotalDuration() {
         totalDuration = chapters.reduce(0) { total, chapter in
             total + (chapter.duration ?? 0)
         }
     }
-    
+
     func getChapter(number: Int) -> ChapterInfo? {
         return chapters.first { $0.number == number }
     }
-    
+
     func getNextChapter(after currentNumber: Int) -> ChapterInfo? {
         return chapters.first { $0.number > currentNumber }
     }
-    
+
     func getPreviousChapter(before currentNumber: Int) -> ChapterInfo? {
         return chapters.last { $0.number < currentNumber }
     }
@@ -112,7 +119,7 @@ enum ListeningError: LocalizedError {
     case streamingLinksUnavailable
     case chapterLoadFailed
     case audioSessionFailed(Error)
-    
+
     var errorDescription: String? {
         switch self {
         case .invalidURL(let url):
@@ -129,7 +136,7 @@ enum ListeningError: LocalizedError {
             return "Audio session error: \(error.localizedDescription)"
         }
     }
-    
+
     var recoverySuggestion: String? {
         switch self {
         case .invalidURL, .streamingLinksUnavailable:
@@ -149,8 +156,7 @@ struct WordTimestamp: Equatable {
     let start: Double
     let end: Double
     let text: String
-    
-    
+
     static func == (lhs: WordTimestamp, rhs: WordTimestamp) -> Bool {
         return lhs.start == rhs.start && lhs.end == rhs.end && lhs.text == rhs.text
     }
