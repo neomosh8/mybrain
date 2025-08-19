@@ -5,8 +5,9 @@ import Combine
 struct HomeView: View {
     @EnvironmentObject var bluetoothService: BTService
     @ObservedObject var thoughtsViewModel: ThoughtsViewModel
+    @StateObject private var settings = SettingsManager.shared
     
-    @State private var selectedMode: ContentMode = .reading
+    @State private var selectedMode: ContentMode
     @State private var showDeviceCard = true
     @State private var selectedThought: Thought?
 
@@ -32,6 +33,8 @@ struct HomeView: View {
     init(thoughtsViewModel: ThoughtsViewModel, onNavigateToDevice: (() -> Void)? = nil) {
         self.thoughtsViewModel = thoughtsViewModel
         self.onNavigateToDevice = onNavigateToDevice
+
+        _selectedMode = State(initialValue: SettingsManager.shared.contentMode)
     }
     
     var body: some View {
@@ -692,9 +695,9 @@ struct ModeButton: View {
 }
 
 // MARK: - Content Mode Enum
-enum ContentMode: CaseIterable {
-    case reading
-    case listening
+enum ContentMode: String, CaseIterable {
+    case reading = "reading"
+    case listening = "listening"
     
     var title: String {
         switch self {
