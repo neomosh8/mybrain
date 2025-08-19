@@ -8,12 +8,15 @@ import MediaPlayer
 struct myBrainApp: App {
     @StateObject var authVM = AuthViewModel()
     @StateObject var backgroundManager = BackgroundManager.shared
-    
+    @StateObject private var settings = SettingsManager.shared
+
     @UIApplicationDelegateAdaptor private var appDelegate: AppDelegate
     
     init() {
         UIApplication.shared.beginReceivingRemoteControlEvents()
         _ = NetworkServiceManager.shared
+        
+        SettingsManager.shared.applyAppearance(SettingsManager.shared.appearance)
     }
     
     var body: some Scene {
@@ -22,6 +25,7 @@ struct myBrainApp: App {
                 .environmentObject(authVM)
                 .environmentObject(backgroundManager)
                 .modelContainer(for: [AuthData.self, UserProfileData.self])
+                .environmentObject(settings)
                 .onOpenURL { url in
                     GIDSignIn.sharedInstance.handle(url)
                 }
