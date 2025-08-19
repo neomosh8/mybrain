@@ -1,46 +1,43 @@
-import SwiftUI
 import AVFoundation
 import Combine
+import SwiftUI
 
 struct ListeningView: View {
     let thought: Thought
-    
+
     @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel = ListeningViewModel()
     @StateObject private var statusPickerController = BottomSheetPickerController()
-        
+
     @State private var thoughtStatus: ThoughtStatus?
     @State private var isCheckingStatus = true
     @State private var cancellables = Set<AnyCancellable>()
-    
+
     @State private var showFocusChart = true
     @State private var showDurationTimer = true
     @State private var showMenuPopup = false
     @State private var lastScrollTime: Date = .distantPast
-    
+
     private var canTogglePlayback: Bool {
-        return !viewModel.isFetchingLinks &&
-        viewModel.player != nil &&
-        !isCheckingStatus &&
-        !viewModel.hasCompletedAllChapters
+        return !viewModel.isFetchingLinks && viewModel.player != nil
+            && !isCheckingStatus && !viewModel.hasCompletedAllChapters
     }
-    
-    
+
     private var playPauseIcon: String {
         return viewModel.isPlaying ? "pause.fill" : "play.fill"
     }
-    
+
     private var playPauseText: String {
         return viewModel.isPlaying ? "Pause" : "Play"
     }
-    
+
     var body: some View {
         ZStack {
             if isCheckingStatus {
                 loadingStatusView
             } else {
                 mainListeningInterface
-                
+
                 statusPickerOverlay
             }
         }
@@ -53,7 +50,7 @@ struct ListeningView: View {
         ) {
             PopupMenuButton(isPresented: $showMenuPopup)
         }
-        .overlay{
+        .overlay {
             if showMenuPopup {
                 PopupMenu(
                     isPresented: $showMenuPopup,
@@ -71,7 +68,7 @@ struct ListeningView: View {
                             isOn: showDurationTimer
                         ) {
                             showDurationTimer.toggle()
-                        }
+                        },
                     ]
                 )
             }
@@ -81,14 +78,16 @@ struct ListeningView: View {
         }
         .onDisappear {
             viewModel.cleanup()
-            
+
             NotificationCenter.default.post(
                 name: .thoughtProgressUpdated,
                 object: nil,
                 userInfo: ["thoughtId": thought.id]
             )
         }
-        .fullScreenCover(isPresented: .constant(viewModel.hasCompletedAllChapters)) {
+        .fullScreenCover(
+            isPresented: .constant(viewModel.hasCompletedAllChapters)
+        ) {
             ChapterCompletionView(
                 thoughtId: thought.id,
                 thoughtName: thought.name,
@@ -98,24 +97,24 @@ struct ListeningView: View {
             )
         }
     }
-    
+
     // MARK: - Computed Properties
-    
+
     private var floatingFocusChart: some View {
         FloatingFocusChart()
             .zIndex(1000)
     }
-    
+
     private var chapterSubtitle: String {
         guard let status = thoughtStatus else {
             return "Loading..."
         }
-        
+
         if let currentChapter = viewModel.chapterManager.currentChapter {
             let totalChapters = status.progress.total
             return "Chapter \(currentChapter.number) of \(totalChapters)"
         }
-        
+
         let totalChapters = status.progress.total
         if viewModel.chapterManager.chapters.isEmpty {
             return "Preparing audio..."
@@ -123,7 +122,7 @@ struct ListeningView: View {
             return "Chapter 1 of \(totalChapters)"
         }
     }
-    
+
     private var loadingStatusView: some View {
         VStack(spacing: 16) {
             ProgressView()
@@ -134,7 +133,7 @@ struct ListeningView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color("EInkBackground"))
     }
-    
+
     private var mainListeningInterface: some View {
         VStack(spacing: 0) {
             ZStack {
@@ -147,22 +146,22 @@ struct ListeningView: View {
                 } else {
                     readyView
                 }
-                
+
                 if showDurationTimer {
                     durationTimerControl
                 }
-                
+
                 if showFocusChart {
                     floatingFocusChart
                 }
             }
             .frame(maxHeight: .infinity)
-            
+
             bottomControlBar
         }
         .blur(radius: statusPickerController.isPresented ? 3 : 0)
     }
-    
+
     private var loadingContentView: some View {
         VStack(spacing: 16) {
             if viewModel.isFetchingLinks {
@@ -182,7 +181,7 @@ struct ListeningView: View {
                 .fill(.ultraThinMaterial)
         )
     }
-    
+
     private var listeningContent: some View {
         VStack(spacing: 20) {
             ScrollViewReader { proxy in
@@ -198,7 +197,9 @@ struct ListeningView: View {
                     guard newIndex >= 15 else { return }
                     let now = Date()
 
-                    guard now.timeIntervalSince(lastScrollTime) > 0.16 else { return }
+                    guard now.timeIntervalSince(lastScrollTime) > 0.16 else {
+                        return
+                    }
                     lastScrollTime = now
 
                     let animate = !viewModel.isCurrentlyStalled
@@ -214,37 +215,46 @@ struct ListeningView: View {
             }
             .background(Color("ParagraphBackground"))
         }
-        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("NewChapterWordsFromAudio"))) { notification in
+        .onReceive(
+            NotificationCenter.default.publisher(
+                for: Notification.Name("NewChapterWordsFromAudio")
+            )
+        ) { notification in
             handleNewChapterWords(notification)
         }
-        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("UpdateSubtitleTime"))) { notification in
+        .onReceive(
+            NotificationCenter.default.publisher(
+                for: Notification.Name("UpdateSubtitleTime")
+            )
+        ) { notification in
             handleTimeUpdate(notification)
         }
     }
-    
+
     private func handleNewChapterWords(_ notification: Notification) {
         if let userInfo = notification.userInfo,
-           let words = userInfo["words"] as? [[String: Any]] {
-            
+            let words = userInfo["words"] as? [[String: Any]]
+        {
+
             viewModel.loadWordsFromChapterAudio(words: words)
         }
     }
-    
+
     private func handleTimeUpdate(_ notification: Notification) {
         if let globalTime = notification.object as? Double {
             viewModel.updateCurrentTime(globalTime)
         }
     }
-    
+
     private var durationTimerControl: some View {
         VStack {
             Spacer()
-            
+
             HStack {
                 Image(systemName: "clock")
                     .font(.caption)
                     .foregroundColor(.secondary)
-                
+
                 Text("Duration: \(formatDuration(viewModel.currentTime))")
                     .font(.caption)
                     .foregroundColor(.secondary)
@@ -262,7 +272,7 @@ struct ListeningView: View {
             .padding(.bottom, 24)
         }
     }
-    
+
     private var bottomControlBar: some View {
         HStack(spacing: 16) {
             Button(action: {
@@ -286,7 +296,7 @@ struct ListeningView: View {
                 )
             }
             .opacity(0)
-            
+
             Button(action: {
                 if canTogglePlayback {
                     withAnimation(.easeInOut(duration: 0.2)) {
@@ -298,14 +308,20 @@ struct ListeningView: View {
                     ZStack {
                         Image(systemName: playPauseIcon)
                             .font(.system(size: 16, weight: .medium))
-                            .animation(.easeInOut(duration: 0.1), value: playPauseIcon)
+                            .animation(
+                                .easeInOut(duration: 0.1),
+                                value: playPauseIcon
+                            )
                     }
                     .frame(width: 10)
-                    
+
                     ZStack {
                         Text(playPauseText)
                             .font(.system(size: 15, weight: .medium))
-                            .animation(.easeInOut(duration: 0.1), value: playPauseText)
+                            .animation(
+                                .easeInOut(duration: 0.1),
+                                value: playPauseText
+                            )
                     }
                     .frame(width: 50)
                 }
@@ -313,12 +329,18 @@ struct ListeningView: View {
                 .frame(width: 90, height: 40)
                 .background(
                     RoundedRectangle(cornerRadius: 8)
-                        .fill(canTogglePlayback ? Color.blue : Color.gray.opacity(0.3))
-                        .animation(.easeInOut(duration: 0.1), value: canTogglePlayback)
+                        .fill(
+                            canTogglePlayback
+                                ? Color.blue : Color.gray.opacity(0.3)
+                        )
+                        .animation(
+                            .easeInOut(duration: 0.1),
+                            value: canTogglePlayback
+                        )
                 )
             }
             .disabled(!canTogglePlayback)
-            
+
             Button(action: {
                 // TODO: Add chapters functionality
             }) {
@@ -350,7 +372,7 @@ struct ListeningView: View {
                 .ignoresSafeArea(edges: .bottom)
         )
     }
-    
+
     private var statusPickerOverlay: some View {
         BottomSheetPicker(
             title: "Listening Options",
@@ -363,24 +385,24 @@ struct ListeningView: View {
                 statusMessage
                     .padding(.horizontal, 20)
                     .padding(.vertical, 16)
-                
+
                 Divider()
                     .background(Color.secondary.opacity(0.2))
-                
+
                 actionButtons
                     .padding(.horizontal, 20)
                     .padding(.vertical, 16)
             }
         }
     }
-    
+
     private var statusMessage: some View {
         Text(overlayMessage)
             .font(.body)
             .multilineTextAlignment(.leading)
             .foregroundColor(.primary)
     }
-    
+
     private var actionButtons: some View {
         VStack(spacing: 12) {
             if thoughtStatus?.status == "in_progress" {
@@ -389,7 +411,7 @@ struct ListeningView: View {
                     setupListening()
                 }
                 .buttonStyle(PrimaryActionButtonStyle())
-                
+
                 Button("Restart from Beginning") {
                     resetListeningProgress()
                 }
@@ -402,24 +424,24 @@ struct ListeningView: View {
             }
         }
     }
-    
+
     // MARK: - Error and Ready Views
-    
+
     private func errorView(_ error: Error) -> some View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 50))
                 .foregroundColor(.red)
-            
+
             Text("Player Error")
                 .font(.headline)
                 .foregroundColor(.primary)
-            
+
             Text(error.localizedDescription)
                 .font(.body)
                 .foregroundColor(.red)
                 .multilineTextAlignment(.center)
-            
+
             Button("Retry") {
                 viewModel.startListening(for: thought)
             }
@@ -427,13 +449,13 @@ struct ListeningView: View {
         }
         .padding()
     }
-    
+
     private var readyView: some View {
         VStack(spacing: 16) {
             Text("Ready to Listen")
                 .font(.headline)
                 .foregroundColor(.primary)
-            
+
             Button("Start Listening") {
                 viewModel.startListening(for: thought)
             }
@@ -441,36 +463,40 @@ struct ListeningView: View {
         }
         .padding()
     }
-    
+
     // MARK: - Helper Properties
     private var overlayMessage: String {
         guard let status = thoughtStatus?.status else {
             return "Ready to start listening to \"\(thought.name)\""
         }
-        
+
         switch status {
         case "in_progress":
-            return "You're in the middle of listening to \"\(thought.name)\". Would you like to continue where you left off?"
+            return
+                "You're in the middle of listening to \"\(thought.name)\". Would you like to continue where you left off?"
         case "finished":
-            return "You've completed listening to \"\(thought.name)\". Would you like to listen to it again?"
+            return
+                "You've completed listening to \"\(thought.name)\". Would you like to listen to it again?"
         default:
             return "Ready to start listening to \"\(thought.name)\""
         }
     }
-    
+
     // MARK: - Action Methods
     private func checkThoughtStatus() {
         isCheckingStatus = true
-        
+
         networkService.thoughts.getThoughtStatus(thoughtId: thought.id)
             .receive(on: DispatchQueue.main)
             .sink { result in
                 self.isCheckingStatus = false
-                
+
                 switch result {
                 case .success(let status):
                     self.thoughtStatus = status
-                    if status.status == "in_progress" || status.status == "finished" {
+                    if status.status == "in_progress"
+                        || status.status == "finished"
+                    {
                         self.statusPickerController.open()
                     } else {
                         self.setupListening()
@@ -482,14 +508,14 @@ struct ListeningView: View {
             }
             .store(in: &cancellables)
     }
-    
+
     private func setupListening() {
         viewModel.startListening(for: thought)
     }
-    
+
     private func resetListeningProgress() {
         statusPickerController.close()
-        
+
         networkService.thoughts.resetThoughtProgress(thoughtId: thought.id)
             .receive(on: DispatchQueue.main)
             .sink { result in
@@ -502,14 +528,14 @@ struct ListeningView: View {
             }
             .store(in: &cancellables)
     }
-    
+
     // MARK: - Helper Functions
     private func formatDuration(_ seconds: Double) -> String {
         let totalSeconds = Int(seconds)
         let hours = totalSeconds / 3600
         let minutes = (totalSeconds % 3600) / 60
         let secs = totalSeconds % 60
-        
+
         if hours > 0 {
             return String(format: "%d:%02d:%02d", hours, minutes, secs)
         } else {
@@ -517,4 +543,3 @@ struct ListeningView: View {
         }
     }
 }
-
