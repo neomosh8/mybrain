@@ -92,10 +92,7 @@
 		74D58B382E152780008B62DC /* AppNavigationBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74D58B372E152776008B62DC /* AppNavigationBar.swift */; };
 		74EC8AA52DCE6590008DE8A9 /* BackgroundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74EC8AA42DCE6588008DE8A9 /* BackgroundManager.swift */; };
 		74F9961C2E548F820012E729 /* MainModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74F996152E5489DF0012E729 /* MainModels.swift */; };
-		74F9961E2E5491B90012E729 /* ThoughtModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74F996172E5489F20012E729 /* ThoughtModels.swift */; };
 		74F9961F2E5491BD0012E729 /* BluetoothModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74F996182E5489FC0012E729 /* BluetoothModels.swift */; };
-		74F996212E5491CF0012E729 /* NavigationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74F9961B2E548A1C0012E729 /* NavigationModels.swift */; };
-		74F996222E5491D30012E729 /* ViewStates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74F9961A2E548A150012E729 /* ViewStates.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -210,10 +207,7 @@
 		74D58B372E152776008B62DC /* AppNavigationBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppNavigationBar.swift; sourceTree = "<group>"; };
 		74EC8AA42DCE6588008DE8A9 /* BackgroundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundManager.swift; sourceTree = "<group>"; };
 		74F996152E5489DF0012E729 /* MainModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainModels.swift; sourceTree = "<group>"; };
-		74F996172E5489F20012E729 /* ThoughtModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtModels.swift; sourceTree = "<group>"; };
 		74F996182E5489FC0012E729 /* BluetoothModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothModels.swift; sourceTree = "<group>"; };
-		74F9961A2E548A150012E729 /* ViewStates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewStates.swift; sourceTree = "<group>"; };
-		74F9961B2E548A1C0012E729 /* NavigationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationModels.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -245,7 +239,6 @@
 				74263C572DDADCD800953598 /* Common */,
 				74263C552DDADCC100953598 /* Core */,
 				7479BFD72E1263CE00F18A48 /* Docs */,
-				74F9960F2E5489670012E729 /* Models */,
 				684427332D13F189002E9BC6 /* myBrain.entitlements */,
 				74C286092DB4C1E800CF836B /* myBrain-by-neocore-Info.plist */,
 				684426C92D13CF03002E9BC6 /* Products */,
@@ -277,6 +270,7 @@
 			children = (
 				684426FC2D13D580002E9BC6 /* ContentView.swift */,
 				743D5BB72DFC464000C4F71E /* MainTabView.swift */,
+				74F9960F2E5489670012E729 /* Models */,
 				684426FE2D13D580002E9BC6 /* myBrainApp.swift */,
 				743D5BB32DFC460700C4F71E /* Tabs */,
 				74263C712DDADEBA00953598 /* ViewModels */,
@@ -589,29 +583,10 @@
 		74F9960F2E5489670012E729 /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				74F996102E54896E0012E729 /* Domain */,
-				74F996122E5489820012E729 /* UI */,
-			);
-			path = Models;
-			sourceTree = "<group>";
-		};
-		74F996102E54896E0012E729 /* Domain */ = {
-			isa = PBXGroup;
-			children = (
 				684426FD2D13D580002E9BC6 /* AppItem.swift */,
 				74F996152E5489DF0012E729 /* MainModels.swift */,
-				74F996172E5489F20012E729 /* ThoughtModels.swift */,
 			);
-			path = Domain;
-			sourceTree = "<group>";
-		};
-		74F996122E5489820012E729 /* UI */ = {
-			isa = PBXGroup;
-			children = (
-				74F9961B2E548A1C0012E729 /* NavigationModels.swift */,
-				74F9961A2E548A150012E729 /* ViewStates.swift */,
-			);
-			path = UI;
+			path = Models;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -752,7 +727,6 @@
 				74263C2B2DDADAE800953598 /* SignalProcessing.swift in Sources */,
 				74BC7E5E2E000DCB00A9C2F4 /* TokenStorage.swift in Sources */,
 				74BC7E682E000E0700A9C2F4 /* ResponseModels.swift in Sources */,
-				74F996222E5491D30012E729 /* ViewStates.swift in Sources */,
 				748CFE322E42153A0034763E /* BTServiceProtocol.swift in Sources */,
 				74BC7E6A2E000E0E00A9C2F4 /* WebSocketModels.swift in Sources */,
 				74263C2D2DDADAE800953598 /* FeedbackPlotView.swift in Sources */,
@@ -773,7 +747,6 @@
 				747E83BF2E31E3AF00F28F50 /* MockBluetoothService.swift in Sources */,
 				74BC7E722E0010D200A9C2F4 /* ProfileAPI+Implementation.swift in Sources */,
 				745BE7AA2E23D05C00FA1CC1 /* ListeningModels.swift in Sources */,
-				74F9961E2E5491B90012E729 /* ThoughtModels.swift in Sources */,
 				7482861E2E40981F0058C2C0 /* BluetoothScanner.swift in Sources */,
 				74263C402DDADAE800953598 /* ChapterCompletionView.swift in Sources */,
 				747377F72E26CC2100C50D04 /* ReadingView.swift in Sources */,
@@ -785,7 +758,6 @@
 				746822642E2F75D3007AB029 /* ListeningView.swift in Sources */,
 				74B3FDAD2E1CD6AF00173269 /* BottomSheetPicker.swift in Sources */,
 				748286242E409A660058C2C0 /* QualityAnalyzer.swift in Sources */,
-				74F996212E5491CF0012E729 /* NavigationModels.swift in Sources */,
 				74BC7E622E000DEF00A9C2F4 /* WebSocketProtocols.swift in Sources */,
 				74C2860D2DB4C32400CF836B /* GoogleAuthManager.swift in Sources */,
 				74B513C52E4729AC00562633 /* FeedbackBufferManager.swift in Sources */,
