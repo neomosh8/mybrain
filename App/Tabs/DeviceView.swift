@@ -45,11 +45,11 @@ struct DeviceView: View {
                     signalQualityView
                     
                     deviceSettingsView
-                                        
+                    
                     liveEEGSignalsView
                     
                     troubleshootingView
-                                        
+                    
                     deviceActionsView
                 } else {
                     noDeviceConnectedView
@@ -74,14 +74,6 @@ struct DeviceView: View {
             TestSignalOverlayView()
         }
     }
-}
-
-// MARK: - Onboarding States
-enum OnboardingState {
-    case welcome
-    case scanning
-    case connecting
-    case permissionIssue
 }
 
 // MARK: - No Device Connected View with Integrated Onboarding
