@@ -135,12 +135,3 @@ class ThoughtsViewModel: ObservableObject {
         networkService.webSocket.closeSocket()
     }
 }
-
-
-extension ThoughtsViewModel {
-    func setMockData(_ mockThoughts: [Thought]) {
-        self.thoughts = mockThoughts
-        self.isLoading = false
-        self.errorMessage = nil
-    }
-}
