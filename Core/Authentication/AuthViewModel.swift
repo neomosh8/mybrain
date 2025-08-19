@@ -144,7 +144,7 @@ class AuthViewModel: ObservableObject {
         networkService.auth.verifyAuthCode(
             email: email,
             code: code,
-            deviceInfo: DeviceInfo.current
+            phoneInfo: PhoneInfo.current
         )
         .sink { result in
             switch result {
@@ -196,7 +196,7 @@ class AuthViewModel: ObservableObject {
         
         networkService.auth.logout(
             refreshToken: refreshToken,
-            deviceId: DeviceInfo.current.uniqueNumber
+            deviceId: PhoneInfo.current.uniqueNumber
         )
         .sink { result in
             switch result {
@@ -223,7 +223,7 @@ class AuthViewModel: ObservableObject {
             firstName: firstName,
             lastName: lastName,
             email: email,
-            deviceInfo: DeviceInfo.current
+            phoneInfo: PhoneInfo.current
         )
         .sink { result in
             switch result {
@@ -244,7 +244,7 @@ class AuthViewModel: ObservableObject {
     ) {
         networkService.auth.googleLogin(
             idToken: idToken,
-            deviceInfo: DeviceInfo.current
+            phoneInfo: PhoneInfo.current
         )
         .sink { result in
             switch result {
