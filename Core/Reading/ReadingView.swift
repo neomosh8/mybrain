@@ -60,7 +60,7 @@ struct ReadingView: View {
             )
         }
         .fullScreenCover(isPresented: .constant(viewModel.hasCompletedAllChapters)) {
-            ChapterCompletionView(
+            CompletionView(
                 thoughtId: thought.id,
                 thoughtName: thought.name,
                 onDismiss: {
