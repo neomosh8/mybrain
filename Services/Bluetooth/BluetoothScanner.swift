@@ -2,24 +2,6 @@ import Foundation
 import CoreBluetooth
 import Combine
 
-enum PermissionStatus {
-    case unknown, notDetermined, denied, authorized, poweredOff, unsupported
-}
-
-struct DiscoveredDevice: Identifiable {
-    let id: String
-    let name: String
-    let rssi: Int
-    let peripheral: CBPeripheral?
-    let isPriority: Bool
-}
-
-struct BLEDevice {
-    let id: String
-    let name: String
-    let peripheral: CBPeripheral?
-}
-
 class BluetoothScanner: NSObject, ObservableObject {
     // MARK: - Published Properties
     @Published var isScanning = false

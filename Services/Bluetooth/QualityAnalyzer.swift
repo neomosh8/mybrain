@@ -2,28 +2,6 @@ import Foundation
 import Accelerate
 import Combine
 
-// MARK: - Quality Analysis Data Structures
-struct SignalQualityMetrics {
-    let dynamicRange: DynamicRange
-    let snr: SignalToNoiseRatio
-}
-
-struct DynamicRange {
-    let linear: Double
-    let db: Double
-    let peakToPeak: Double
-    let rms: Double
-    let max: Double
-    let min: Double
-}
-
-struct SignalToNoiseRatio {
-    let totalSNRdB: Double
-    let bandSNR: [String: Double]
-    let signalPower: Double
-    let noisePower: Double
-}
-
 class QualityAnalyzer: NSObject, ObservableObject {
     // MARK: - Published Properties
     @Published var ch1ConnectionStatus: (connected: Bool, quality: Double) = (false, 0.0)

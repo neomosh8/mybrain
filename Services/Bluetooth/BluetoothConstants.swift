@@ -2,7 +2,6 @@ import Foundation
 import CoreBluetooth
 
 struct BtConst {
-    
     // MARK: - Service and Characteristic UUIDs
     static let SERVICE_UUID = CBUUID(string: "6E400001-B5A3-F393-E0A9-E50E24DCCA9E")
     static let WRITE_CHARACTERISTIC_UUID = CBUUID(string: "6E400002-B5A3-F393-E0A9-E50E24DCCA9E")
@@ -53,5 +52,4 @@ struct BtConst {
         "beta": (13, 30),
         "gamma": (30, 45)
     ]
-    
 }
