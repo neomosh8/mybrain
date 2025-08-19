@@ -270,9 +270,9 @@
 			children = (
 				684426FC2D13D580002E9BC6 /* ContentView.swift */,
 				743D5BB72DFC464000C4F71E /* MainTabView.swift */,
-				74F9960F2E5489670012E729 /* Models */,
 				684426FE2D13D580002E9BC6 /* myBrainApp.swift */,
 				743D5BB32DFC460700C4F71E /* Tabs */,
+				74F9960F2E5489670012E729 /* Models */,
 				74263C712DDADEBA00953598 /* ViewModels */,
 			);
 			path = App;
