@@ -27,7 +27,6 @@ final class AuthData {
     }
 }
 
-
 @Model
 final class UserProfileData {
     @Attribute(.unique) var id: String

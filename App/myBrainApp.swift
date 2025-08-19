@@ -1,7 +1,6 @@
 import SwiftUI
 import SwiftData
 import GoogleSignIn
-
 import MediaPlayer
 
 @main
