@@ -3,7 +3,8 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
-    
+    @StateObject private var settings = SettingsManager.shared
+
     let onNavigateToHome: (() -> Void)?
     
     init(onNavigateToHome: (() -> Void)? = nil) {
@@ -18,17 +19,6 @@ struct SettingsView: View {
     @State private var backgroundAudio = true
     @State private var appearance: AppearanceMode = .light
     @State private var language = "English (US)"
-    
-    enum ContentMode: String, CaseIterable {
-        case reading = "Reading"
-        case listening = "Listening"
-    }
-        
-    enum AppearanceMode: String, CaseIterable {
-        case light = "Light"
-        case dark = "Dark"
-        case auto = "Auto"
-    }
 
     var body: some View {
         ScrollView {
@@ -70,7 +60,6 @@ extension SettingsView {
                 iconColor: .green
             )
             
-            // Default Consumption Mode
             VStack(alignment: .leading, spacing: 8) {
                 Text("Default Consumption Mode")
                     .font(.system(size: 16, weight: .medium))
@@ -79,20 +68,21 @@ extension SettingsView {
                 HStack(spacing: 12) {
                     ForEach(ContentMode.allCases, id: \.self) { mode in
                         Button(action: {
-                            defaultMode = mode
+                            settings.contentMode = mode
                         }) {
                             HStack(spacing: 8) {
-                                Image(systemName: mode == .reading ? "eye" : "headphones")
+                                Image(systemName: mode.icon)
                                     .font(.system(size: 14, weight: .medium))
-                                Text(mode.rawValue)
+                                Text(mode.title)
                                     .font(.system(size: 14, weight: .medium))
                             }
-                            .foregroundColor(defaultMode == mode ? .white : .primary)
+                            .foregroundColor(settings.contentMode == mode ? .white : Color.label)
                             .padding(.horizontal, 16)
                             .padding(.vertical, 8)
                             .background(
                                 RoundedRectangle(cornerRadius: 20)
-                                    .fill(defaultMode == mode ? Color.blue : Color(.systemGray6))
+                                    .fill(settings.contentMode == mode ?
+                                          Color.accentColor : Color.secondarySystemBackground)
                             )
                         }
                     }
@@ -101,10 +91,7 @@ extension SettingsView {
             }
         }
     }
-}
-
-// MARK: - App Behavior Section
-extension SettingsView {
+    
     private var appBehaviorSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             SectionHeader(
@@ -113,21 +100,18 @@ extension SettingsView {
                 iconColor: .orange
             )
             
-            // Push Notifications Toggle
             ToggleRow(
                 title: "Push Notifications",
                 subtitle: "Session reminders and updates",
-                isOn: $pushNotifications
+                isOn: $settings.pushNotifications
             )
             
-            // Background Audio Toggle
             ToggleRow(
                 title: "Background Audio",
                 subtitle: "Continue playback when app is closed",
-                isOn: $backgroundAudio
+                isOn: $settings.backgroundAudio
             )
             
-            // Appearance
             VStack(alignment: .leading, spacing: 8) {
                 Text("Appearance")
                     .font(.system(size: 16, weight: .medium))
@@ -136,34 +120,47 @@ extension SettingsView {
                 HStack(spacing: 12) {
                     ForEach(AppearanceMode.allCases, id: \.self) { mode in
                         Button(action: {
-                            appearance = mode
+                            settings.appearance = mode
                         }) {
-                            Text(mode.rawValue)
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(appearance == mode ? .white : .primary)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 20)
-                                        .fill(appearance == mode ? Color.blue : Color(.systemGray5))
-                                )
+                            HStack(spacing: 6) {
+                                Image(systemName: appearanceIcon(for: mode))
+                                    .font(.system(size: 12, weight: .medium))
+                                Text(mode.rawValue)
+                                    .font(.system(size: 14, weight: .medium))
+                            }
+                            .foregroundColor(settings.appearance == mode ? .white : Color.label)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(settings.appearance == mode ?
+                                          Color.accentColor : Color.secondarySystemBackground)
+                            )
                         }
                     }
                     Spacer()
                 }
             }
             
-            // Language
             ActionRow(
                 icon: "globe",
                 title: "Language",
-                subtitle: language,
+                subtitle: settings.language,
                 iconColor: .blue
             ) {
                 // Language picker action
             }
         }
     }
+    
+    private func appearanceIcon(for mode: AppearanceMode) -> String {
+        switch mode {
+        case .light: return "sun.max.fill"
+        case .dark: return "moon.fill"
+        case .system: return "circle.lefthalf.filled"
+        }
+    }
+
 }
 
 // MARK: - Support & Information Section
