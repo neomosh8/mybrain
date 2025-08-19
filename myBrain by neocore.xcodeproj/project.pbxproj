@@ -32,7 +32,6 @@
 		74263C522DDADAE800953598 /* MainInterface.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 74263C472DDADAE800953598 /* MainInterface.storyboard */; };
 		74263C532DDADAE800953598 /* myAnimation.gif in Resources */ = {isa = PBXBuildFile; fileRef = 74263C482DDADAE800953598 /* myAnimation.gif */; };
 		74263C872DDAF63500953598 /* AnimatedLineChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C862DDAF63500953598 /* AnimatedLineChartView.swift */; };
-		74263C892DDAF66400953598 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74263C882DDAF66200953598 /* Constants.swift */; };
 		74263C8F2DDAF6F700953598 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 74263C8E2DDAF6F400953598 /* Localizable.strings */; };
 		743D5BBA2DFC464000C4F71E /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 743D5BB72DFC464000C4F71E /* MainTabView.swift */; };
 		743D5BBB2DFC464000C4F71E /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 743D5BB82DFC464000C4F71E /* ProfileView.swift */; };
@@ -151,7 +150,6 @@
 		74263C4B2DDADAE800953598 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
 		74263C4C2DDADAE800953598 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/MainInterface.storyboard; sourceTree = "<group>"; };
 		74263C862DDAF63500953598 /* AnimatedLineChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedLineChartView.swift; sourceTree = "<group>"; };
-		74263C882DDAF66200953598 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		74263C8E2DDAF6F400953598 /* Localizable.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = Localizable.strings; sourceTree = "<group>"; };
 		743D5BB42DFC464000C4F71E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		743D5BB52DFC464000C4F71E /* DeviceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceView.swift; sourceTree = "<group>"; };
@@ -426,7 +424,6 @@
 			children = (
 				74BC7E792E0027D600A9C2F4 /* GlobalServices.swift */,
 				7468256E2DDCE5880089AE37 /* ImageLoader.swift */,
-				74263C882DDAF66200953598 /* Constants.swift */,
 				684427372D13F22E002E9BC6 /* SharedDataManager.swift */,
 				74EC8AA42DCE6588008DE8A9 /* BackgroundManager.swift */,
 			);
@@ -774,7 +771,6 @@
 				74263C3C2DDADAE800953598 /* LoginScreen.swift in Sources */,
 				74B513C72E4758BC00562633 /* AnimatedText.swift in Sources */,
 				747E83BF2E31E3AF00F28F50 /* MockBluetoothService.swift in Sources */,
-				74263C892DDAF66400953598 /* Constants.swift in Sources */,
 				74BC7E722E0010D200A9C2F4 /* ProfileAPI+Implementation.swift in Sources */,
 				745BE7AA2E23D05C00FA1CC1 /* ListeningModels.swift in Sources */,
 				74F9961E2E5491B90012E729 /* ThoughtModels.swift in Sources */,
