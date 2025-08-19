@@ -7,10 +7,10 @@ protocol HTTPNetworkServiceProtocol: AuthenticationAPI, ProfileAPI, ThoughtsAPI 
 
 protocol AuthenticationAPI {
     func requestAuthCode(email: String) -> AnyPublisher<NetworkResult<RegisterResponse>, Never>
-    func verifyAuthCode(email: String, code: String, deviceInfo: DeviceInfo) -> AnyPublisher<NetworkResult<TokenResponse>, Never>
+    func verifyAuthCode(email: String, code: String, phoneInfo: PhoneInfo) -> AnyPublisher<NetworkResult<TokenResponse>, Never>
     func refreshToken(refreshToken: String) -> AnyPublisher<NetworkResult<RefreshTokenResponse>, Never>
-    func googleLogin(idToken: String, deviceInfo: DeviceInfo) -> AnyPublisher<NetworkResult<TokenResponse>, Never>
-    func appleLogin(userId: String, firstName: String?, lastName: String?, email: String?, deviceInfo: DeviceInfo) -> AnyPublisher<NetworkResult<TokenResponse>, Never>
+    func googleLogin(idToken: String, phoneInfo: PhoneInfo) -> AnyPublisher<NetworkResult<TokenResponse>, Never>
+    func appleLogin(userId: String, firstName: String?, lastName: String?, email: String?, phoneInfo: PhoneInfo) -> AnyPublisher<NetworkResult<TokenResponse>, Never>
     func logout(refreshToken: String, deviceId: String) -> AnyPublisher<NetworkResult<LogoutResponse>, Never>
 }
 
