@@ -16,16 +16,16 @@ extension HTTPNetworkService: AuthenticationAPI {
     func verifyAuthCode(
         email: String,
         code: String,
-        deviceInfo: DeviceInfo
+        phoneInfo: PhoneInfo
     ) -> AnyPublisher<NetworkResult<TokenResponse>, Never> {
         let body: [String: Any] = [
             "email": email,
             "code": code,
             "device_info": [
-                "device_name": deviceInfo.deviceName,
-                "os_name": deviceInfo.osName,
-                "app_version": deviceInfo.appVersion,
-                "unique_number": deviceInfo.uniqueNumber
+                "device_name": phoneInfo.deviceName,
+                "os_name": phoneInfo.osName,
+                "app_version": phoneInfo.appVersion,
+                "unique_number": phoneInfo.uniqueNumber
             ]
         ]
         
@@ -71,15 +71,15 @@ extension HTTPNetworkService: AuthenticationAPI {
     
     func googleLogin(
         idToken: String,
-        deviceInfo: DeviceInfo
+        phoneInfo: PhoneInfo
     ) -> AnyPublisher<NetworkResult<TokenResponse>, Never> {
         let body: [String: Any] = [
             "id_token": idToken,
             "device_info": [
-                "device_name": deviceInfo.deviceName,
-                "os_name": deviceInfo.osName,
-                "app_version": deviceInfo.appVersion,
-                "unique_number": deviceInfo.uniqueNumber
+                "device_name": phoneInfo.deviceName,
+                "os_name": phoneInfo.osName,
+                "app_version": phoneInfo.appVersion,
+                "unique_number": phoneInfo.uniqueNumber
             ]
         ]
         let endpoint = APIEndpoint(
@@ -104,7 +104,7 @@ extension HTTPNetworkService: AuthenticationAPI {
         firstName: String?,
         lastName: String?,
         email: String?,
-        deviceInfo: DeviceInfo
+        phoneInfo: PhoneInfo
     ) -> AnyPublisher<NetworkResult<TokenResponse>, Never> {
         let body: [String: Any] = [
             "user_id": userId,
@@ -112,10 +112,10 @@ extension HTTPNetworkService: AuthenticationAPI {
             "last_name": lastName ?? "",
             "email": email ?? "",
             "device_info": [
-                "device_name": deviceInfo.deviceName,
-                "os_name": deviceInfo.osName,
-                "app_version": deviceInfo.appVersion,
-                "unique_number": deviceInfo.uniqueNumber
+                "device_name": phoneInfo.deviceName,
+                "os_name": phoneInfo.osName,
+                "app_version": phoneInfo.appVersion,
+                "unique_number": phoneInfo.uniqueNumber
             ]
         ]
         
