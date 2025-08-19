@@ -10,7 +10,7 @@ struct HomeView: View {
     @State private var selectedMode: ContentMode
     @State private var showDeviceCard = true
     @State private var selectedThought: Thought?
-
+    
     // Search/Filter states
     @State private var showSearchField = false
     @State private var searchText = ""
@@ -33,7 +33,7 @@ struct HomeView: View {
     init(thoughtsViewModel: ThoughtsViewModel, onNavigateToDevice: (() -> Void)? = nil) {
         self.thoughtsViewModel = thoughtsViewModel
         self.onNavigateToDevice = onNavigateToDevice
-
+        
         _selectedMode = State(initialValue: SettingsManager.shared.contentMode)
     }
     
@@ -356,19 +356,6 @@ struct DeviceStatusCard: View {
     @State private var isCurrentlyConnecting = false
     @State private var connectionTimer: Timer?
     @State private var hideTimer: Timer?
-    
-    enum CardState {
-        case connectingToSaved(deviceName: String)
-        case tapToConnect
-        case connected(deviceInfo: DeviceInfo)
-        case connectionFailed
-    }
-    
-    struct DeviceInfo {
-        let name: String
-        let serialNumber: String?
-        let batteryLevel: Int?
-    }
     
     private var currentState: CardState {
         let hasSavedDevice = UserDefaults.standard.string(forKey: "savedBluetoothDeviceID") != nil
