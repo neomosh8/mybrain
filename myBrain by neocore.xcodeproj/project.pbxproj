@@ -58,6 +58,8 @@
 		748CFE322E42153A0034763E /* BTServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748CFE312E4215350034763E /* BTServiceProtocol.swift */; };
 		748DF72A2E1BA15400FD4080 /* AvatarImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748DF7292E1BA15100FD4080 /* AvatarImageCache.swift */; };
 		748DF72C2E1BA17600FD4080 /* CachedAvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748DF72B2E1BA17400FD4080 /* CachedAvatarView.swift */; };
+		748E0E842E5439ED001F40B6 /* SettingsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748E0E832E5439EC001F40B6 /* SettingsManager.swift */; };
+		748E0E872E543BCE001F40B6 /* Color+Adaptive.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748E0E862E543BCA001F40B6 /* Color+Adaptive.swift */; };
 		748E387F2E1E822E004FADCA /* PopupMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748E387E2E1E822D004FADCA /* PopupMenu.swift */; };
 		74929B2D2E0BD17F008DA6A6 /* ProfileManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74929B2C2E0BD17C008DA6A6 /* ProfileManager.swift */; };
 		7499D9082E02A652007E8C92 /* Thought+URLProcessing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7499D9072E02A64E007E8C92 /* Thought+URLProcessing.swift */; };
@@ -170,6 +172,8 @@
 		748CFE312E4215350034763E /* BTServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BTServiceProtocol.swift; sourceTree = "<group>"; };
 		748DF7292E1BA15100FD4080 /* AvatarImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarImageCache.swift; sourceTree = "<group>"; };
 		748DF72B2E1BA17400FD4080 /* CachedAvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CachedAvatarView.swift; sourceTree = "<group>"; };
+		748E0E832E5439EC001F40B6 /* SettingsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsManager.swift; sourceTree = "<group>"; };
+		748E0E862E543BCA001F40B6 /* Color+Adaptive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Adaptive.swift"; sourceTree = "<group>"; };
 		748E387E2E1E822D004FADCA /* PopupMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopupMenu.swift; sourceTree = "<group>"; };
 		74929B2C2E0BD17C008DA6A6 /* ProfileManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileManager.swift; sourceTree = "<group>"; };
 		7499D9072E02A64E007E8C92 /* Thought+URLProcessing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Thought+URLProcessing.swift"; sourceTree = "<group>"; };
@@ -295,6 +299,7 @@
 		74263C572DDADCD800953598 /* Common */ = {
 			isa = PBXGroup;
 			children = (
+				748E0E852E543BC3001F40B6 /* Extensions */,
 				74263C792DDADF1C00953598 /* Utilities */,
 				74263C622DDADDFC00953598 /* Components */,
 			);
@@ -501,9 +506,18 @@
 			path = Reading;
 			sourceTree = "<group>";
 		};
+		748E0E852E543BC3001F40B6 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				748E0E862E543BCA001F40B6 /* Color+Adaptive.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
 		74929B2B2E0BD175008DA6A6 /* Data */ = {
 			isa = PBXGroup;
 			children = (
+				748E0E832E5439EC001F40B6 /* SettingsManager.swift */,
 				748DF7292E1BA15100FD4080 /* AvatarImageCache.swift */,
 				74929B2C2E0BD17C008DA6A6 /* ProfileManager.swift */,
 			);
@@ -712,6 +726,7 @@
 				74BC7E5C2E000DC100A9C2F4 /* WebSocketNetworkService.swift in Sources */,
 				74BC7E5A2E000DB900A9C2F4 /* HTTPNetworkService.swift in Sources */,
 				74263C362DDADAE800953598 /* BluetoothService.swift in Sources */,
+				748E0E842E5439ED001F40B6 /* SettingsManager.swift in Sources */,
 				747A54B32DFDC0B400BD9541 /* ThoughtCard.swift in Sources */,
 				7468256F2DDCE58B0089AE37 /* ImageLoader.swift in Sources */,
 				748DF72C2E1BA17600FD4080 /* CachedAvatarView.swift in Sources */,
@@ -754,6 +769,7 @@
 				684427052D13D580002E9BC6 /* AppItem.swift in Sources */,
 				74C2860B2DB4C31A00CF836B /* AppleAuthManager.swift in Sources */,
 				7489330C2E2389BE007A5340 /* ReadingViewModel.swift in Sources */,
+				748E0E872E543BCE001F40B6 /* Color+Adaptive.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
