@@ -44,6 +44,7 @@
 		746822642E2F75D3007AB029 /* ListeningView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 746822632E2F75D2007AB029 /* ListeningView.swift */; };
 		7468256F2DDCE58B0089AE37 /* ImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7468256E2DDCE5880089AE37 /* ImageLoader.swift */; };
 		746E5A3A2E54DAC500049805 /* FeedbackModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 746E5A392E54DABC00049805 /* FeedbackModels.swift */; };
+		746E5A3C2E54DCDB00049805 /* DeviceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 746E5A3B2E54DCD400049805 /* DeviceModels.swift */; };
 		746FB2E12E369C4600204028 /* ToggleRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 746FB2E02E369C4500204028 /* ToggleRow.swift */; };
 		747377F72E26CC2100C50D04 /* ReadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747377F62E26CC1F00C50D04 /* ReadingView.swift */; };
 		747A2D9D2E2BCD3400CE9B80 /* FeedbackService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747A2D9C2E2BCD3100CE9B80 /* FeedbackService.swift */; };
@@ -92,7 +93,7 @@
 		74C286142DB4D5EB00CF836B /* client_312380135422-bko7g13qv6ggt7e5cc7dlt6lsquq7qi4.apps.googleusercontent.com.plist in Resources */ = {isa = PBXBuildFile; fileRef = 74C286132DB4D5EB00CF836B /* client_312380135422-bko7g13qv6ggt7e5cc7dlt6lsquq7qi4.apps.googleusercontent.com.plist */; };
 		74D58B382E152780008B62DC /* AppNavigationBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74D58B372E152776008B62DC /* AppNavigationBar.swift */; };
 		74EC8AA52DCE6590008DE8A9 /* BackgroundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74EC8AA42DCE6588008DE8A9 /* BackgroundManager.swift */; };
-		74F9961C2E548F820012E729 /* ContentModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74F996152E5489DF0012E729 /* ContentModels.swift */; };
+		74F9961C2E548F820012E729 /* MainModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74F996152E5489DF0012E729 /* MainModels.swift */; };
 		74F9961D2E5491B50012E729 /* UserModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74F996162E5489E90012E729 /* UserModels.swift */; };
 		74F9961E2E5491B90012E729 /* ThoughtModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74F996172E5489F20012E729 /* ThoughtModels.swift */; };
 		74F9961F2E5491BD0012E729 /* BluetoothModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74F996182E5489FC0012E729 /* BluetoothModels.swift */; };
@@ -164,6 +165,7 @@
 		746822632E2F75D2007AB029 /* ListeningView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListeningView.swift; sourceTree = "<group>"; };
 		7468256E2DDCE5880089AE37 /* ImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageLoader.swift; sourceTree = "<group>"; };
 		746E5A392E54DABC00049805 /* FeedbackModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackModels.swift; sourceTree = "<group>"; };
+		746E5A3B2E54DCD400049805 /* DeviceModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceModels.swift; sourceTree = "<group>"; };
 		746FB2E02E369C4500204028 /* ToggleRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToggleRow.swift; sourceTree = "<group>"; };
 		747377F62E26CC1F00C50D04 /* ReadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingView.swift; sourceTree = "<group>"; };
 		7479BFD92E1263F100F18A48 /* ServerAPI.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ServerAPI.md; sourceTree = "<group>"; };
@@ -212,7 +214,7 @@
 		74C286132DB4D5EB00CF836B /* client_312380135422-bko7g13qv6ggt7e5cc7dlt6lsquq7qi4.apps.googleusercontent.com.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "client_312380135422-bko7g13qv6ggt7e5cc7dlt6lsquq7qi4.apps.googleusercontent.com.plist"; sourceTree = "<group>"; };
 		74D58B372E152776008B62DC /* AppNavigationBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppNavigationBar.swift; sourceTree = "<group>"; };
 		74EC8AA42DCE6588008DE8A9 /* BackgroundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundManager.swift; sourceTree = "<group>"; };
-		74F996152E5489DF0012E729 /* ContentModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentModels.swift; sourceTree = "<group>"; };
+		74F996152E5489DF0012E729 /* MainModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainModels.swift; sourceTree = "<group>"; };
 		74F996162E5489E90012E729 /* UserModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserModels.swift; sourceTree = "<group>"; };
 		74F996172E5489F20012E729 /* ThoughtModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtModels.swift; sourceTree = "<group>"; };
 		74F996182E5489FC0012E729 /* BluetoothModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothModels.swift; sourceTree = "<group>"; };
@@ -281,7 +283,6 @@
 			children = (
 				684426FC2D13D580002E9BC6 /* ContentView.swift */,
 				743D5BB72DFC464000C4F71E /* MainTabView.swift */,
-				742DCF802DDD8C3500B17443 /* Models */,
 				684426FE2D13D580002E9BC6 /* myBrainApp.swift */,
 				743D5BB32DFC460700C4F71E /* Tabs */,
 				74263C712DDADEBA00953598 /* ViewModels */,
@@ -459,14 +460,6 @@
 			path = Fonts;
 			sourceTree = "<group>";
 		};
-		742DCF802DDD8C3500B17443 /* Models */ = {
-			isa = PBXGroup;
-			children = (
-				684426FD2D13D580002E9BC6 /* AppItem.swift */,
-			);
-			path = Models;
-			sourceTree = "<group>";
-		};
 		743D5BB32DFC460700C4F71E /* Tabs */ = {
 			isa = PBXGroup;
 			children = (
@@ -612,9 +605,11 @@
 		74F996102E54896E0012E729 /* Domain */ = {
 			isa = PBXGroup;
 			children = (
+				746E5A3B2E54DCD400049805 /* DeviceModels.swift */,
+				684426FD2D13D580002E9BC6 /* AppItem.swift */,
+				74F996152E5489DF0012E729 /* MainModels.swift */,
 				74F996172E5489F20012E729 /* ThoughtModels.swift */,
 				74F996162E5489E90012E729 /* UserModels.swift */,
-				74F996152E5489DF0012E729 /* ContentModels.swift */,
 			);
 			path = Domain;
 			sourceTree = "<group>";
@@ -792,12 +787,13 @@
 				74F9961E2E5491B90012E729 /* ThoughtModels.swift in Sources */,
 				7482861E2E40981F0058C2C0 /* BluetoothScanner.swift in Sources */,
 				74263C402DDADAE800953598 /* ChapterCompletionView.swift in Sources */,
+				746E5A3C2E54DCDB00049805 /* DeviceModels.swift in Sources */,
 				747377F72E26CC2100C50D04 /* ReadingView.swift in Sources */,
 				74BC7E782E0013D500A9C2F4 /* ThoughtsAPI+Implementation.swift in Sources */,
 				74A6ADE82E4310CF0054DB5E /* BluetoothConstants.swift in Sources */,
 				74D58B382E152780008B62DC /* AppNavigationBar.swift in Sources */,
 				748286222E409A3F0058C2C0 /* ResponseParser.swift in Sources */,
-				74F9961C2E548F820012E729 /* ContentModels.swift in Sources */,
+				74F9961C2E548F820012E729 /* MainModels.swift in Sources */,
 				746822642E2F75D3007AB029 /* ListeningView.swift in Sources */,
 				74B3FDAD2E1CD6AF00173269 /* BottomSheetPicker.swift in Sources */,
 				748286242E409A660058C2C0 /* QualityAnalyzer.swift in Sources */,
