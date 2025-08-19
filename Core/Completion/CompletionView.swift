@@ -1,7 +1,7 @@
 import Combine
 import SwiftUI
 
-struct ChapterCompletionView: View {
+struct CompletionView: View {
     let thoughtId: String
     let thoughtName: String
     let onDismiss: () -> Void
