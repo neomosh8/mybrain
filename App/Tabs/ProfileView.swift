@@ -507,7 +507,7 @@ struct InsightsRecommendationsSection: View {
             description: "Track progress toward your goals and celebrate achievements to reinforce momentum and commitment."
         )
     ]
-
+    
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -525,15 +525,6 @@ struct InsightsRecommendationsSection: View {
             }
         }
     }
-}
-
-struct InsightItem: Identifiable {
-    let id = UUID()
-    let icon: String
-    let iconColor: Color
-    let title: String
-    let subtitle: String
-    let description: String
 }
 
 struct WeeklyTrendsSection: View {
@@ -623,14 +614,6 @@ struct TrendCircleView: View {
             }
         }
     }
-}
-
-struct TrendItem: Identifiable {
-    let id = UUID()
-    let percentage: Int
-    let label: String
-    let change: String
-    let color: Color
 }
 
 struct ThoughtHistorySection: View {
@@ -741,16 +724,6 @@ struct ThoughtRowView: View {
                 .fill(Color(.systemGray6))
         )
     }
-}
-
-struct ThoughtItem: Identifiable {
-    let id = UUID()
-    let title: String
-    let subtitle: String
-    let score: Int
-    let scoreType: String
-    let progress: Double
-    let color: Color
 }
 
 
