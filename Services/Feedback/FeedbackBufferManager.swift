@@ -1,18 +1,8 @@
 import Foundation
 import Combine
 
-// MARK: - Feedback Buffer Item
-struct FeedbackItem {
-    let word: String
-    let value: Double
-    let timestamp: Date
-    let thoughtId: String
-    let chapterNumber: Int
-}
-
 // MARK: - Feedback Buffer Manager
 class FeedbackBufferManager: ObservableObject {
-    
     // MARK: - Properties
     private var buffer: [FeedbackItem] = []
     private let bufferLimit: Int

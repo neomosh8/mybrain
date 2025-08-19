@@ -43,6 +43,7 @@
 		745BE7AA2E23D05C00FA1CC1 /* ListeningModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 745BE7A92E23D04100FA1CC1 /* ListeningModels.swift */; };
 		746822642E2F75D3007AB029 /* ListeningView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 746822632E2F75D2007AB029 /* ListeningView.swift */; };
 		7468256F2DDCE58B0089AE37 /* ImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7468256E2DDCE5880089AE37 /* ImageLoader.swift */; };
+		746E5A3A2E54DAC500049805 /* FeedbackModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 746E5A392E54DABC00049805 /* FeedbackModels.swift */; };
 		746FB2E12E369C4600204028 /* ToggleRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 746FB2E02E369C4500204028 /* ToggleRow.swift */; };
 		747377F72E26CC2100C50D04 /* ReadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747377F62E26CC1F00C50D04 /* ReadingView.swift */; };
 		747A2D9D2E2BCD3400CE9B80 /* FeedbackService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747A2D9C2E2BCD3100CE9B80 /* FeedbackService.swift */; };
@@ -91,6 +92,12 @@
 		74C286142DB4D5EB00CF836B /* client_312380135422-bko7g13qv6ggt7e5cc7dlt6lsquq7qi4.apps.googleusercontent.com.plist in Resources */ = {isa = PBXBuildFile; fileRef = 74C286132DB4D5EB00CF836B /* client_312380135422-bko7g13qv6ggt7e5cc7dlt6lsquq7qi4.apps.googleusercontent.com.plist */; };
 		74D58B382E152780008B62DC /* AppNavigationBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74D58B372E152776008B62DC /* AppNavigationBar.swift */; };
 		74EC8AA52DCE6590008DE8A9 /* BackgroundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74EC8AA42DCE6588008DE8A9 /* BackgroundManager.swift */; };
+		74F9961C2E548F820012E729 /* ContentModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74F996152E5489DF0012E729 /* ContentModels.swift */; };
+		74F9961D2E5491B50012E729 /* UserModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74F996162E5489E90012E729 /* UserModels.swift */; };
+		74F9961E2E5491B90012E729 /* ThoughtModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74F996172E5489F20012E729 /* ThoughtModels.swift */; };
+		74F9961F2E5491BD0012E729 /* BluetoothModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74F996182E5489FC0012E729 /* BluetoothModels.swift */; };
+		74F996212E5491CF0012E729 /* NavigationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74F9961B2E548A1C0012E729 /* NavigationModels.swift */; };
+		74F996222E5491D30012E729 /* ViewStates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74F9961A2E548A150012E729 /* ViewStates.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -156,6 +163,7 @@
 		745BE7A92E23D04100FA1CC1 /* ListeningModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListeningModels.swift; sourceTree = "<group>"; };
 		746822632E2F75D2007AB029 /* ListeningView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListeningView.swift; sourceTree = "<group>"; };
 		7468256E2DDCE5880089AE37 /* ImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageLoader.swift; sourceTree = "<group>"; };
+		746E5A392E54DABC00049805 /* FeedbackModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackModels.swift; sourceTree = "<group>"; };
 		746FB2E02E369C4500204028 /* ToggleRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToggleRow.swift; sourceTree = "<group>"; };
 		747377F62E26CC1F00C50D04 /* ReadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingView.swift; sourceTree = "<group>"; };
 		7479BFD92E1263F100F18A48 /* ServerAPI.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ServerAPI.md; sourceTree = "<group>"; };
@@ -204,6 +212,12 @@
 		74C286132DB4D5EB00CF836B /* client_312380135422-bko7g13qv6ggt7e5cc7dlt6lsquq7qi4.apps.googleusercontent.com.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "client_312380135422-bko7g13qv6ggt7e5cc7dlt6lsquq7qi4.apps.googleusercontent.com.plist"; sourceTree = "<group>"; };
 		74D58B372E152776008B62DC /* AppNavigationBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppNavigationBar.swift; sourceTree = "<group>"; };
 		74EC8AA42DCE6588008DE8A9 /* BackgroundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundManager.swift; sourceTree = "<group>"; };
+		74F996152E5489DF0012E729 /* ContentModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentModels.swift; sourceTree = "<group>"; };
+		74F996162E5489E90012E729 /* UserModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserModels.swift; sourceTree = "<group>"; };
+		74F996172E5489F20012E729 /* ThoughtModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtModels.swift; sourceTree = "<group>"; };
+		74F996182E5489FC0012E729 /* BluetoothModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothModels.swift; sourceTree = "<group>"; };
+		74F9961A2E548A150012E729 /* ViewStates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewStates.swift; sourceTree = "<group>"; };
+		74F9961B2E548A1C0012E729 /* NavigationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationModels.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -235,6 +249,7 @@
 				74263C572DDADCD800953598 /* Common */,
 				74263C552DDADCC100953598 /* Core */,
 				7479BFD72E1263CE00F18A48 /* Docs */,
+				74F9960F2E5489670012E729 /* Models */,
 				684427332D13F189002E9BC6 /* myBrain.entitlements */,
 				74C286092DB4C1E800CF836B /* myBrain-by-neocore-Info.plist */,
 				684426C92D13CF03002E9BC6 /* Products */,
@@ -359,14 +374,15 @@
 			isa = PBXGroup;
 			children = (
 				74A6ADE72E4310CE0054DB5E /* BluetoothConstants.swift */,
-				748CFE312E4215350034763E /* BTServiceProtocol.swift */,
+				74F996182E5489FC0012E729 /* BluetoothModels.swift */,
+				7482861D2E40981E0058C2C0 /* BluetoothScanner.swift */,
 				74263C0B2DDADAE800953598 /* BluetoothService.swift */,
+				7482861F2E409A170058C2C0 /* BluetoothStreamer.swift */,
+				748CFE312E4215350034763E /* BTServiceProtocol.swift */,
+				747E83BE2E31E3AA00F28F50 /* MockBluetoothService.swift */,
 				748286232E409A650058C2C0 /* QualityAnalyzer.swift */,
 				748286212E409A3D0058C2C0 /* ResponseParser.swift */,
-				7482861F2E409A170058C2C0 /* BluetoothStreamer.swift */,
-				7482861D2E40981E0058C2C0 /* BluetoothScanner.swift */,
 				74263C1A2DDADAE800953598 /* SignalProcessing.swift */,
-				747E83BE2E31E3AA00F28F50 /* MockBluetoothService.swift */,
 			);
 			path = Bluetooth;
 			sourceTree = "<group>";
@@ -493,6 +509,7 @@
 			children = (
 				74B513C42E4729AB00562633 /* FeedbackBufferManager.swift */,
 				747A2D9C2E2BCD3100CE9B80 /* FeedbackService.swift */,
+				746E5A392E54DABC00049805 /* FeedbackModels.swift */,
 			);
 			path = Feedback;
 			sourceTree = "<group>";
@@ -579,6 +596,34 @@
 				748DF72B2E1BA17400FD4080 /* CachedAvatarView.swift */,
 				748E387E2E1E822D004FADCA /* PopupMenu.swift */,
 				74B513C62E4758BB00562633 /* AnimatedText.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		74F9960F2E5489670012E729 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				74F996102E54896E0012E729 /* Domain */,
+				74F996122E5489820012E729 /* UI */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		74F996102E54896E0012E729 /* Domain */ = {
+			isa = PBXGroup;
+			children = (
+				74F996172E5489F20012E729 /* ThoughtModels.swift */,
+				74F996162E5489E90012E729 /* UserModels.swift */,
+				74F996152E5489DF0012E729 /* ContentModels.swift */,
+			);
+			path = Domain;
+			sourceTree = "<group>";
+		};
+		74F996122E5489820012E729 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				74F9961B2E548A1C0012E729 /* NavigationModels.swift */,
+				74F9961A2E548A150012E729 /* ViewStates.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -713,6 +758,7 @@
 				743D5BBC2DFC464000C4F71E /* HomeView.swift in Sources */,
 				743D5BBE2DFC464000C4F71E /* SettingsView.swift in Sources */,
 				747A2D9D2E2BCD3400CE9B80 /* FeedbackService.swift in Sources */,
+				746E5A3A2E54DAC500049805 /* FeedbackModels.swift in Sources */,
 				743D5BBF2DFC464000C4F71E /* DeviceView.swift in Sources */,
 				748DF72A2E1BA15400FD4080 /* AvatarImageCache.swift in Sources */,
 				74BC7E702E00109800A9C2F4 /* AuthenticationAPI+Implementation.swift in Sources */,
@@ -720,6 +766,7 @@
 				74263C2B2DDADAE800953598 /* SignalProcessing.swift in Sources */,
 				74BC7E5E2E000DCB00A9C2F4 /* TokenStorage.swift in Sources */,
 				74BC7E682E000E0700A9C2F4 /* ResponseModels.swift in Sources */,
+				74F996222E5491D30012E729 /* ViewStates.swift in Sources */,
 				748CFE322E42153A0034763E /* BTServiceProtocol.swift in Sources */,
 				74BC7E6A2E000E0E00A9C2F4 /* WebSocketModels.swift in Sources */,
 				74263C2D2DDADAE800953598 /* FeedbackPlotView.swift in Sources */,
@@ -738,9 +785,11 @@
 				74263C3C2DDADAE800953598 /* LoginScreen.swift in Sources */,
 				74B513C72E4758BC00562633 /* AnimatedText.swift in Sources */,
 				747E83BF2E31E3AF00F28F50 /* MockBluetoothService.swift in Sources */,
+				74F9961D2E5491B50012E729 /* UserModels.swift in Sources */,
 				74263C892DDAF66400953598 /* Constants.swift in Sources */,
 				74BC7E722E0010D200A9C2F4 /* ProfileAPI+Implementation.swift in Sources */,
 				745BE7AA2E23D05C00FA1CC1 /* ListeningModels.swift in Sources */,
+				74F9961E2E5491B90012E729 /* ThoughtModels.swift in Sources */,
 				7482861E2E40981F0058C2C0 /* BluetoothScanner.swift in Sources */,
 				74263C402DDADAE800953598 /* ChapterCompletionView.swift in Sources */,
 				747377F72E26CC2100C50D04 /* ReadingView.swift in Sources */,
@@ -748,15 +797,18 @@
 				74A6ADE82E4310CF0054DB5E /* BluetoothConstants.swift in Sources */,
 				74D58B382E152780008B62DC /* AppNavigationBar.swift in Sources */,
 				748286222E409A3F0058C2C0 /* ResponseParser.swift in Sources */,
+				74F9961C2E548F820012E729 /* ContentModels.swift in Sources */,
 				746822642E2F75D3007AB029 /* ListeningView.swift in Sources */,
 				74B3FDAD2E1CD6AF00173269 /* BottomSheetPicker.swift in Sources */,
 				748286242E409A660058C2C0 /* QualityAnalyzer.swift in Sources */,
+				74F996212E5491CF0012E729 /* NavigationModels.swift in Sources */,
 				74BC7E622E000DEF00A9C2F4 /* WebSocketProtocols.swift in Sources */,
 				74C2860D2DB4C32400CF836B /* GoogleAuthManager.swift in Sources */,
 				74B513C52E4729AC00562633 /* FeedbackBufferManager.swift in Sources */,
 				74BC7E662E000E0000A9C2F4 /* RequestModels.swift in Sources */,
 				6844270E2D13D862002E9BC6 /* AuthViewModel.swift in Sources */,
 				684427032D13D580002E9BC6 /* myBrainApp.swift in Sources */,
+				74F9961F2E5491BD0012E729 /* BluetoothModels.swift in Sources */,
 				684427382D13F22E002E9BC6 /* SharedDataManager.swift in Sources */,
 				74929B2D2E0BD17F008DA6A6 /* ProfileManager.swift in Sources */,
 				74BC7E6C2E000E1B00A9C2F4 /* KeychainHelper.swift in Sources */,
