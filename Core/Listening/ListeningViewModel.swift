@@ -39,7 +39,6 @@ class ListeningViewModel: ObservableObject {
     private var currentThought: Thought?
         
     // MARK: - Private State
-    private var didEndToken: NSObjectProtocol?
     private var cancellables = Set<AnyCancellable>()
     private var playbackProgressObserver: Any?
     private var playerItemObservation: AnyCancellable?
@@ -262,9 +261,7 @@ class ListeningViewModel: ObservableObject {
         isPlaying = true
         player?.playImmediately(atRate: 1.0)
                 
-        // Send any pending words now that player is ready
         if !pendingChapterWords.isEmpty {
-            print("🎵 Sending \(pendingChapterWords.count) pending words from Chapter 1")
             DispatchQueue.main.async {
                 NotificationCenter.default.post(
                     name: Notification.Name("NewChapterWordsFromAudio"),
@@ -294,8 +291,6 @@ class ListeningViewModel: ObservableObject {
     }
     
     private func appendNewWords(_ newWords: [WordTimestamp]) {
-        print("🎵 appendNewWords called with \(newWords.count) words")
-        
         if !newWords.isEmpty {
             allWords.append(contentsOf: newWords)
             allWords.sort { $0.start < $1.start }
@@ -305,9 +300,6 @@ class ListeningViewModel: ObservableObject {
             
             buildParagraphs()
 
-            print("🎵 Total words now: \(allWords.count)")
-            print("🎵 First word: \(allWords.first?.text ?? "none"), Last word: \(allWords.last?.text ?? "none")")
-            
             if !newWords.isEmpty {
                 lastUpdateTime = -1
                 
@@ -350,7 +342,6 @@ class ListeningViewModel: ObservableObject {
                 applyIndexIfChanged(j, at: t); return
             }
         }
-        // no change
     }
 
     @inline(__always)
@@ -383,11 +374,6 @@ class ListeningViewModel: ObservableObject {
         if let observer = playbackProgressObserver {
             player?.removeTimeObserver(observer)
             playbackProgressObserver = nil
-        }
-        
-        if let token = didEndToken {
-            NotificationCenter.default.removeObserver(token)
-            didEndToken = nil
         }
         
         playerItemObservation?.cancel()
@@ -446,21 +432,6 @@ class ListeningViewModel: ObservableObject {
         }
         playbackProgressObserver = timeObserver
         
-        didEndToken = NotificationCenter.default.addObserver(
-            forName: .AVPlayerItemDidPlayToEndTime,
-            object: player.currentItem,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in
-                guard let self = self else { return }
-                self.isPlaying = false
-                
-                if self.isOnLastChapter {
-                    self.hasCompletedAllChapters = true
-                }
-            }
-        }
-        
         NotificationCenter.default.publisher(for: AVPlayerItem.playbackStalledNotification)
             .sink { [weak self] _ in
                 print("🎵 Playback stalled (likely waiting for next chapter)")
@@ -486,11 +457,8 @@ class ListeningViewModel: ObservableObject {
         )
         
         checkForNextChapterRequest(currentTime: currentSeconds)
-        
-        if isOnLastChapter,
-           duration > 0,
-           currentTime.seconds >= (duration - 0.25),
-           !hasCompletedAllChapters {
+                
+        if isOnLastChapter, !hasCompletedAllChapters {
             pausePlayback()
             hasCompletedAllChapters = true
         }
@@ -501,12 +469,13 @@ class ListeningViewModel: ObservableObject {
         
         let nextChapterNumber = currentChapterNumber + 1
         
+//        print("before next chapter request, isOnLastChapter: \(isOnLastChapter)")
         if currentTime >= requestTime,
            !requestedChapters.contains(nextChapterNumber),
            !isOnLastChapter {
             requestedChapters.insert(nextChapterNumber)
             requestNextChapter()
-            print("🎵 ✅ Requesting chapter \(nextChapterNumber) at time \(currentTime) (threshold: \(requestTime))")
+            print("🎵 ✅ Requesting chapter \(nextChapterNumber) at time \(currentTime)")
         }
     }
     
@@ -530,7 +499,7 @@ class ListeningViewModel: ObservableObject {
             let title = chapterAudioData.title ?? ""
             let chapterStartTime = durationsSoFar
             
-            print("🎵 Chapter \(chapterNumber) audio generated")
+            print("✅ ✅ Chapter \(chapterNumber) audio generated")
             currentChapterNumber = chapterNumber
             
             let chapterInfo = ChapterInfo(
