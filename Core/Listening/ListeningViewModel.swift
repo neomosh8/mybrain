@@ -458,7 +458,11 @@ class ListeningViewModel: ObservableObject {
         
         checkForNextChapterRequest(currentTime: currentSeconds)
                 
-        if isOnLastChapter, !hasCompletedAllChapters {
+        if isOnLastChapter,
+           !hasCompletedAllChapters,
+           let totalDuration = player?.currentItem?.duration.seconds,
+           totalDuration.isFinite,
+           currentSeconds >= totalDuration - 0.5 {
             pausePlayback()
             hasCompletedAllChapters = true
         }
