@@ -465,18 +465,14 @@ class ListeningViewModel: ObservableObject {
     }
     
     private func checkForNextChapterRequest(currentTime: Double) {
-        guard let requestTime = nextChapterRequestTime else { return }
-        
-        let nextChapterNumber = currentChapterNumber + 1
-        
-//        print("before next chapter request, isOnLastChapter: \(isOnLastChapter)")
-        if currentTime >= requestTime,
-           !requestedChapters.contains(nextChapterNumber),
-           !isOnLastChapter {
-            requestedChapters.insert(nextChapterNumber)
-            requestNextChapter()
-            print("🎵 ✅ Requesting chapter \(nextChapterNumber) at time \(currentTime)")
-        }
+       guard let requestTime = nextChapterRequestTime,
+             currentTime >= requestTime,
+             !requestedChapters.contains(currentChapterNumber + 1),
+             !isOnLastChapter else { return }
+       
+       requestedChapters.insert(currentChapterNumber + 1)
+       requestNextChapter()
+       print("🎵 ✅ Requesting chapter \(currentChapterNumber + 1) at time \(currentTime)")
     }
     
     private func requestNextChapter() {
