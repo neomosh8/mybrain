@@ -506,8 +506,11 @@ class ListeningViewModel: ObservableObject {
             )
             chapterManager.addChapter(chapterInfo)
             
-            let requestDelay = max(audioDuration - generationTime * 2 , 5.0)
-            nextChapterRequestTime = durationsSoFar + requestDelay
+            if !isOnLastChapter {
+                let requestDelay = max(audioDuration - generationTime * 2, 5.0)
+                nextChapterRequestTime = durationsSoFar + requestDelay
+            }
+            
             durationsSoFar += audioDuration
         }
         
