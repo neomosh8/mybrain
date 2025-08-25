@@ -196,21 +196,15 @@ struct ListeningView: View {
                 .onChange(of: viewModel.currentWordIndex) { _, newIndex in
                     guard newIndex >= 15 else { return }
                     let now = Date()
-
+                    
                     guard now.timeIntervalSince(lastScrollTime) > 0.16 else {
                         return
                     }
                     lastScrollTime = now
-
-                    let animate = !viewModel.isCurrentlyStalled
-                    if animate {
-                        withAnimation(.easeInOut(duration: 0.25)) {
-                            proxy.scrollTo(newIndex, anchor: .center)
-                        }
-                    } else {
+                    
+                    withAnimation(.easeInOut(duration: 0.25)) {
                         proxy.scrollTo(newIndex, anchor: .center)
                     }
-
                 }
             }
             .background(Color("ParagraphBackground"))
