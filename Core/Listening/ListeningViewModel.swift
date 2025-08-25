@@ -208,9 +208,6 @@ class ListeningViewModel: ObservableObject {
                 handleChapterAudioResponse(data: data)
             }
             
-        case .chapterComplete(_, _, let data):
-            if let completeData = ChapterCompleteResponseData(from: data),
-               let complete = completeData.complete,
                complete {
                 isOnLastChapter = true
                 nextChapterRequestTime = nil
