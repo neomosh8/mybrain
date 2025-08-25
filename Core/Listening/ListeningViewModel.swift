@@ -479,7 +479,7 @@ class ListeningViewModel: ObservableObject {
         }
         
         let receivedChapterNumber = chapterAudioData.chapterNumber ?? 0
-        
+                
         if let isLast = chapterAudioData.isLastChapter, isLast {
             isOnLastChapter = true
             nextChapterRequestTime = nil
