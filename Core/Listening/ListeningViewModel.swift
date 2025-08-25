@@ -208,11 +208,6 @@ class ListeningViewModel: ObservableObject {
                 handleChapterAudioResponse(data: data)
             }
             
-               complete {
-                isOnLastChapter = true
-                nextChapterRequestTime = nil
-            }
-            
         default:
             break
         }
@@ -487,6 +482,11 @@ class ListeningViewModel: ObservableObject {
         }
         
         let receivedChapterNumber = chapterAudioData.chapterNumber ?? 0
+        
+        if let isLast = chapterAudioData.isLastChapter, isLast {
+            isOnLastChapter = true
+            nextChapterRequestTime = nil
+        }
 
         // Handle chapter info
         if let chapterNumber = chapterAudioData.chapterNumber {
