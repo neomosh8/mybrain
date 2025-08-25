@@ -40,9 +40,6 @@ class ListeningViewModel: ObservableObject {
     // MARK: - Private State
     private var cancellables = Set<AnyCancellable>()
     private var playbackProgressObserver: Any?
-    private var playerItemObservation: AnyCancellable?
-    private var timeControlObs: AnyCancellable?
-    private var accessLogObs: AnyCancellable?
     private var searchIndex: Int = 0
     private var wordStarts: [Double] = []
     
@@ -348,9 +345,6 @@ class ListeningViewModel: ObservableObject {
             playbackProgressObserver = nil
         }
         
-        playerItemObservation?.cancel()
-        playerItemObservation = nil
-        
         player?.pause()
         player = nil
     }
@@ -367,33 +361,6 @@ class ListeningViewModel: ObservableObject {
     
     private func setupPlayerObservations() {
         guard let player = player else { return }
-        
-        playerItemObservation = player.currentItem?.publisher(for: \.status)
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] status in
-                if status == .readyToPlay, self?.isPlaying == true {
-                    self?.player?.play()
-                }
-            }
-        
-        timeControlObs = player.publisher(for: \.timeControlStatus)
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] status in
-                guard let self else { return }
-                if self.isPlaying, status != .playing {
-                    self.player?.play()
-                }
-            }
-        
-        accessLogObs = NotificationCenter.default.publisher(
-            for: .AVPlayerItemNewAccessLogEntry,
-            object: player.currentItem
-        )
-        .receive(on: DispatchQueue.main)
-        .sink { [weak self] _ in
-            if self?.isPlaying == true { self?.player?.play() }
-        }
-        
 
         playbackProgressObserver = player.addPeriodicTimeObserver(
             forInterval: CMTime(seconds: 0.1, preferredTimescale: CMTimeScale(NSEC_PER_SEC)),
@@ -403,13 +370,6 @@ class ListeningViewModel: ObservableObject {
                 self?.monitorPlaybackProgress(currentTime: currentTime)
             }
         }
-        
-        NotificationCenter.default.publisher(for: AVPlayerItem.playbackStalledNotification)
-            .sink { [weak self] _ in
-                print("🎵 Playback stalled (likely waiting for next chapter)")
-                self?.isCurrentlyStalled = true
-            }
-            .store(in: &cancellables)
     }
     
     private func monitorPlaybackProgress(currentTime: CMTime) {
@@ -462,6 +422,7 @@ class ListeningViewModel: ObservableObject {
         let receivedChapterNumber = chapterAudioData.chapterNumber ?? 0
                 
         if let isLast = chapterAudioData.isLastChapter, isLast {
+            print("this is the last chapter")
             isOnLastChapter = true
             nextChapterRequestTime = nil
         }
@@ -485,7 +446,7 @@ class ListeningViewModel: ObservableObject {
             chapterManager.addChapter(chapterInfo)
             
             if !isOnLastChapter {
-                let requestDelay = max(audioDuration - generationTime * 2, 5.0)
+                let requestDelay = max(audioDuration - generationTime, 3.0)
                 nextChapterRequestTime = durationsSoFar + requestDelay
             }
             
@@ -519,42 +480,6 @@ class ListeningViewModel: ObservableObject {
                 }
             } else {
                 pendingChapterWords = adjustedWords
-            }
-        }
-
-        if let player = player,
-           isPlaying,
-           isCurrentlyStalled {
-            print("🎵 Player is stalled but new chapter \(receivedChapterNumber) is ready, resuming playback...")
-            
-            isCurrentlyStalled = false
-                        
-            player.play()
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-                guard let self = self,
-                      self.isPlaying,
-                      let player = self.player else { return }
-                
-                if player.rate == 0 {
-                    print("🎵 Player still stalled, trying pause/play cycle...")
-                    player.pause()
-                    
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        player.play()
-                        self.isPlaying = true
-                        
-                        // Final verification
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            if player.rate > 0 {
-                                print("🎵 ✅ Playback successfully resumed")
-                                self.isCurrentlyStalled = false
-                            } else {
-                                print("🎵 ⚠️ Playback still stalled - HLS might need more time to update")
-                            }
-                        }
-                    }
-                }
             }
         }
     }
