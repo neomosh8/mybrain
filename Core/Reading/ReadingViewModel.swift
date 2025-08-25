@@ -78,14 +78,6 @@ class ReadingViewModel: ObservableObject {
             if status.isSuccess { handleTextChapterResponse(data: data) }
             isLoadingChapter = false
             
-        case .chapterComplete(_, _, let data):
-            if let completeData = ChapterCompleteResponseData(from: data),
-               let complete = completeData.complete,
-               complete {
-                isLastChapter = true
-            }
-            isLoadingChapter = false
-            
         default:
             break
         }
@@ -94,6 +86,10 @@ class ReadingViewModel: ObservableObject {
     private func handleTextChapterResponse(data: [String: Any]?) {
         guard let chapterData = ChapterTextResponseData(from: data),
               let html = chapterData.content else { return }
+        
+        if let isLast = chapterData.isLastChapter, isLast {
+            isLastChapter = true
+        }
         
         appendChapter(html: html, chapterNumber: chapterData.chapterNumber ?? (chapters.count + 1))
         chapters.append(chapterData)
