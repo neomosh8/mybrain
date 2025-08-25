@@ -49,17 +49,6 @@ class ListeningViewModel: ObservableObject {
     init() {
         setupWebSocketSubscriptions()
         setupRemoteControlHandlers()
-        
-        NotificationCenter.default.addObserver(
-            forName: Notification.Name("ResumePlaybackAfterGap"),
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in                
-                self?.player?.play()
-                self?.isPlaying = true
-            }
-        }
     }
     
     //    deinit {
@@ -293,14 +282,6 @@ class ListeningViewModel: ObservableObject {
 
             if !newWords.isEmpty {
                 lastUpdateTime = -1
-                
-                DispatchQueue.main.async {
-                    NotificationCenter.default.post(
-                        name: Notification.Name("ResumePlaybackAfterGap"),
-                        object: nil
-                    )
-                }
-                
             }
         }
     }
