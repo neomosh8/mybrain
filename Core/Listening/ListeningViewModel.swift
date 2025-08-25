@@ -418,9 +418,7 @@ class ListeningViewModel: ObservableObject {
         guard let chapterAudioData = ChapterAudioResponseData(from: data) else {
             return
         }
-        
-        let receivedChapterNumber = chapterAudioData.chapterNumber ?? 0
-                
+                        
         if let isLast = chapterAudioData.isLastChapter, isLast {
             print("this is the last chapter")
             isOnLastChapter = true
