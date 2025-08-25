@@ -394,7 +394,8 @@ class ListeningViewModel: ObservableObject {
             if self?.isPlaying == true { self?.player?.play() }
         }
         
-        let timeObserver = player.addPeriodicTimeObserver(
+
+        playbackProgressObserver = player.addPeriodicTimeObserver(
             forInterval: CMTime(seconds: 0.1, preferredTimescale: CMTimeScale(NSEC_PER_SEC)),
             queue: .main
         ) { [weak self] currentTime in
@@ -402,7 +403,6 @@ class ListeningViewModel: ObservableObject {
                 self?.monitorPlaybackProgress(currentTime: currentTime)
             }
         }
-        playbackProgressObserver = timeObserver
         
         NotificationCenter.default.publisher(for: AVPlayerItem.playbackStalledNotification)
             .sink { [weak self] _ in
