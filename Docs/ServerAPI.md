@@ -923,6 +923,7 @@ For chapters with audio generation (`generate_audio: true`).
     "title": "Chapter Title",
     "audio_duration": 86.7,
     "generation_time": 12.5,
+    "is_last_chapter": false,
     "words": [
       {
         "text": "The",
@@ -973,7 +974,8 @@ For chapters with text content (`generate_audio: false` or not specified).
     "title": "Chapter Title",
     "content": "HTML formatted content",
     "content_with_image": "HTML content with images",
-    "generation_time": 8.3
+    "generation_time": 8.3,
+    "is_last_chapter": true
   }
 }
 ```
@@ -1206,6 +1208,9 @@ Process and retrieve the next chapter of a thought.
 - If `generate_audio: true` → `chapter_audio` message type
 - If `generate_audio: false` → `chapter_text` message type  
 - If no more chapters → `chapter_complete` message type
+
+Note: Both chapter_audio and chapter_text responses include an is_last_chapter boolean field indicating whether this is the final chapter in the thought. This allows clients to know when they've reached the end without needing to make an additional request.
+
 
 #### 3. Submit Feedback
 
