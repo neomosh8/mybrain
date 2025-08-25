@@ -33,7 +33,6 @@ class ListeningViewModel: ObservableObject {
     private var requestedChapters: Set<Int> = []
     @Published var currentChapterNumber: Int = 1
     private var pendingChapterWords: [[String: Any]] = []
-    @Published var isCurrentlyStalled = false
 
     // MARK: - Thought Context
     private var currentThought: Thought?
@@ -448,7 +447,7 @@ class ListeningViewModel: ObservableObject {
             object: currentSeconds
         )
         
-        checkForNextChapterRequest(currentTime: currentSeconds)
+        requestNextChapter(currentTime: currentSeconds)
                 
         if isOnLastChapter,
            !hasCompletedAllChapters,
@@ -460,20 +459,18 @@ class ListeningViewModel: ObservableObject {
         }
     }
     
-    private func checkForNextChapterRequest(currentTime: Double) {
-       guard let requestTime = nextChapterRequestTime,
-             currentTime >= requestTime,
-             !requestedChapters.contains(currentChapterNumber + 1),
-             !isOnLastChapter else { return }
-       
-       requestedChapters.insert(currentChapterNumber + 1)
-       requestNextChapter()
-       print("🎵 ✅ Requesting chapter \(currentChapterNumber + 1) at time \(currentTime)")
-    }
-    
-    private func requestNextChapter() {
+    private func requestNextChapter(currentTime: Double) {
+        guard let requestTime = nextChapterRequestTime,
+              currentTime >= requestTime,
+              !requestedChapters.contains(currentChapterNumber + 1),
+              !isOnLastChapter else { return }
+        
+        requestedChapters.insert(currentChapterNumber + 1)
+        
         guard let thoughtId = currentThought?.id else { return }
         networkService.webSocket.requestNextChapter(thoughtId: thoughtId, generateAudio: true)
+        
+        print("🎵 ✅ Requesting chapter \(currentChapterNumber + 1) at time \(currentTime)")
     }
     
     private func handleChapterAudioResponse(data: [String: Any]?) {
