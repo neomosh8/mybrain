@@ -220,6 +220,7 @@ struct ChapterAudioResponseData {
     let audioDuration: Double?
     let generationTime: Double?
     let words: [[String: Any]]?
+    let isLastChapter: Bool?
     
     init?(from data: [String: Any]?) {
         guard let data = data else { return nil }
@@ -229,6 +230,7 @@ struct ChapterAudioResponseData {
         self.audioDuration = data["audio_duration"] as? Double
         self.generationTime = data["generation_time"] as? Double
         self.words = data["words"] as? [[String: Any]]
+        self.isLastChapter = data["is_last_chapter"] as? Bool
     }
 }
 
@@ -238,6 +240,7 @@ struct ChapterTextResponseData {
     let content: String?
     let contentWithImage: String?
     let generationTime: Double?
+    let isLastChapter: Bool?
     
     init?(from data: [String: Any]?) {
         guard let data = data else { return nil }
@@ -247,6 +250,7 @@ struct ChapterTextResponseData {
         self.content = data["content"] as? String
         self.contentWithImage = data["content_with_image"] as? String
         self.generationTime = data["generation_time"] as? Double
+        self.isLastChapter = data["is_last_chapter"] as? Bool
     }
 }
 
