@@ -482,8 +482,7 @@ class ListeningViewModel: ObservableObject {
     }
     
     private func handleChapterAudioResponse(data: [String: Any]?) {
-        guard let data = data,
-              let chapterAudioData = ChapterAudioResponseData(from: data) else {
+        guard let chapterAudioData = ChapterAudioResponseData(from: data) else {
             return
         }
         
