@@ -48,10 +48,6 @@ class ListeningViewModel: ObservableObject {
         setupRemoteControlHandlers()
     }
 
-    //    deinit {
-    //        cleanup()
-    //    }
-
     // MARK: - Public Interface
 
     func buildParagraphs() {
