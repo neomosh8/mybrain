@@ -77,7 +77,8 @@ struct ListeningView: View {
             checkThoughtStatus()
         }
         .onDisappear {
-            viewModel.cleanup()
+            viewModel.cleanupPlayer()
+            viewModel.resetState()
 
             NotificationCenter.default.post(
                 name: .thoughtProgressUpdated,
