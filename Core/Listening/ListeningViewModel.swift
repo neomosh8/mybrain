@@ -130,6 +130,7 @@ class ListeningViewModel: ObservableObject {
     func startListening(for thought: Thought) {
         currentThought = thought
         resetState()
+        cleanupPlayer()
         fetchStreamingLinks(for: thought)
     }
 
@@ -243,8 +244,6 @@ class ListeningViewModel: ObservableObject {
             listeningState = .error(NSError(domain: "InvalidURL", code: -1))
             return
         }
-
-        cleanupPlayer()
 
         configureAudioSession()
 
