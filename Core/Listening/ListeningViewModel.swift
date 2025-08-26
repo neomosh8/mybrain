@@ -1,6 +1,6 @@
-import Foundation
 import AVFoundation
 import Combine
+import Foundation
 import MediaPlayer
 import NaturalLanguage
 
@@ -13,22 +13,22 @@ class ListeningViewModel: ObservableObject {
     @Published var playerError: Error?
     @Published var listeningState: ListeningState = .idle
     @Published var chapterManager = ChapterManager()
-    
+
     @Published var currentTime: Double = 0.0
     @Published var duration: Double = 0.0
-    
+
     // MARK: - Chapter Progress State
     @Published var isOnLastChapter = false
     @Published var hasCompletedAllChapters = false
     @Published var nextChapterRequestTime: Double?
     @Published var durationsSoFar: Double = 0.0
-    
+
     // MARK: - Subtitle
     @Published var paragraphs: [[WordData]] = []
     @Published var allWords: [WordTimestamp] = []
     @Published var currentWordIndex: Int = -1
     private var lastUpdateTime: TimeInterval = -1
-    
+
     // MARK: - Request Deduplication
     private var requestedChapters: Set<Int> = []
     @Published var currentChapterNumber: Int = 1
@@ -36,35 +36,37 @@ class ListeningViewModel: ObservableObject {
 
     // MARK: - Thought Context
     private var currentThought: Thought?
-        
+
     // MARK: - Private State
     private var cancellables = Set<AnyCancellable>()
     private var playbackProgressObserver: Any?
     private var searchIndex: Int = 0
     private var wordStarts: [Double] = []
-    
+
     init() {
         setupWebSocketSubscriptions()
         setupRemoteControlHandlers()
     }
-    
+
     //    deinit {
     //        cleanup()
     //    }
-    
+
     // MARK: - Public Interface
-    
+
     func buildParagraphs() {
         let allText = allWords.map { $0.text }.joined(separator: " ")
         let tagger = NLTagger(tagSchemes: [.nameType, .lexicalClass])
         tagger.string = allText
-        
-        let commonUppercaseWords: Set<String> = ["I", "I'm", "I'll", "I've", "I'd", "Dr", "Mr", "Mrs", "Ms"]
-        
+
+        let commonUppercaseWords: Set<String> = [
+            "I", "I'm", "I'll", "I've", "I'd", "Dr", "Mr", "Mrs", "Ms",
+        ]
+
         var currentParagraph: [WordData] = []
         var newParagraphs: [[WordData]] = []
         var textIndex = allText.startIndex
-        
+
         for (index, wordTimestamp) in allWords.enumerated() {
             let wordData = WordData(
                 originalIndex: index,
@@ -72,23 +74,36 @@ class ListeningViewModel: ObservableObject {
                 startTime: wordTimestamp.start,
                 endTime: wordTimestamp.end
             )
-            
+
             let word = wordTimestamp.text
             let firstChar = word.first
             let isUppercase = firstChar?.isUppercase == true
-            
-            if let wordRange = allText.range(of: word, range: textIndex..<allText.endIndex) {
+
+            if let wordRange = allText.range(
+                of: word,
+                range: textIndex..<allText.endIndex
+            ) {
                 var shouldStartNewParagraph = false
-                
+
                 if isUppercase && !currentParagraph.isEmpty {
                     if !commonUppercaseWords.contains(word) {
-                        tagger.enumerateTags(in: wordRange, unit: .word, scheme: .nameType) { tag, _ in
-                            shouldStartNewParagraph = !(tag == .personalName || tag == .placeName || tag == .organizationName)
+                        tagger.enumerateTags(
+                            in: wordRange,
+                            unit: .word,
+                            scheme: .nameType
+                        ) { tag, _ in
+                            shouldStartNewParagraph =
+                                !(tag == .personalName || tag == .placeName
+                                || tag == .organizationName)
                             return false
                         }
-                        
+
                         if shouldStartNewParagraph {
-                            tagger.enumerateTags(in: wordRange, unit: .word, scheme: .lexicalClass) { tag, _ in
+                            tagger.enumerateTags(
+                                in: wordRange,
+                                unit: .word,
+                                scheme: .lexicalClass
+                            ) { tag, _ in
                                 if tag == .noun && word.count > 3 {
                                     shouldStartNewParagraph = false
                                 }
@@ -97,42 +112,41 @@ class ListeningViewModel: ObservableObject {
                         }
                     }
                 }
-                
+
                 if shouldStartNewParagraph {
                     newParagraphs.append(currentParagraph)
                     currentParagraph = []
                 }
-                
+
                 textIndex = wordRange.upperBound
             }
-            
+
             currentParagraph.append(wordData)
         }
-        
+
         if !currentParagraph.isEmpty {
             newParagraphs.append(currentParagraph)
         }
-        
+
         paragraphs = newParagraphs
     }
 
-    
     func startListening(for thought: Thought) {
         currentThought = thought
         resetState()
         fetchStreamingLinks(for: thought)
     }
-    
+
     func pausePlayback() {
         player?.pause()
         isPlaying = false
     }
-    
+
     func resumePlayback() {
         player?.play()
         isPlaying = true
     }
-    
+
     func togglePlayback() {
         if isPlaying {
             pausePlayback()
@@ -140,14 +154,14 @@ class ListeningViewModel: ObservableObject {
             resumePlayback()
         }
     }
-    
+
     func cleanup() {
         cleanupPlayer()
         resetState()
     }
-    
+
     // MARK: - Private Methods
-    
+
     private func resetState() {
         requestedChapters.removeAll()
         currentChapterNumber = 1
@@ -161,13 +175,13 @@ class ListeningViewModel: ObservableObject {
         allWords.removeAll()
         paragraphs = []
     }
-    
+
     private func fetchStreamingLinks(for thought: Thought) {
         isFetchingLinks = true
         listeningState = .fetchingLinks
         networkService.webSocket.requestStreamingLinks(thoughtId: thought.id)
     }
-    
+
     private func setupWebSocketSubscriptions() {
         networkService.webSocket.messages
             .receive(on: DispatchQueue.main)
@@ -176,7 +190,7 @@ class ListeningViewModel: ObservableObject {
             }
             .store(in: &cancellables)
     }
-    
+
     private func handleWebSocketMessage(_ message: WebSocketMessage) {
         switch message {
         case .streamingLinksResponse(let status, let message, let data):
@@ -184,31 +198,37 @@ class ListeningViewModel: ObservableObject {
                 handleStreamingLinksResponse(data: data)
             } else {
                 isFetchingLinks = false
-                listeningState = .error(playerError ?? NSError(domain: "ListeningError", code: -1))
-                playerError = NSError(domain: "ListeningError", code: -1, userInfo: [NSLocalizedDescriptionKey: message])
+                listeningState = .error(
+                    playerError ?? NSError(domain: "ListeningError", code: -1)
+                )
+                playerError = NSError(
+                    domain: "ListeningError",
+                    code: -1,
+                    userInfo: [NSLocalizedDescriptionKey: message]
+                )
             }
-            
+
         case .chapterAudio(let status, _, let data):
             if status.isSuccess {
                 handleChapterAudioResponse(data: data)
             }
-            
+
         default:
             break
         }
     }
-    
+
     private func handleStreamingLinksResponse(data: [String: Any]?) {
         isFetchingLinks = false
-        
+
         guard let data = data else {
             listeningState = .error(NSError(domain: "ListeningError", code: -1))
             return
         }
-        
+
         if let masterPlaylist = data["master_playlist"] as? String {
             let fullURL = "\(NetworkConstants.baseURL)\(masterPlaylist)"
-            
+
             DispatchQueue.main.async {
                 self.setupPlayer(with: fullURL)
             }
@@ -216,28 +236,28 @@ class ListeningViewModel: ObservableObject {
             listeningState = .error(NSError(domain: "ListeningError", code: -2))
         }
     }
-    
+
     private func setupPlayer(with urlString: String) {
         guard let url = URL(string: urlString) else {
             listeningState = .error(NSError(domain: "InvalidURL", code: -1))
             return
         }
-        
+
         cleanupPlayer()
-        
+
         configureAudioSession()
-        
+
         let playerItem = AVPlayerItem(url: url)
         player = AVPlayer(playerItem: playerItem)
         player?.automaticallyWaitsToMinimizeStalling = true
 
         setupPlayerObservations()
-        
+
         listeningState = .ready
-        
+
         isPlaying = true
         player?.playImmediately(atRate: 1.0)
-                
+
         if !pendingChapterWords.isEmpty {
             DispatchQueue.main.async {
                 NotificationCenter.default.post(
@@ -249,32 +269,36 @@ class ListeningViewModel: ObservableObject {
             }
         }
     }
-    
+
     func loadWordsFromChapterAudio(words: [[String: Any]]) {
         let newWords = words.compactMap { wordData -> WordTimestamp? in
             guard let text = wordData["text"] as? String,
-                  let start = wordData["start"] as? Double,
-                  let end = wordData["end"] as? Double else {
+                let start = wordData["start"] as? Double,
+                let end = wordData["end"] as? Double
+            else {
                 return nil
             }
-            
+
             let adjustedEnd = max(end, start + 0.3)
             return WordTimestamp(start: start, end: adjustedEnd, text: text)
         }
-        
+
         DispatchQueue.main.async { [weak self] in
             self?.appendNewWords(newWords)
         }
     }
-    
+
     private func appendNewWords(_ newWords: [WordTimestamp]) {
         if !newWords.isEmpty {
             allWords.append(contentsOf: newWords)
             allWords.sort { $0.start < $1.start }
             wordStarts = allWords.map { $0.start }
-            if currentWordIndex >= 0 { searchIndex = currentWordIndex }
-            else { searchIndex = min(searchIndex, max(allWords.count - 1, 0)) }
-            
+            if currentWordIndex >= 0 {
+                searchIndex = currentWordIndex
+            } else {
+                searchIndex = min(searchIndex, max(allWords.count - 1, 0))
+            }
+
             buildParagraphs()
 
             if !newWords.isEmpty {
@@ -282,7 +306,7 @@ class ListeningViewModel: ObservableObject {
             }
         }
     }
-    
+
     func updateCurrentTime(_ t: Double) {
         // keep the existing 50ms gate if you like
         guard abs(t - lastUpdateTime) > 0.08 else { return }
@@ -295,7 +319,8 @@ class ListeningViewModel: ObservableObject {
             // walk forward until we enclose t or pass it
             while i + 1 < allWords.count, t >= allWords[i].end { i += 1 }
             if allWords[i].start <= t, t <= allWords[i].end {
-                applyIndexIfChanged(i, at: t); return
+                applyIndexIfChanged(i, at: t)
+                return
             }
             // overshot t → fall back to local binary search around i
         } else if t < allWords[i].start {
@@ -304,18 +329,23 @@ class ListeningViewModel: ObservableObject {
             i = max(0, min(i, allWords.count - 1))
         }
         // small local window scan around i
-        let lo = max(0, i - 2), hi = min(allWords.count - 1, i + 2)
+        let lo = max(0, i - 2)
+        let hi = min(allWords.count - 1, i + 2)
         for j in lo...hi {
             let w = allWords[j]
-            if (w.start == w.end && abs(t - w.start) < 0.08) || (t >= w.start && t <= w.end) {
-                applyIndexIfChanged(j, at: t); return
+            if (w.start == w.end && abs(t - w.start) < 0.08)
+                || (t >= w.start && t <= w.end)
+            {
+                applyIndexIfChanged(j, at: t)
+                return
             }
         }
     }
 
     @inline(__always)
     private func insertionIndex(in sorted: [Double], for x: Double) -> Int {
-        var l = 0, r = sorted.count
+        var l = 0
+        var r = sorted.count
         while l < r {
             let m = (l + r) >> 1
             if sorted[m] < x { l = m + 1 } else { r = m }
@@ -329,48 +359,63 @@ class ListeningViewModel: ObservableObject {
         if idx != prev {
             currentWordIndex = idx
             // emit feedback only when index changed (existing logic)
-            if idx >= 0, idx < allWords.count, let thoughtId = currentThought?.id {
+            if idx >= 0, idx < allWords.count,
+                let thoughtId = currentThought?.id
+            {
                 let word = allWords[idx].text
-                let chapterNum = chapterManager.currentChapter?.number ?? currentChapterNumber
+                let chapterNum =
+                    chapterManager.currentChapter?.number
+                    ?? currentChapterNumber
                 let v = bluetoothService.processFeedback(word: word)
-                feedbackBuffer.addFeedback(word: word, value: v, thoughtId: thoughtId, chapterNumber: chapterNum)
+                feedbackBuffer.addFeedback(
+                    word: word,
+                    value: v,
+                    thoughtId: thoughtId,
+                    chapterNumber: chapterNum
+                )
             }
         }
     }
-    
-    
+
     private func cleanupPlayer() {
         if let observer = playbackProgressObserver {
             player?.removeTimeObserver(observer)
             playbackProgressObserver = nil
         }
-        
+
         player?.pause()
         player = nil
     }
-    
+
     private func configureAudioSession() {
         do {
             let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playback, mode: .default, options: [.allowAirPlay, .allowBluetooth])
+            try audioSession.setCategory(
+                .playback,
+                mode: .default,
+                options: [.allowAirPlay, .allowBluetooth]
+            )
             try audioSession.setActive(true)
         } catch {
             print("Failed to configure audio session: \(error)")
         }
     }
-    
+
     private func setupPlayerObservations() {
         guard let player = player else { return }
 
         playbackProgressObserver = player.addPeriodicTimeObserver(
-            forInterval: CMTime(seconds: 0.1, preferredTimescale: CMTimeScale(NSEC_PER_SEC)),
+            forInterval: CMTime(
+                seconds: 0.1,
+                preferredTimescale: CMTimeScale(NSEC_PER_SEC)
+            ),
             queue: .main
         ) { [weak self] currentTime in
             Task { @MainActor in
                 self?.monitorPlaybackProgress(currentTime: currentTime)
             }
         }
-        
+
         // Monitor player status
         player.publisher(for: \.timeControlStatus)
             .receive(on: DispatchQueue.main)
@@ -378,28 +423,30 @@ class ListeningViewModel: ObservableObject {
                 self?.handleTimeControlStatus(status)
             }
             .store(in: &cancellables)
-        
+
         // Monitor buffer status
         player.currentItem?.publisher(for: \.isPlaybackLikelyToKeepUp)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] keepUp in
                 guard let self = self else { return }
-                if keepUp && self.isPlaying && self.player?.timeControlStatus != .playing {
+                if keepUp && self.isPlaying
+                    && self.player?.timeControlStatus != .playing
+                {
                     print("📡 Buffer ready, forcing play")
                     self.player?.play()
                 }
             }
             .store(in: &cancellables)
-        
-        NotificationCenter.default.publisher(for: AVPlayerItem.playbackStalledNotification)
-            .sink { [weak self] _ in
-                print("🎵 Playback stalled (likely waiting for next chapter)")
-//                self?.isCurrentlyStalled = true
-            }
-            .store(in: &cancellables)
+
+        NotificationCenter.default.publisher(
+            for: AVPlayerItem.playbackStalledNotification
+        )
+        .sink { [weak self] _ in
+            print("🎵 Playback stalled (likely waiting for next chapter)")
+            //                self?.isCurrentlyStalled = true
+        }
+        .store(in: &cancellables)
     }
-    
-    
 
     private func handleTimeControlStatus(_ status: AVPlayer.TimeControlStatus) {
         switch status {
@@ -407,7 +454,8 @@ class ListeningViewModel: ObservableObject {
             break
         case .paused:
             if isPlaying {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    [weak self] in
                     guard let self = self, self.isPlaying else { return }
                     if self.player?.timeControlStatus != .playing {
                         self.player?.play()
@@ -416,13 +464,18 @@ class ListeningViewModel: ObservableObject {
             }
         case .waitingToPlayAtSpecifiedRate:
             if isPlaying {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    [weak self] in
                     guard let self = self, self.isPlaying else { return }
-                    if self.player?.timeControlStatus == .waitingToPlayAtSpecifiedRate {
+                    if self.player?.timeControlStatus
+                        == .waitingToPlayAtSpecifiedRate
+                    {
                         self.player?.play()
                         // Double-tap if needed
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            if self.player?.timeControlStatus != .playing && self.isPlaying {
+                            if self.player?.timeControlStatus != .playing
+                                && self.isPlaying
+                            {
                                 self.player?.playImmediately(atRate: 1.0)
                             }
                         }
@@ -433,54 +486,61 @@ class ListeningViewModel: ObservableObject {
             break
         }
     }
-    
+
     private func monitorPlaybackProgress(currentTime: CMTime) {
         let currentSeconds = currentTime.seconds
         self.currentTime = currentSeconds.isFinite ? currentSeconds : 0.0
-        
+
         if let currentItem = player?.currentItem {
             let totalDuration = currentItem.duration.seconds
             self.duration = totalDuration.isFinite ? totalDuration : 0.0
         }
-        
+
         chapterManager.updateCurrentChapter(for: currentSeconds)
-        
+
         NotificationCenter.default.post(
             name: Notification.Name("UpdateSubtitleTime"),
             object: currentSeconds
         )
-        
+
         requestNextChapter(currentTime: currentSeconds)
-                
+
         if isOnLastChapter,
-           !hasCompletedAllChapters,
-           let totalDuration = player?.currentItem?.duration.seconds,
-           totalDuration.isFinite,
-           currentSeconds >= totalDuration - 0.5 {
+            !hasCompletedAllChapters,
+            let totalDuration = player?.currentItem?.duration.seconds,
+            totalDuration.isFinite,
+            currentSeconds >= totalDuration - 0.5
+        {
             pausePlayback()
             hasCompletedAllChapters = true
         }
     }
-    
+
     private func requestNextChapter(currentTime: Double) {
         guard let requestTime = nextChapterRequestTime,
-              currentTime >= requestTime,
-              !requestedChapters.contains(currentChapterNumber + 1),
-              !isOnLastChapter else { return }
-        
+            currentTime >= requestTime,
+            !requestedChapters.contains(currentChapterNumber + 1),
+            !isOnLastChapter
+        else { return }
+
         requestedChapters.insert(currentChapterNumber + 1)
-        
+
         guard let thoughtId = currentThought?.id else { return }
-        networkService.webSocket.requestNextChapter(thoughtId: thoughtId, generateAudio: true)
-        
-        print("🎵 ✅ Requesting chapter \(currentChapterNumber + 1) at time \(currentTime)")
+        networkService.webSocket.requestNextChapter(
+            thoughtId: thoughtId,
+            generateAudio: true
+        )
+
+        print(
+            "🎵 ✅ Requesting chapter \(currentChapterNumber + 1) at time \(currentTime)"
+        )
     }
-    
+
     private func handleChapterAudioResponse(data: [String: Any]?) {
         guard let chapterAudioData = ChapterAudioResponseData(from: data) else {
             return
         }
-                        
+
         if let isLast = chapterAudioData.isLastChapter, isLast {
             print("this is the last chapter")
             isOnLastChapter = true
@@ -493,10 +553,10 @@ class ListeningViewModel: ObservableObject {
             let generationTime = chapterAudioData.generationTime ?? 0.0
             let title = chapterAudioData.title ?? ""
             let chapterStartTime = durationsSoFar
-            
+
             print("✅ ✅ Chapter \(chapterNumber) audio generated")
             currentChapterNumber = chapterNumber
-            
+
             let chapterInfo = ChapterInfo(
                 number: chapterNumber,
                 title: title,
@@ -504,29 +564,31 @@ class ListeningViewModel: ObservableObject {
                 startTime: chapterStartTime
             )
             chapterManager.addChapter(chapterInfo)
-            
+
             if !isOnLastChapter {
                 let requestDelay = max(audioDuration - generationTime * 2, 5.0)
                 nextChapterRequestTime = durationsSoFar + requestDelay
             }
-            
+
             durationsSoFar += audioDuration
         }
-        
+
         if let words = chapterAudioData.words {
             let adjustedWords = words.compactMap { wordData -> [String: Any]? in
                 guard let text = wordData["text"] as? String,
-                      let start = wordData["start"] as? Double,
-                      let end = wordData["end"] as? Double else {
+                    let start = wordData["start"] as? Double,
+                    let end = wordData["end"] as? Double
+                else {
                     return nil
                 }
-                
-                let chapterOffset = durationsSoFar - (chapterAudioData.audioDuration ?? 0.0)
-                
+
+                let chapterOffset =
+                    durationsSoFar - (chapterAudioData.audioDuration ?? 0.0)
+
                 return [
                     "text": text,
                     "start": start + chapterOffset,
-                    "end": end + chapterOffset
+                    "end": end + chapterOffset,
                 ]
             }
 
@@ -542,54 +604,57 @@ class ListeningViewModel: ObservableObject {
                 pendingChapterWords = adjustedWords
             }
         }
-        
-        if player?.timeControlStatus == .waitingToPlayAtSpecifiedRate && isPlaying {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+
+        if player?.timeControlStatus == .waitingToPlayAtSpecifiedRate
+            && isPlaying
+        {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                [weak self] in
                 self?.player?.play()
                 if self?.player?.timeControlStatus != .playing {
                     self?.player?.playImmediately(atRate: 1.0)
                 }
             }
         }
-    
-//        if let player = player,
-//           isPlaying
-////            ,isCurrentlyStalled
-//        {
-//            print("🎵 Player is stalled but new chapter \(receivedChapterNumber) is ready, resuming playback...")
-//            
-////            isCurrentlyStalled = false
-//                        
-//            player.play()
-//            
-//            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-//                guard let self = self,
-//                      self.isPlaying,
-//                      let player = self.player else { return }
-//                
-//                if player.rate == 0 {
-//                    print("🎵 Player still stalled, trying pause/play cycle...")
-//                    player.pause()
-//                    
-//                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-//                        player.play()
-//                        self.isPlaying = true
-//                        
-//                        // Final verification
-//                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-//                            if player.rate > 0 {
-//                                print("🎵 ✅ Playback successfully resumed")
-//                                self.isCurrentlyStalled = false
-//                            } else {
-//                                print("🎵 ⚠️ Playback still stalled - HLS might need more time to update")
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//        }
+
+        //        if let player = player,
+        //           isPlaying
+        ////            ,isCurrentlyStalled
+        //        {
+        //            print("🎵 Player is stalled but new chapter \(receivedChapterNumber) is ready, resuming playback...")
+        //
+        ////            isCurrentlyStalled = false
+        //
+        //            player.play()
+        //
+        //            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+        //                guard let self = self,
+        //                      self.isPlaying,
+        //                      let player = self.player else { return }
+        //
+        //                if player.rate == 0 {
+        //                    print("🎵 Player still stalled, trying pause/play cycle...")
+        //                    player.pause()
+        //
+        //                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+        //                        player.play()
+        //                        self.isPlaying = true
+        //
+        //                        // Final verification
+        //                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        //                            if player.rate > 0 {
+        //                                print("🎵 ✅ Playback successfully resumed")
+        //                                self.isCurrentlyStalled = false
+        //                            } else {
+        //                                print("🎵 ⚠️ Playback still stalled - HLS might need more time to update")
+        //                            }
+        //                        }
+        //                    }
+        //                }
+        //            }
+        //        }
     }
-    
+
     private func setupRemoteControlHandlers() {
         // Handle remote control commands from lock screen
         NotificationCenter.default.addObserver(
@@ -601,7 +666,7 @@ class ListeningViewModel: ObservableObject {
                 self?.resumePlayback()
             }
         }
-        
+
         NotificationCenter.default.addObserver(
             forName: Notification.Name("RemotePauseCommand"),
             object: nil,
@@ -611,7 +676,7 @@ class ListeningViewModel: ObservableObject {
                 self?.pausePlayback()
             }
         }
-        
+
         NotificationCenter.default.addObserver(
             forName: Notification.Name("AudioInterruptionBegan"),
             object: nil,
@@ -621,7 +686,7 @@ class ListeningViewModel: ObservableObject {
                 self?.pausePlayback()
             }
         }
-        
+
         NotificationCenter.default.addObserver(
             forName: Notification.Name("AudioInterruptionEnded"),
             object: nil,
