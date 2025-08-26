@@ -251,6 +251,9 @@ class ListeningViewModel: ObservableObject {
         player = AVPlayer(playerItem: playerItem)
         player?.automaticallyWaitsToMinimizeStalling = true
 
+//        let seekTime = CMTime(seconds: currentTime, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+//        player?.seek(to: seekTime, toleranceBefore: .zero, toleranceAfter: .zero)
+
         setupPlayerObservations()
 
         listeningState = .ready
@@ -490,29 +493,29 @@ class ListeningViewModel: ObservableObject {
     private func monitorPlaybackProgress(currentTime: CMTime) {
         let currentSeconds = currentTime.seconds
         self.currentTime = currentSeconds.isFinite ? currentSeconds : 0.0
-
+        
         if let currentItem = player?.currentItem {
             let totalDuration = currentItem.duration.seconds
             self.duration = totalDuration.isFinite ? totalDuration : 0.0
         }
-
+        
         chapterManager.updateCurrentChapter(for: currentSeconds)
-
+        
         NotificationCenter.default.post(
             name: Notification.Name("UpdateSubtitleTime"),
             object: currentSeconds
         )
-
+        
         requestNextChapter(currentTime: currentSeconds)
-
+        
         if isOnLastChapter,
-            !hasCompletedAllChapters,
-            let totalDuration = player?.currentItem?.duration.seconds,
-            totalDuration.isFinite,
-            currentSeconds >= totalDuration - 0.5
+           !hasCompletedAllChapters,
+           durationsSoFar > 0,
+           currentSeconds >= durationsSoFar - 0.5
         {
             pausePlayback()
             hasCompletedAllChapters = true
+            cleanupPlayer()
         }
     }
 
@@ -542,7 +545,6 @@ class ListeningViewModel: ObservableObject {
         }
 
         if let isLast = chapterAudioData.isLastChapter, isLast {
-            print("this is the last chapter")
             isOnLastChapter = true
             nextChapterRequestTime = nil
         }
@@ -616,43 +618,6 @@ class ListeningViewModel: ObservableObject {
                 }
             }
         }
-
-        //        if let player = player,
-        //           isPlaying
-        ////            ,isCurrentlyStalled
-        //        {
-        //            print("🎵 Player is stalled but new chapter \(receivedChapterNumber) is ready, resuming playback...")
-        //
-        ////            isCurrentlyStalled = false
-        //
-        //            player.play()
-        //
-        //            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-        //                guard let self = self,
-        //                      self.isPlaying,
-        //                      let player = self.player else { return }
-        //
-        //                if player.rate == 0 {
-        //                    print("🎵 Player still stalled, trying pause/play cycle...")
-        //                    player.pause()
-        //
-        //                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-        //                        player.play()
-        //                        self.isPlaying = true
-        //
-        //                        // Final verification
-        //                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-        //                            if player.rate > 0 {
-        //                                print("🎵 ✅ Playback successfully resumed")
-        //                                self.isCurrentlyStalled = false
-        //                            } else {
-        //                                print("🎵 ⚠️ Playback still stalled - HLS might need more time to update")
-        //                            }
-        //                        }
-        //                    }
-        //                }
-        //            }
-        //        }
     }
 
     private func setupRemoteControlHandlers() {
