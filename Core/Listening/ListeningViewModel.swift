@@ -171,7 +171,8 @@ class ListeningViewModel: ObservableObject {
             player?.removeTimeObserver(observer)
             playbackProgressObserver = nil
         }
-
+        
+        isPlaying = false
         player?.pause()
         player = nil
     }
@@ -494,8 +495,10 @@ class ListeningViewModel: ObservableObject {
            durationsSoFar > 0,
            currentSeconds >= durationsSoFar - 0.5
         {
-            pausePlayback()
-            hasCompletedAllChapters = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                self.hasCompletedAllChapters = true
+            }
+
             cleanupPlayer()
         }
     }
