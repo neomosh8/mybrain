@@ -151,14 +151,7 @@ class ListeningViewModel: ObservableObject {
         }
     }
 
-    func cleanup() {
-        cleanupPlayer()
-        resetState()
-    }
-
-    // MARK: - Private Methods
-
-    private func resetState() {
+    func resetState() {
         requestedChapters.removeAll()
         currentChapterNumber = 1
         hasCompletedAllChapters = false
@@ -171,6 +164,18 @@ class ListeningViewModel: ObservableObject {
         allWords.removeAll()
         paragraphs = []
     }
+    
+    func cleanupPlayer() {
+        if let observer = playbackProgressObserver {
+            player?.removeTimeObserver(observer)
+            playbackProgressObserver = nil
+        }
+
+        player?.pause()
+        player = nil
+    }
+    
+    // MARK: - Private Methods
 
     private func fetchStreamingLinks(for thought: Thought) {
         isFetchingLinks = true
@@ -374,16 +379,6 @@ class ListeningViewModel: ObservableObject {
                 )
             }
         }
-    }
-
-    private func cleanupPlayer() {
-        if let observer = playbackProgressObserver {
-            player?.removeTimeObserver(observer)
-            playbackProgressObserver = nil
-        }
-
-        player?.pause()
-        player = nil
     }
 
     private func configureAudioSession() {
