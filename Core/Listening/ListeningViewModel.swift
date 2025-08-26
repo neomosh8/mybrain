@@ -521,9 +521,7 @@ class ListeningViewModel: ObservableObject {
             generateAudio: true
         )
 
-        print(
-            "🎵 ✅ Requesting chapter \(currentChapterNumber + 1) at time \(currentTime)"
-        )
+        print("🎵 ✅ Requesting chapter \(currentChapterNumber + 1) at time \(currentTime)")
     }
 
     private func handleChapterAudioResponse(data: [String: Any]?) {
