@@ -370,6 +370,68 @@ class ListeningViewModel: ObservableObject {
                 self?.monitorPlaybackProgress(currentTime: currentTime)
             }
         }
+        
+        // Monitor player status
+        player.publisher(for: \.timeControlStatus)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] status in
+                self?.handleTimeControlStatus(status)
+            }
+            .store(in: &cancellables)
+        
+        // Monitor buffer status
+        player.currentItem?.publisher(for: \.isPlaybackLikelyToKeepUp)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] keepUp in
+                guard let self = self else { return }
+                if keepUp && self.isPlaying && self.player?.timeControlStatus != .playing {
+                    print("📡 Buffer ready, forcing play")
+                    self.player?.play()
+                }
+            }
+            .store(in: &cancellables)
+        
+        NotificationCenter.default.publisher(for: AVPlayerItem.playbackStalledNotification)
+            .sink { [weak self] _ in
+                print("🎵 Playback stalled (likely waiting for next chapter)")
+//                self?.isCurrentlyStalled = true
+            }
+            .store(in: &cancellables)
+    }
+    
+    
+
+    private func handleTimeControlStatus(_ status: AVPlayer.TimeControlStatus) {
+        switch status {
+        case .playing:
+            break
+        case .paused:
+            if isPlaying {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+                    guard let self = self, self.isPlaying else { return }
+                    if self.player?.timeControlStatus != .playing {
+                        self.player?.play()
+                    }
+                }
+            }
+        case .waitingToPlayAtSpecifiedRate:
+            if isPlaying {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+                    guard let self = self, self.isPlaying else { return }
+                    if self.player?.timeControlStatus == .waitingToPlayAtSpecifiedRate {
+                        self.player?.play()
+                        // Double-tap if needed
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            if self.player?.timeControlStatus != .playing && self.isPlaying {
+                                self.player?.playImmediately(atRate: 1.0)
+                            }
+                        }
+                    }
+                }
+            }
+        @unknown default:
+            break
+        }
     }
     
     private func monitorPlaybackProgress(currentTime: CMTime) {
@@ -444,7 +506,7 @@ class ListeningViewModel: ObservableObject {
             chapterManager.addChapter(chapterInfo)
             
             if !isOnLastChapter {
-                let requestDelay = max(audioDuration - generationTime, 3.0)
+                let requestDelay = max(audioDuration - generationTime * 2, 5.0)
                 nextChapterRequestTime = durationsSoFar + requestDelay
             }
             
@@ -480,6 +542,52 @@ class ListeningViewModel: ObservableObject {
                 pendingChapterWords = adjustedWords
             }
         }
+        
+        if player?.timeControlStatus == .waitingToPlayAtSpecifiedRate && isPlaying {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                self?.player?.play()
+                if self?.player?.timeControlStatus != .playing {
+                    self?.player?.playImmediately(atRate: 1.0)
+                }
+            }
+        }
+    
+//        if let player = player,
+//           isPlaying
+////            ,isCurrentlyStalled
+//        {
+//            print("🎵 Player is stalled but new chapter \(receivedChapterNumber) is ready, resuming playback...")
+//            
+////            isCurrentlyStalled = false
+//                        
+//            player.play()
+//            
+//            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+//                guard let self = self,
+//                      self.isPlaying,
+//                      let player = self.player else { return }
+//                
+//                if player.rate == 0 {
+//                    print("🎵 Player still stalled, trying pause/play cycle...")
+//                    player.pause()
+//                    
+//                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+//                        player.play()
+//                        self.isPlaying = true
+//                        
+//                        // Final verification
+//                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+//                            if player.rate > 0 {
+//                                print("🎵 ✅ Playback successfully resumed")
+//                                self.isCurrentlyStalled = false
+//                            } else {
+//                                print("🎵 ⚠️ Playback still stalled - HLS might need more time to update")
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//        }
     }
     
     private func setupRemoteControlHandlers() {
