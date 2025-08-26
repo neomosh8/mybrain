@@ -436,15 +436,6 @@ class ListeningViewModel: ObservableObject {
                 }
             }
             .store(in: &cancellables)
-
-        NotificationCenter.default.publisher(
-            for: AVPlayerItem.playbackStalledNotification
-        )
-        .sink { [weak self] _ in
-            print("🎵 Playback stalled (likely waiting for next chapter)")
-            //                self?.isCurrentlyStalled = true
-        }
-        .store(in: &cancellables)
     }
 
     private func handleTimeControlStatus(_ status: AVPlayer.TimeControlStatus) {
