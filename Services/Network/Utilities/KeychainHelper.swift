@@ -1,46 +1,76 @@
 import Foundation
 import Security
 
+enum KeychainError: Error {
+    case unexpectedStatus(OSStatus)
+    case noData
+    case stringDecodingFailed
+}
+
 final class KeychainHelper {
-    static func save(_ value: String, forKey key: String) {
-        let data = value.data(using: .utf8)!
-        
+    private static var service: String =
+        Bundle.main.bundleIdentifier ?? "myBrain"
+
+    @discardableResult
+    static func save(_ value: String, forKey key: String) throws -> OSStatus {
+        let data = Data(value.utf8)
+
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrAccount as String: key,
-            kSecValueData as String: data
+            kSecAttrService as String: service,
         ]
-        
-        SecItemDelete(query as CFDictionary)
-        SecItemAdd(query as CFDictionary, nil)
-    }
-    
-    static func load(forKey key: String) -> String? {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrAccount as String: key,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne
+        let attributes: [String: Any] = [
+            kSecValueData as String: data,
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
         ]
-        
-        var result: AnyObject?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
-        
-        guard status == errSecSuccess,
-              let data = result as? Data,
-              let string = String(data: data, encoding: .utf8) else {
-            return nil
+        var status = SecItemUpdate(
+            query as CFDictionary,
+            attributes as CFDictionary
+        )
+
+        if status == errSecItemNotFound {
+            var addQuery = query
+            addQuery[kSecValueData as String] = data
+            addQuery[kSecAttrAccessible as String] =
+                kSecAttrAccessibleAfterFirstUnlock
+            status = SecItemAdd(addQuery as CFDictionary, nil)
         }
-        
-        return string
+
+        if status != errSecSuccess {
+            throw KeychainError.unexpectedStatus(status)
+        }
+        return status
     }
-    
-    static func delete(forKey key: String) {
+
+    static func load(forKey key: String) throws -> String {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrAccount as String: key
+            kSecAttrAccount as String: key,
+            kSecAttrService as String: service,
+            kSecReturnData as String: kCFBooleanTrue as Any,
+            kSecMatchLimit as String: kSecMatchLimitOne,
         ]
-        
-        SecItemDelete(query as CFDictionary)
+
+        var item: CFTypeRef?
+        let status = SecItemCopyMatching(query as CFDictionary, &item)
+        guard status != errSecItemNotFound else { throw KeychainError.noData }
+        guard status == errSecSuccess, let data = item as? Data else {
+            throw KeychainError.unexpectedStatus(status)
+        }
+        guard let str = String(data: data, encoding: .utf8) else {
+            throw KeychainError.stringDecodingFailed
+        }
+        return str
+    }
+
+    @discardableResult
+    static func delete(forKey key: String) -> OSStatus {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: key,
+            kSecAttrService as String: service,
+        ]
+        return SecItemDelete(query as CFDictionary)
     }
 }
