@@ -12,6 +12,20 @@ class ResponseParser: NSObject, ObservableObject {
     @Published var chargerStatus: Bool?
     @Published var lastError: String?
     
+    enum Mode { case normal, testSignal, leadOff }
+
+    private(set) var isRecording: Bool = false
+    private(set) var mode: Mode = .normal
+
+    func setRecording(_ on: Bool) {
+        isRecording = on
+    }
+
+    func setMode(_ newMode: Mode) {
+        mode = newMode
+    }
+    
+    
     private var onlineFilter = OnlineFilter()
     
     // MARK: - Callbacks
@@ -162,29 +176,24 @@ class ResponseParser: NSObject, ObservableObject {
         let (rawCh1, rawCh2) = parseEEGSamples(from: samplesData)
         var ch1Doubles = rawCh1.map { Double($0) }
         var ch2Doubles = rawCh2.map { Double($0) }
-        
-        // apply your online filter
         onlineFilter.apply(to: &ch1Doubles, &ch2Doubles)
-        
-        // convert filtered back to Int32
+
         let filteredCh1 = ch1Doubles.map { Int32($0) }
         let filteredCh2 = ch2Doubles.map { Int32($0) }
-        
-        // append & bound buffer
-        if isReceivingTestData && isInTestMode {
+
+        // NEW: append whenever recording is on, regardless of mode
+        if isRecording {
             DispatchQueue.main.async {
                 self.eegChannel1.append(contentsOf: filteredCh1)
                 self.eegChannel2.append(contentsOf: filteredCh2)
-                
-                let maxStoredSamples = 5000 // 20 s @250 Hz
+
+                let maxStoredSamples = 5000
                 if self.eegChannel1.count > maxStoredSamples {
                     self.eegChannel1.removeFirst(self.eegChannel1.count - maxStoredSamples)
                 }
                 if self.eegChannel2.count > maxStoredSamples {
                     self.eegChannel2.removeFirst(self.eegChannel2.count - maxStoredSamples)
                 }
-                
-                print("Updated EEG channels: CH1=\(self.eegChannel1.count), CH2=\(self.eegChannel2.count)")
             }
         }
     }
