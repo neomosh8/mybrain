@@ -168,40 +168,62 @@ final class BluetoothService: NSObject, BTServiceProtocol {
     }
     
     // Streamer methods
+    
+    // NEW: expose mode-only methods
+    func setModeNormal() {
+        streamer.setModeNormal()
+        parser.setMode(.normal)
+    }
+
+    func setModeTestSignal() {
+        streamer.setModeTestSignal()
+        parser.setMode(.testSignal)
+    }
+
+    func setModeLeadOff() {
+        streamer.setModeLeadOff()
+        parser.setMode(.leadOff)
+    }
+
+    
     func startRecording(useTestSignal: Bool, enableLeadOff: Bool = false) {
-        // Reset parser state
+        // BACK-COMPAT: if callers still pass flags, map them to the new API first.
+        if enableLeadOff {
+            setModeLeadOff()
+        } else if useTestSignal {
+            setModeTestSignal()
+        } else {
+            setModeNormal()
+        }
+
+        // Reset/prepare parsing & quality
         parser.clearEEGData()
         parser.resetOnlineFilter()
-        parser.updateReceivingState(isReceiving: true, inTestMode: useTestSignal)
-        
-        // Reset quality analyzer
+        parser.setRecording(true)
+
         qualityAnalyzer.resetConnectionStatus()
         SignalProcessing.resetLeadoffData()
-        
-        // Update local state
-        isInTestMode = useTestSignal
-        
-        // Start streaming
-        streamer.startRecording(useTestSignal: useTestSignal, enableLeadOff: enableLeadOff)
-        
-        // Start lead-off analysis if enabled
-        if enableLeadOff {
+
+        streamer.startRecording()
+
+        if streamer.currentMode == .leadOff {
             qualityAnalyzer.startLeadOffAnalysis(channel1: eegChannel1, channel2: eegChannel2)
+        } else {
+            qualityAnalyzer.stopLeadOffAnalysis()
         }
     }
-    
+
     func stopRecording() {
         streamer.stopRecording()
         qualityAnalyzer.stopAllAnalysis()
-        parser.updateReceivingState(isReceiving: false, inTestMode: false)
-        isInTestMode = false
-        
+        parser.setRecording(false)
+
         if let notifyChar = notifyCharacteristic {
             scanner.setNotifications(enabled: false, for: notifyChar)
             print("Notifications disabled for EEG characteristic")
         }
     }
-    
+
     // Device Information Commands
     func readSerialNumber() {
         sendCommand(featureId: BtConst.NEOCORE_CORE_FEATURE_ID,
