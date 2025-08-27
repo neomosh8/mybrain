@@ -181,48 +181,66 @@ final class MockBluetoothService: NSObject, ObservableObject, BTServiceProtocol 
     }
     
     // MARK: - Streaming Control Methods
+    // MARK: - Streaming Control Methods
     func startRecording(useTestSignal: Bool, enableLeadOff: Bool = false) {
         guard isConnected else {
             print("Mock: Cannot start recording - not connected")
             return
         }
-        
-        print("Mock: Starting recording (testSignal: \(useTestSignal), leadOff: \(enableLeadOff))")
-        
-        isInTestMode = useTestSignal
-        isTestSignalEnabled = useTestSignal
+        print("Mock: Starting recording (stream only; mode must be set separately)")
+
+        // Stream ON (do not change mode flags here)
         isStreamingEnabled = true
-        isReceivingTestData = useTestSignal
-        isInNormalMode = !useTestSignal
-        isLeadOffDetectionEnabled = enableLeadOff
-        
+
         // Clear previous data
         clearEEGData()
-        
-        // Start data generation
-        startDataGeneration(useTestSignal: useTestSignal)
-        
-        // Start lead-off analysis if enabled
-        if enableLeadOff {
+
+        // Start data generation (mode is read live each tick)
+        startDataGeneration()
+
+        // Lead-off analysis: driven by current mode
+        if isLeadOffDetectionEnabled {
             startLeadOffAnalysis()
+        } else {
+            stopLeadOffAnalysis()
         }
-        
-        // Start quality analysis
+
+        // Quality assumption if no lead-off
         startQualityAnalysis()
     }
-    
+
     func stopRecording() {
         print("Mock: Stopping recording")
-        
         isStreamingEnabled = false
-        isTestSignalEnabled = false
-        isReceivingTestData = false
-        isInNormalMode = false
-        isLeadOffDetectionEnabled = false
-        
+
         stopDataGeneration()
         stopLeadOffAnalysis()
         stopQualityAnalysis()
+    }
+
+    // MARK: - NEW: Mode-only APIs (no streaming side effects)
+    func setModeNormal() {
+        isTestSignalEnabled = false
+        isLeadOffDetectionEnabled = false
+        isInNormalMode = true
+        isReceivingTestData = false
+        print("Mock: Mode = NORMAL")
+    }
+
+    func setModeTestSignal() {
+        isTestSignalEnabled = true
+        isLeadOffDetectionEnabled = false
+        isInNormalMode = false
+        isReceivingTestData = true
+        print("Mock: Mode = TEST SIGNAL")
+    }
+
+    func setModeLeadOff() {
+        isTestSignalEnabled = false
+        isLeadOffDetectionEnabled = true
+        isInNormalMode = false
+        isReceivingTestData = false
+        print("Mock: Mode = LEAD-OFF")
     }
     
     // MARK: - Device Info Methods
@@ -386,11 +404,64 @@ final class MockBluetoothService: NSObject, ObservableObject, BTServiceProtocol 
         eegChannel2.removeAll()
     }
     
-    private func startDataGeneration(useTestSignal: Bool) {
+    private func startDataGeneration() {
         dataTimer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { _ in
-            self.generateMockEEGData(useTestSignal: useTestSignal)
+            self.generateMockEEGData()
         }
     }
+    
+    private func generateMockEEGData() {
+        guard isStreamingEnabled else { return }
+
+        let useTestSignal = self.isTestSignalEnabled
+        let useLeadOff = self.isLeadOffDetectionEnabled
+
+        let samplesPerPacket = 10
+        var ch1Samples: [Int32] = []
+        var ch2Samples: [Int32] = []
+
+        for _ in 0..<samplesPerPacket {
+            if useLeadOff {
+                // Lead-off mode: low-amplitude noisy baseline to mimic diagnostic stream
+                let v1 = Int32.random(in: -15...15)
+                let v2 = Int32.random(in: -15...15)
+                ch1Samples.append(v1)
+                ch2Samples.append(v2)
+            } else if useTestSignal {
+                // Test signal (square/sine)
+                let testValue1 = Int32(sin(simPhase) > 0 ? 1000 : -1000)
+                let testValue2 = Int32(sin(simPhase * 2) * 800)
+                ch1Samples.append(testValue1)
+                ch2Samples.append(testValue2)
+                testSignalData.append(testValue1)
+            } else {
+                // Normal EEG-like noise
+                let noise1 = Int32.random(in: -50...50)
+                let noise2 = Int32.random(in: -50...50)
+                let base1 = Int32(sin(simPhase * 0.1) * 30)
+                let base2 = Int32(cos(simPhase * 0.15) * 25)
+                ch1Samples.append(base1 + noise1)
+                ch2Samples.append(base2 + noise2)
+            }
+
+            simPhase += simStep
+            if simPhase > .pi * 4 { simPhase -= .pi * 4 }
+        }
+
+        DispatchQueue.main.async {
+            self.eegChannel1.append(contentsOf: ch1Samples)
+            self.eegChannel2.append(contentsOf: ch2Samples)
+
+            let maxStoredSamples = 2000
+            if self.eegChannel1.count > maxStoredSamples {
+                self.eegChannel1.removeFirst(self.eegChannel1.count - maxStoredSamples)
+            }
+            if self.eegChannel2.count > maxStoredSamples {
+                self.eegChannel2.removeFirst(self.eegChannel2.count - maxStoredSamples)
+            }
+        }
+    }
+
     
     private func stopDataGeneration() {
         dataTimer?.invalidate()
