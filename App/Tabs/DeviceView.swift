@@ -38,7 +38,7 @@ struct DeviceView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
-                if bluetoothService.isConnected, let device = bluetoothService.connectedDevice {
+                if bluetoothService.isConnected, _ = bluetoothService.connectedDevice {
                     
                     deviceSetupHeaderView
                     
