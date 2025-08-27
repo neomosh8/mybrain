@@ -114,10 +114,13 @@ class BluetoothScanner: NSObject, ObservableObject {
     }
     
     // MARK: - Helper Methods
-    func writeToCharacteristic(data: Data, characteristic: CBCharacteristic?) {
-        guard let peripheral = peripheral,
-              let writeCharacteristic = characteristic else { return }
-        peripheral.writeValue(data, for: writeCharacteristic, type: .withResponse)
+    func writeToCharacteristic(data: Data, characteristic: CBCharacteristic) {
+        guard let peripheral = characteristic.service?.peripheral else { return }
+
+        let supportsWriteWithout = characteristic.properties.contains(.writeWithoutResponse)
+        let writeType: CBCharacteristicWriteType = supportsWriteWithout ? .withoutResponse : .withResponse
+
+        peripheral.writeValue(data, for: characteristic, type: writeType)
     }
     
     func enableNotifications(for characteristic: CBCharacteristic) {
@@ -211,7 +214,13 @@ extension BluetoothScanner: CBCentralManagerDelegate {
     }
     
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
-        print("Disconnected from \(peripheral.name ?? "Unknown Device")")
+        if let e = error as? CBError {
+            print("Disconnected (\(e.code.rawValue)): \(e.code)")
+        } else if let e = error {
+            print("Disconnected (unknown): \(e.localizedDescription)")
+        } else {
+            print("Disconnected (no error provided)")
+        }
         
         DispatchQueue.main.async {
             self.isConnected = false
