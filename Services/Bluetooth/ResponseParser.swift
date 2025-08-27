@@ -174,8 +174,11 @@ class ResponseParser: NSObject, ObservableObject {
         let (rawCh1, rawCh2) = parseEEGSamples(from: samplesData)
         var ch1Doubles = rawCh1.map { Double($0) }
         var ch2Doubles = rawCh2.map { Double($0) }
-        onlineFilter.apply(to: &ch1Doubles, &ch2Doubles)
-
+        
+        if mode != .normal {
+            onlineFilter.apply(to: &ch1Doubles, &ch2Doubles)
+        }
+        
         let filteredCh1 = ch1Doubles.map { Int32($0) }
         let filteredCh2 = ch2Doubles.map { Int32($0) }
 
