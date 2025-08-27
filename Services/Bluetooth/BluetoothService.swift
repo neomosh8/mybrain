@@ -218,10 +218,10 @@ final class BluetoothService: NSObject, BTServiceProtocol {
         qualityAnalyzer.stopAllAnalysis()
         parser.setRecording(false)
 
-        if let notifyChar = notifyCharacteristic {
-            scanner.setNotifications(enabled: false, for: notifyChar)
-            print("Notifications disabled for EEG characteristic")
-        }
+//        if let notifyChar = notifyCharacteristic {
+//            scanner.setNotifications(enabled: false, for: notifyChar)
+//            print("Notifications disabled for EEG characteristic")
+//        }
     }
 
     // Device Information Commands
@@ -383,18 +383,17 @@ final class BluetoothService: NSObject, BTServiceProtocol {
             let mtu = peripheral.maximumWriteValueLength(for: .withResponse)
             print("MTU: \(mtu)")
             
-            // Auto-start streaming if configured
-            if streamer.shouldAutoStartStreaming() {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                    self.startRecording(useTestSignal: true, enableLeadOff: true)
-                }
-            }
-            
-            // Read device info
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 self.readSerialNumber()
                 self.readBatteryLevel()
             }
+            
+//            // Auto-start streaming if configured
+//            if streamer.shouldAutoStartStreaming() {
+//                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+//                    self.startRecording(useTestSignal: true, enableLeadOff: true)
+//                }
+//            }
         }
     }
 }
