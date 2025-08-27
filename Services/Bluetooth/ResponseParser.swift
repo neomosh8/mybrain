@@ -154,9 +154,7 @@ class ResponseParser: NSObject, ObservableObject {
         let packetType = data[0]
         let payloadLength = Int(data[1])
         let messageIndex = UInt16(data[2]) | (UInt16(data[3]) << 8)
-        
-        print("EEG Packet: Type=0x\(String(format: "%02X", packetType)), Length=\(payloadLength), Index=\(messageIndex)")
-        
+                
         // sanity-check length (max 27 samples × 2 channels × 4 bytes = 216)
         guard payloadLength > 0 && payloadLength <= 216 else {
             print("Invalid payload length: \(payloadLength)")
