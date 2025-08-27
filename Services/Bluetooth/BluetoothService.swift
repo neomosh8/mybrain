@@ -50,6 +50,7 @@ final class BluetoothService: NSObject, BTServiceProtocol {
     private var writeCharacteristic: CBCharacteristic?
     private var notifyCharacteristic: CBCharacteristic?
     private var cancellables = Set<AnyCancellable>()
+    private var keepAliveTimer: Timer?
     
     // MARK: - Initialization
     override init() {
@@ -205,6 +206,12 @@ final class BluetoothService: NSObject, BTServiceProtocol {
         SignalProcessing.resetLeadoffData()
 
         streamer.startRecording()
+        
+        if !useTestSignal && !enableLeadOff {
+            startKeepAliveIfNeeded()
+        } else {
+            stopKeepAlive()
+        }
 
         if streamer.currentMode == .leadOff {
             qualityAnalyzer.startLeadOffAnalysis(channel1: eegChannel1, channel2: eegChannel2)
@@ -214,6 +221,7 @@ final class BluetoothService: NSObject, BTServiceProtocol {
     }
 
     func stopRecording() {
+        stopKeepAlive()
         streamer.stopRecording()
         qualityAnalyzer.stopAllAnalysis()
         parser.setRecording(false)
@@ -291,6 +299,21 @@ final class BluetoothService: NSObject, BTServiceProtocol {
         
         let raw = (ch1Avg + ch2Avg) / 2.0
         return raw
+    }
+    
+    private func startKeepAliveIfNeeded() {
+        keepAliveTimer?.invalidate()
+        // Send a tiny command every 3 seconds (safe & cheap)
+        keepAliveTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
+            guard let self = self, self.isConnected, self.isStreamingEnabled else { return }
+            // Any benign read works; we already implement this:
+            self.readBatteryLevel() // Feature 0x03, ID 0x00
+        }
+    }
+
+    private func stopKeepAlive() {
+        keepAliveTimer?.invalidate()
+        keepAliveTimer = nil
     }
     
     // MARK: - Command and Response Handling
