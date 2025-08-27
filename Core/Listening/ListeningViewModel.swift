@@ -241,6 +241,8 @@ class ListeningViewModel: ObservableObject {
     }
 
     private func setupPlayer(with urlString: String) {
+        cleanupPlayer()
+        
         guard let url = URL(string: urlString) else {
             listeningState = .error(NSError(domain: "InvalidURL", code: -1))
             return
@@ -256,9 +258,7 @@ class ListeningViewModel: ObservableObject {
 //        player?.seek(to: seekTime, toleranceBefore: .zero, toleranceAfter: .zero)
 
         setupPlayerObservations()
-
         listeningState = .ready
-
         isPlaying = true
         player?.playImmediately(atRate: 1.0)
 
