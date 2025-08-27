@@ -77,6 +77,10 @@ protocol BTServiceProtocol: ObservableObject {
     
     // MARK: - Streaming Control
     
+    func setModeNormal()
+    func setModeTestSignal()
+    func setModeLeadOff()
+    
     func startRecording(useTestSignal: Bool, enableLeadOff: Bool)
     func stopRecording()
     
