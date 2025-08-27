@@ -6,20 +6,26 @@ final class SecureTokenStorage: TokenStorage {
     private let refreshTokenKey = "myBrain.refreshToken"
     
     func saveTokens(accessToken: String, refreshToken: String) {
-        KeychainHelper.save(accessToken, forKey: accessTokenKey)
-        KeychainHelper.save(refreshToken, forKey: refreshTokenKey)
+        do {
+            try KeychainHelper.save(accessToken, forKey: accessTokenKey)
+            try KeychainHelper.save(refreshToken, forKey: refreshTokenKey)
+        } catch {
+            print("Keychain save error:", error)
+        }
     }
     
     func getAccessToken() -> String? {
-        return KeychainHelper.load(forKey: accessTokenKey)
+        do { return try KeychainHelper.load(forKey: accessTokenKey) }
+        catch { print("Keychain load access error:", error); return nil }
     }
-    
+
     func getRefreshToken() -> String? {
-        return KeychainHelper.load(forKey: refreshTokenKey)
+        do { return try KeychainHelper.load(forKey: refreshTokenKey) }
+        catch { print("Keychain load refresh error:", error); return nil }
     }
-    
+
     func clearTokens() {
-        KeychainHelper.delete(forKey: accessTokenKey)
-        KeychainHelper.delete(forKey: refreshTokenKey)
+        _ = KeychainHelper.delete(forKey: accessTokenKey)
+        _ = KeychainHelper.delete(forKey: refreshTokenKey)
     }
 }
