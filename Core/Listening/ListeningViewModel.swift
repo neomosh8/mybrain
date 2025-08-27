@@ -253,6 +253,8 @@ class ListeningViewModel: ObservableObject {
         let playerItem = AVPlayerItem(url: url)
         player = AVPlayer(playerItem: playerItem)
         player?.automaticallyWaitsToMinimizeStalling = true
+        player?.currentItem?.canUseNetworkResourcesForLiveStreamingWhilePaused = false
+        player?.currentItem?.preferredForwardBufferDuration = 60
 
         setupPlayerObservations()
         listeningState = .ready
@@ -547,7 +549,7 @@ class ListeningViewModel: ObservableObject {
             chapterManager.addChapter(chapterInfo)
 
             if !isOnLastChapter {
-                let requestDelay = max(audioDuration - generationTime * 2, 5.0)
+                let requestDelay = max(audioDuration - generationTime * 1.8, 5.0)
                 nextChapterRequestTime = durationsSoFar + requestDelay
             }
 
