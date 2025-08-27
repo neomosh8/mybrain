@@ -991,6 +991,20 @@ struct TestSignalOverlayView: View {
     @State private var useTestSignal = true // Toggle between test signal and normal mode
     @State private var enableLeadOffDetection = false // Toggle for lead-off detection
     
+    private func applySelectedMode() {
+        // Lead-Off takes precedence (mutually exclusive with test signal)
+        if enableLeadOffDetection {
+            bluetoothService.setModeLeadOff()
+            return
+        }
+        if useTestSignal {
+            bluetoothService.setModeTestSignal()
+        } else {
+            bluetoothService.setModeNormal()
+        }
+    }
+
+    
     var body: some View {
         NavigationView {
             ZStack {
@@ -1031,6 +1045,9 @@ struct TestSignalOverlayView: View {
                 }
             }
         }
+        .onAppear {
+            applySelectedMode()
+        }
         .onDisappear {
             stopRecording()
         }
@@ -1041,19 +1058,56 @@ struct TestSignalOverlayView: View {
         VStack(spacing: 20) {
             // Mode toggles
             VStack(alignment: .leading, spacing: 12) {
-                ToggleRow(
-                    title: "Use Test Signal",
-                    subtitle: "Generate a known waveform",
-                    isOn: $useTestSignal
-                )
-                .disabled(isRecording)
-                
-                ToggleRow(
-                    title: "Enable Lead-Off Detection",
-                    subtitle: "Monitor electrode connection quality",
-                    isOn: $enableLeadOffDetection
-                )
-                .disabled(isRecording)
+                HStack(spacing: 12) {
+                    Button(action: {
+                        useTestSignal = false
+                        enableLeadOffDetection = false
+                        bluetoothService.setModeNormal()
+                    }) {
+                        Text("Normal")
+                            .font(.system(size: 14, weight: .semibold))
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .frame(maxWidth: .infinity)
+                            .background(useTestSignal == false && enableLeadOffDetection == false ? Color.blue : Color.gray.opacity(0.2))
+                            .foregroundColor(useTestSignal == false && enableLeadOffDetection == false ? .white : .primary)
+                            .cornerRadius(8)
+                    }
+                    .disabled(isRecording)
+
+                    Button(action: {
+                        useTestSignal = true
+                        enableLeadOffDetection = false
+                        bluetoothService.setModeTestSignal()
+                    }) {
+                        Text("Test Signal")
+                            .font(.system(size: 14, weight: .semibold))
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .frame(maxWidth: .infinity)
+                            .background(useTestSignal && !enableLeadOffDetection ? Color.blue : Color.gray.opacity(0.2))
+                            .foregroundColor(useTestSignal && !enableLeadOffDetection ? .white : .primary)
+                            .cornerRadius(8)
+                    }
+                    .disabled(isRecording)
+
+                    Button(action: {
+                        useTestSignal = false
+                        enableLeadOffDetection = true
+                        bluetoothService.setModeLeadOff()
+                    }) {
+                        Text("Lead-Off")
+                            .font(.system(size: 14, weight: .semibold))
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .frame(maxWidth: .infinity)
+                            .background(enableLeadOffDetection ? Color.blue : Color.gray.opacity(0.2))
+                            .foregroundColor(enableLeadOffDetection ? .white : .primary)
+                            .cornerRadius(8)
+                    }
+                    .disabled(isRecording)
+                }
+
                 
                 ToggleRow(
                     title: "Normalize Signal",
@@ -1340,20 +1394,20 @@ struct TestSignalOverlayView: View {
         isRecording = true
         startTime = Date()
         recordingDuration = 0
-        
-        // Start recording with current mode settings using the public API
+
+        // Start streaming; parsing happens automatically and WaveformView reads eegChannel1/2.
         bluetoothService.startRecording(
             useTestSignal: useTestSignal,
             enableLeadOff: enableLeadOffDetection
         )
-        
+
         timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
             if let startTime = startTime {
                 recordingDuration = Date().timeIntervalSince(startTime)
             }
         }
     }
-    
+
     private func stopRecording() {
         isRecording = false
         timer?.invalidate()
