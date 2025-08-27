@@ -2,6 +2,12 @@ import Foundation
 import CoreBluetooth
 import Combine
 
+enum DeviceMode {
+    case normal
+    case testSignal
+    case leadOff
+}
+
 class BluetoothStreamer: NSObject, ObservableObject {
     // MARK: - Published Properties
     @Published var isTestSignalEnabled = false
@@ -10,6 +16,8 @@ class BluetoothStreamer: NSObject, ObservableObject {
     @Published var isInNormalMode = false
     @Published var isLeadOffDetectionEnabled = false
     @Published var isInTestMode = false
+    
+    @Published var currentMode: DeviceMode = .normal
     
     // MARK: - Private Properties
     private var autoStartStreaming = false
@@ -22,55 +30,49 @@ class BluetoothStreamer: NSObject, ObservableObject {
         super.init()
     }
     
-    // MARK: - Public Streaming Control Methods
-    func startRecording(useTestSignal: Bool, enableLeadOff: Bool = false) {
-        // Reset state
-        isTestSignalEnabled = false
-        isStreamingEnabled = false
-        isReceivingTestData = false
-        isLeadOffDetectionEnabled = false
-        isInTestMode = true
-        isInNormalMode = !useTestSignal
-        
-        print("Starting recording in \(useTestSignal ? "test signal" : "normal") mode with lead-off detection \(enableLeadOff ? "enabled" : "disabled")")
-        
-        // 1. Enable lead-off detection first if requested
-        if enableLeadOff {
-            enableLeadOffDetection(true)
-            
-            // Wait a bit before enabling test signal
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                if useTestSignal {
-                    self.enableTestSignal(true)
-                } else {
-                    self.enableDataStreaming(true)
-                }
-            }
-        } else {
-            // Start directly with test signal or data streaming
-            if useTestSignal {
-                enableTestSignal(true)
-            } else {
-                enableDataStreaming(true)
-            }
-        }
-    }
-    
-    func stopRecording() {
-        print("Stopping EEG recording")
-        
-        // Stop all streaming
+    // NEW: pure mode setters (no streaming toggles)
+    func setModeNormal() {
+        // Disable test signal & lead-off; leave stream state untouched
         enableTestSignal(false)
-        enableDataStreaming(false)
         enableLeadOffDetection(false)
-        
-        // Reset state
-        isTestSignalEnabled = false
-        isStreamingEnabled = false
-        isReceivingTestData = false
-        isLeadOffDetectionEnabled = false
+        currentMode = .normal
+        isInTestMode = false
+        isInNormalMode = true
+        print("Mode set to NORMAL (no streaming side effects)")
+    }
+
+    func setModeTestSignal() {
+        // Enable test signal; leave stream state untouched
+        enableLeadOffDetection(false)
+        enableTestSignal(true)
+        currentMode = .testSignal
+        isInTestMode = true
+        isInNormalMode = false
+        print("Mode set to TEST SIGNAL (no streaming side effects)")
+    }
+
+    func setModeLeadOff() {
+        // Enable lead-off detection; test signal off; leave stream state untouched
+        enableTestSignal(false)
+        enableLeadOffDetection(true)
+        currentMode = .leadOff
         isInTestMode = false
         isInNormalMode = false
+        print("Mode set to LEAD-OFF (no streaming side effects)")
+    }
+
+    
+    // MARK: - Public Streaming Control Methods
+    func startRecording() {
+        print("Starting EEG streaming (mode was set separately)")
+        enableDataStreaming(true) // ONLY stream on/off here
+        isStreamingEnabled = true
+    }
+
+    func stopRecording() {
+        print("Stopping EEG streaming")
+        enableDataStreaming(false) // ONLY stream on/off
+        isStreamingEnabled = false
     }
     
     func enableDataStreaming(_ enable: Bool) {
