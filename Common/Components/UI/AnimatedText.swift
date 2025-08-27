@@ -137,7 +137,7 @@ public struct AnimatedWordsView: View {
     public init(
         paragraphs: [[WordData]],
         currentWordIndex: Int,
-        showOverlay: Bool,
+        showOverlay: Bool
     ) {
         self.paragraphs = paragraphs
         self.currentWordIndex = currentWordIndex

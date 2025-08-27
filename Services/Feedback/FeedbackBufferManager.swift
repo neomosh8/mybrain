@@ -12,7 +12,7 @@ class FeedbackBufferManager: ObservableObject {
     // MARK: - Initialization
     init(
         bufferLimit: Int = 10,
-        batchInterval: TimeInterval = 2.0,
+        batchInterval: TimeInterval = 2.0
     ) {
         self.bufferLimit = bufferLimit
         self.batchInterval = batchInterval

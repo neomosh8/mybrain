@@ -9,7 +9,7 @@ class FeedbackService {
     
     // MARK: - Initialization
     private init(
-        webSocketService: WebSocketAPI = NetworkServiceManager.shared.webSocket,
+        webSocketService: WebSocketAPI = NetworkServiceManager.shared.webSocket
     ) {
         self.webSocketService = webSocketService
     }
