@@ -2,13 +2,13 @@ import Foundation
 import Combine
 import CoreBluetooth
 
-#if DEBUG
-/// In Debug (simulator/development) use the mock
-typealias BTService = MockBluetoothService
-#else
+//#if DEBUG
+///// In Debug (simulator/development) use the mock
+//typealias BTService = MockBluetoothService
+//#else
 /// In Release (or on-device) use the real one
 typealias BTService = BluetoothService
-#endif
+//#endif
 
 /// Facade interface for Bluetooth EEG service
 protocol BTServiceProtocol: ObservableObject {
