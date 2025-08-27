@@ -254,9 +254,6 @@ class ListeningViewModel: ObservableObject {
         player = AVPlayer(playerItem: playerItem)
         player?.automaticallyWaitsToMinimizeStalling = true
 
-//        let seekTime = CMTime(seconds: currentTime, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
-//        player?.seek(to: seekTime, toleranceBefore: .zero, toleranceAfter: .zero)
-
         setupPlayerObservations()
         listeningState = .ready
         isPlaying = true
@@ -588,7 +585,7 @@ class ListeningViewModel: ObservableObject {
                 pendingChapterWords = adjustedWords
             }
         }
-
+        
         if player?.timeControlStatus == .waitingToPlayAtSpecifiedRate
             && isPlaying
         {
