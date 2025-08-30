@@ -218,6 +218,21 @@ struct LoginScreen: View {
                 prepareProfileCompletion()
             }
         }
+        .overlay(alignment: .topLeading) {
+            if showProfileCompletion || showVerificationView {
+                Button(action: { handleBack() }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 16, weight: .medium))
+                        Text("Back")
+                            .font(.system(size: 16, weight: .medium))
+                    }
+                    .foregroundColor(.white.opacity(0.8))
+                }
+                .padding(.leading, 24)
+                .padding(.top, 12)
+            }
+        }
     }
     
     // MARK: - Email Login Section
@@ -324,35 +339,6 @@ struct LoginScreen: View {
     // MARK: - Verification Section
     private var verificationSection: some View {
         VStack(spacing: 24) {
-            // Back button
-            HStack {
-                Button(action: {
-                    withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                        showVerificationView = false
-                        verificationCode = ""
-                        formOffset = 30
-                        contentOpacity = 0
-                    }
-                    
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                            formOffset = 0
-                            contentOpacity = 1
-                        }
-                    }
-                }) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .medium))
-                        Text("Back")
-                            .font(.system(size: 16, weight: .medium))
-                    }
-                    .foregroundColor(.white.opacity(0.8))
-                }
-                
-                Spacer()
-            }
-            
             VStack(spacing: 16) {
                 Text("Check your email")
                     .font(.system(size: 28, weight: .semibold))
@@ -420,49 +406,6 @@ struct LoginScreen: View {
     // MARK: - Profile Completion Section
     private var profileCompletionSection: some View {
         VStack(spacing: 24) {
-            // Back button
-            HStack {
-                Button(action: {
-                    authVM.logout(context: modelContext) { result in
-                        switch result {
-                        case .success:
-                            print("Logout successful")
-                        case .failure(let error):
-                            print("Logout failed: \(error)")
-                        }
-                    }
-                    
-                    email = ""
-                    verificationCode = ""
-                    firstName = ""
-                    lastName = ""
-                    
-                    withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                        showProfileCompletion = false
-                        showVerificationView = false
-                        formOffset = 30
-                        contentOpacity = 0
-                    }
-                    
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                            formOffset = 0
-                            contentOpacity = 1
-                        }
-                    }
-                }) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .medium))
-                        Text("Back")
-                            .font(.system(size: 16, weight: .medium))
-                    }
-                    .foregroundColor(.white.opacity(0.8))
-                }
-                
-                Spacer()
-            }
-            
             VStack(spacing: 8) {
                 Text("Complete your profile")
                     .font(.system(size: 28, weight: .semibold))
@@ -956,6 +899,50 @@ struct LoginScreen: View {
             }
             .store(in: &cancellables)
     }
+    
+    private func handleBack() {
+        if showProfileCompletion {
+            authVM.logout(context: modelContext) { result in
+                switch result {
+                case .success:
+                    print("Logout successful")
+                case .failure(let error):
+                    print("Logout failed: \(error)")
+                }
+            }
+            
+            email = ""
+            verificationCode = ""
+            firstName = ""
+            lastName = ""
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                showProfileCompletion = false
+                showVerificationView = false
+                formOffset = 30
+                contentOpacity = 0
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                    formOffset = 0
+                    contentOpacity = 1
+                }
+            }
+        } else if showVerificationView {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                showVerificationView = false
+                verificationCode = ""
+                formOffset = 30
+                contentOpacity = 0
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                    formOffset = 0
+                    contentOpacity = 1
+                }
+            }
+        }
+    }
+
 }
 
 extension DateFormatter {
