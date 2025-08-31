@@ -110,9 +110,15 @@ final class BluetoothService: NSObject, BTServiceProtocol {
         }
         
         scanner.onCharacteristicValueUpdated = { [weak self] peripheral, characteristic, data in
-            if let data = data {
-                self?.parser.parseResponse(from: data)
+            // use dispatcher for not blocking main thread
+            guard let self = self, let data = data else { return }
+            DispatchQueue.global(qos: .userInitiated).async {
+                self.parser.parseResponse(from: data)
             }
+            
+//            if let data = data {
+//                self?.parser.parseResponse(from: data)
+//            }
         }
         
         scanner.onNotificationStateChanged = { [weak self] peripheral, characteristic, error in

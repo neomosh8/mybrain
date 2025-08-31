@@ -106,7 +106,11 @@ class ResponseParser: NSObject, ObservableObject {
     private func handleSensorStreamResponse(pduType: UInt16, pduId: UInt16, data: Data) {
         switch pduId {
         case BtConst.NEOCORE_NOTIFY_ID_EEG_DATA:
-            handleEEGDataPacket(data)
+            // TODO: - test this (drop pdu from data)
+            let payload = data.dropFirst(BtConst.HEADER_BYTES)
+            handleEEGDataPacket(Data(payload))
+
+//            handleEEGDataPacket(data)
         default:
             print("Unknown sensor stream ID: 0x\(String(pduId, radix: 16))")
         }
@@ -173,9 +177,10 @@ class ResponseParser: NSObject, ObservableObject {
         var ch1Doubles = rawCh1.map { Double($0) }
         var ch2Doubles = rawCh2.map { Double($0) }
         
-        if mode != .normal {
+        // TODO: i remove this condition cause it needed to filter data
+//        if mode != .normal {
             onlineFilter.apply(to: &ch1Doubles, &ch2Doubles)
-        }
+//        }
         
         let filteredCh1 = ch1Doubles.map { Int32($0) }
         let filteredCh2 = ch2Doubles.map { Int32($0) }
