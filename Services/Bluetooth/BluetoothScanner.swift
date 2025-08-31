@@ -117,8 +117,12 @@ class BluetoothScanner: NSObject, ObservableObject {
     func writeToCharacteristic(data: Data, characteristic: CBCharacteristic) {
         guard let peripheral = characteristic.service?.peripheral else { return }
 
-        let supportsWriteWithout = characteristic.properties.contains(.writeWithoutResponse)
-        let writeType: CBCharacteristicWriteType = supportsWriteWithout ? .withoutResponse : .withResponse
+        // TODO: prefer with response instead of the withought
+        let supportsWithResponse = characteristic.properties.contains(.write)
+        let writeType: CBCharacteristicWriteType = supportsWithResponse ? .withResponse : .withoutResponse
+
+//        let supportsWriteWithout = characteristic.properties.contains(.writeWithoutResponse)
+//        let writeType: CBCharacteristicWriteType = supportsWriteWithout ? .withoutResponse : .withResponse
 
         peripheral.writeValue(data, for: characteristic, type: writeType)
     }
