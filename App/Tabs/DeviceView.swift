@@ -1430,16 +1430,13 @@ struct WaveformView: View {
                 
                 let width = size.width
                 let height = size.height
-                
                 var path = Path()
                 
                 if normalized {
-                    // Find min and max for normalization
+                    // existing normalization
                     let minValue = CGFloat(dataPoints.min() ?? 0)
                     let maxValue = CGFloat(dataPoints.max() ?? 1)
                     let range = maxValue - minValue
-                    
-                    // Avoid division by zero
                     let scaleFactor = range != 0 ? height / range : 1.0
                     
                     for (index, value) in dataPoints.enumerated() {
@@ -1454,14 +1451,14 @@ struct WaveformView: View {
                         }
                     }
                 } else {
-                    // Use raw values
-                    let maxDisplayValue: CGFloat = 32768 // Typical 16-bit signed range
-                    let midPoint = height / 2
+                    // Fixed Y axis range [-40, 40]
+                    let minDisplayValue: CGFloat = -40
+                    let maxDisplayValue: CGFloat = 40
+                    let range = maxDisplayValue - minDisplayValue
                     
                     for (index, value) in dataPoints.enumerated() {
                         let x = CGFloat(index) / CGFloat(dataPoints.count - 1) * width
-                        let scaledValue = CGFloat(value) / maxDisplayValue * (height / 2)
-                        let y = midPoint - scaledValue
+                        let y = height - ((CGFloat(value) - minDisplayValue) / range * height)
                         
                         if index == 0 {
                             path.move(to: CGPoint(x: x, y: y))
@@ -1477,6 +1474,7 @@ struct WaveformView: View {
         .frame(height: 100)
     }
 }
+
 
 // MARK: - Helper Methods
 extension DeviceView {
