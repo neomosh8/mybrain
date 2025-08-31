@@ -25,7 +25,6 @@ class ResponseParser: NSObject, ObservableObject {
         mode = newMode
     }
     
-    
     private var onlineFilter = OnlineFilter()
     
     // MARK: - Callbacks
@@ -215,25 +214,25 @@ class ResponseParser: NSObject, ObservableObject {
     // MARK: – Sample Parsing (4-byte Int32 per channel)
     private func parseEEGSamples(from data: Data) -> ([Int32], [Int32]) {
         var ch1Samples: [Int32] = []
-            var ch2Samples: [Int32] = []
+        var ch2Samples: [Int32] = []
+        
+        for offset in stride(from: 0, to: data.count - 7, by: 8) {
+            // Explicitly handle little-endian
+            let ch1Bytes = data.subdata(in: offset..<offset+4)
+            let ch2Bytes = data.subdata(in: offset+4..<offset+8)
             
-            for offset in stride(from: 0, to: data.count - 7, by: 8) {
-                // Explicitly handle little-endian
-                let ch1Bytes = data.subdata(in: offset..<offset+4)
-                let ch2Bytes = data.subdata(in: offset+4..<offset+8)
-                
-                let ch1Val = ch1Bytes.withUnsafeBytes {
-                    $0.bindMemory(to: Int32.self).first!.littleEndian
-                }
-                let ch2Val = ch2Bytes.withUnsafeBytes {
-                    $0.bindMemory(to: Int32.self).first!.littleEndian
-                }
-                
-                ch1Samples.append(Int32(littleEndian: ch1Val))
-                ch2Samples.append(Int32(littleEndian: ch2Val))
+            let ch1Val = ch1Bytes.withUnsafeBytes {
+                $0.bindMemory(to: Int32.self).first!.littleEndian
+            }
+            let ch2Val = ch2Bytes.withUnsafeBytes {
+                $0.bindMemory(to: Int32.self).first!.littleEndian
             }
             
-            return (ch1Samples, ch2Samples)
+            ch1Samples.append(Int32(littleEndian: ch1Val))
+            ch2Samples.append(Int32(littleEndian: ch2Val))
+        }
+        
+        return (ch1Samples, ch2Samples)
     }
     
     // MARK: - Characteristic UUID Helpers
