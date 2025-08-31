@@ -114,11 +114,9 @@ class SignalProcessing {
         leadoffCh1.removeAll(); leadoffCh2.removeAll()
     }
     
-    static func processLeadoffDetection(ch1Data: [Int32], ch2Data: [Int32]) -> (ch1Connected: Bool, ch2Connected: Bool, ch1Quality: Double, ch2Quality: Double) {
-        let d1 = ch1Data.map(Double.init)
-        let d2 = ch2Data.map(Double.init)
-        let p1 = calculateWelchPower(data: d1)
-        let p2 = calculateWelchPower(data: d2)
+    static func processLeadoffDetection(ch1Data: [Double], ch2Data: [Double]) -> (ch1Connected: Bool, ch2Connected: Bool, ch1Quality: Double, ch2Quality: Double) {
+        let p1 = calculateWelchPower(data: ch1Data)
+        let p2 = calculateWelchPower(data: ch2Data)
         print("Lead-off Detection - Channel Powers: CH1=\(p1), CH2=\(p2)")
         
         leadoffCh1.append(p1); leadoffCh2.append(p2)

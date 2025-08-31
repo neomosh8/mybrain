@@ -1174,27 +1174,27 @@ struct TestSignalOverlayView: View {
                     if selectedChannel == 0 {
                         // Both channels
                         WaveformView(
-                            dataPoints: bluetoothService.eegChannel1D,
+                            dataPoints: bluetoothService.eegChannel1,
                             normalized: normalized,
                             color: .blue
                         )
                         
                         WaveformView(
-                            dataPoints: bluetoothService.eegChannel2D,
+                            dataPoints: bluetoothService.eegChannel2,
                             normalized: normalized,
                             color: .green
                         )
                     } else if selectedChannel == 1 {
                         // Only Channel 1
                         WaveformView(
-                            dataPoints: bluetoothService.eegChannel1D,
+                            dataPoints: bluetoothService.eegChannel1,
                             normalized: normalized,
                             color: .blue
                         )
                     } else {
                         // Only Channel 2
                         WaveformView(
-                            dataPoints: bluetoothService.eegChannel2D,
+                            dataPoints: bluetoothService.eegChannel2,
                             normalized: normalized,
                             color: .green
                         )

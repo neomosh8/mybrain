@@ -41,9 +41,9 @@ protocol BTServiceProtocol: ObservableObject {
     /// Raw test‐signal samples
     var testSignalData: [Int32] { get }
     /// EEG channel 1 samples
-    var eegChannel1: [Int32] { get }
+    var eegChannel1: [Double] { get }
     /// EEG channel 2 samples
-    var eegChannel2: [Int32] { get }
+    var eegChannel2: [Double] { get }
     
     // MARK: - Streamer State
     

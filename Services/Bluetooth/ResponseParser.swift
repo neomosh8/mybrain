@@ -7,10 +7,8 @@ class ResponseParser: NSObject, ObservableObject {
     @Published var batteryLevel: Int?
     @Published var serialNumber: String?
     @Published var testSignalData: [Int32] = []
-    @Published var eegChannel1: [Int32] = []
-    @Published var eegChannel2: [Int32] = []
-    @Published var eegChannel1D: [Double] = []
-    @Published var eegChannel2D: [Double] = []
+    @Published var eegChannel1: [Double] = []
+    @Published var eegChannel2: [Double] = []
     @Published var chargerStatus: Bool?
     @Published var lastError: String?
     
@@ -30,7 +28,7 @@ class ResponseParser: NSObject, ObservableObject {
     private var onlineFilter = OnlineFilter()
     
     // MARK: - Callbacks
-    var onEEGDataReceived: (([Int32], [Int32]) -> Void)?
+    var onEEGDataReceived: (([Double], [Double]) -> Void)?
     var isReceivingTestData: Bool = false
     var isInTestMode: Bool = false
     
@@ -174,43 +172,27 @@ class ResponseParser: NSObject, ObservableObject {
         
         // parse into Int32 arrays, then to Double for filtering
         let (rawCh1, rawCh2) = parseEEGSamples(from: samplesData)
-        var ch1Doubles = rawCh1.map { Double($0) }
-        var ch2Doubles = rawCh2.map { Double($0) }
+        var ch1Doubles = rawCh1.map(Double.init)
+        var ch2Doubles = rawCh2.map(Double.init)
         
         onlineFilter.apply(to: &ch1Doubles, &ch2Doubles)
         
         if isRecording {
             DispatchQueue.main.async {
-                self.eegChannel1D.append(contentsOf: ch1Doubles)
-                self.eegChannel2D.append(contentsOf: ch2Doubles)
+                self.eegChannel1.append(contentsOf: ch1Doubles)
+                self.eegChannel2.append(contentsOf: ch2Doubles)
                 
                 let maxStored = 1500
-                if self.eegChannel1D.count > maxStored {
-                    self.eegChannel1D.removeFirst(self.eegChannel1D.count - maxStored)
+                if self.eegChannel1.count > maxStored {
+                    self.eegChannel1.removeFirst(self.eegChannel1.count - maxStored)
                 }
-                if self.eegChannel2D.count > maxStored {
-                    self.eegChannel2D.removeFirst(self.eegChannel2D.count - maxStored)
+                if self.eegChannel2.count > maxStored {
+                    self.eegChannel2.removeFirst(self.eegChannel2.count - maxStored)
                 }
             }
+            // TODO: if listeners want immediate chunks
+//            self.onEEGDataReceived?(ch1Doubles, ch2Doubles)
         }
-        
-        //        let filteredCh1 = ch1Doubles.map { Int32($0) }
-        //        let filteredCh2 = ch2Doubles.map { Int32($0) }
-        //        
-        //        if isRecording {
-        //            DispatchQueue.main.async {
-        //                self.eegChannel1.append(contentsOf: filteredCh1)
-        //                self.eegChannel2.append(contentsOf: filteredCh2)
-        //                
-        //                let maxStored = 1500
-        //                if self.eegChannel1.count > maxStored {
-        //                    self.eegChannel1.removeFirst(self.eegChannel1.count - maxStored)
-        //                }
-        //                if self.eegChannel2.count > maxStored {
-        //                    self.eegChannel2.removeFirst(self.eegChannel2.count - maxStored)
-        //                }
-        //            }
-        //        }
     }
     
     private func handleChargerStatusResponse(pduType: UInt16, pduId: UInt16, data: Data) {

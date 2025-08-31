@@ -17,8 +17,8 @@ final class MockBluetoothService: NSObject, ObservableObject, BTServiceProtocol 
     @Published var batteryLevel: Int?
     @Published var serialNumber: String?
     @Published var testSignalData: [Int32] = []
-    @Published var eegChannel1: [Int32] = []
-    @Published var eegChannel2: [Int32] = []
+    @Published var eegChannel1: [Double] = []
+    @Published var eegChannel2: [Double] = []
     
     // Streamer properties
     @Published var isTestSignalEnabled = false
@@ -417,29 +417,29 @@ final class MockBluetoothService: NSObject, ObservableObject, BTServiceProtocol 
         let useLeadOff = self.isLeadOffDetectionEnabled
 
         let samplesPerPacket = 10
-        var ch1Samples: [Int32] = []
-        var ch2Samples: [Int32] = []
+        var ch1Samples: [Double] = []
+        var ch2Samples: [Double] = []
 
         for _ in 0..<samplesPerPacket {
             if useLeadOff {
                 // Lead-off mode: low-amplitude noisy baseline to mimic diagnostic stream
-                let v1 = Int32.random(in: -15...15)
-                let v2 = Int32.random(in: -15...15)
+                let v1 = Double.random(in: -15...15)
+                let v2 = Double.random(in: -15...15)
                 ch1Samples.append(v1)
                 ch2Samples.append(v2)
             } else if useTestSignal {
                 // Test signal (square/sine)
-                let testValue1 = Int32(sin(simPhase) > 0 ? 1000 : -1000)
-                let testValue2 = Int32(sin(simPhase * 2) * 800)
+                let testValue1 = Double(sin(simPhase) > 0 ? 1000 : -1000)
+                let testValue2 = Double(sin(simPhase * 2) * 800)
                 ch1Samples.append(testValue1)
                 ch2Samples.append(testValue2)
-                testSignalData.append(testValue1)
+                testSignalData.append(Int32(testValue1))
             } else {
                 // Normal EEG-like noise
-                let noise1 = Int32.random(in: -50...50)
-                let noise2 = Int32.random(in: -50...50)
-                let base1 = Int32(sin(simPhase * 0.1) * 30)
-                let base2 = Int32(cos(simPhase * 0.15) * 25)
+                let noise1 = Double.random(in: -50...50)
+                let noise2 = Double.random(in: -50...50)
+                let base1 = Double(sin(simPhase * 0.1) * 30)
+                let base2 = Double(cos(simPhase * 0.15) * 25)
                 ch1Samples.append(base1 + noise1)
                 ch2Samples.append(base2 + noise2)
             }
@@ -470,24 +470,24 @@ final class MockBluetoothService: NSObject, ObservableObject, BTServiceProtocol 
     
     private func generateMockEEGData(useTestSignal: Bool) {
         let samplesPerPacket = 10
-        var ch1Samples: [Int32] = []
-        var ch2Samples: [Int32] = []
+        var ch1Samples: [Double] = []
+        var ch2Samples: [Double] = []
         
         for _ in 0..<samplesPerPacket {
             if useTestSignal {
                 // Generate test signal (square wave for channel 1, sine for channel 2)
-                let testValue1 = Int32(sin(simPhase) > 0 ? 1000 : -1000)
-                let testValue2 = Int32(sin(simPhase * 2) * 800)
+                let testValue1 = Double(sin(simPhase) > 0 ? 1000 : -1000)
+                let testValue2 = Double(sin(simPhase * 2) * 800)
                 
                 ch1Samples.append(testValue1)
                 ch2Samples.append(testValue2)
-                testSignalData.append(testValue1)
+                testSignalData.append(Int32(testValue1))
             } else {
                 // Generate realistic EEG-like noise
-                let noise1 = Int32.random(in: -50...50)
-                let noise2 = Int32.random(in: -50...50)
-                let base1 = Int32(sin(simPhase * 0.1) * 30)
-                let base2 = Int32(cos(simPhase * 0.15) * 25)
+                let noise1 = Double.random(in: -50...50)
+                let noise2 = Double.random(in: -50...50)
+                let base1 = Double(sin(simPhase * 0.1) * 30)
+                let base2 = Double(cos(simPhase * 0.15) * 25)
                 
                 ch1Samples.append(base1 + noise1)
                 ch2Samples.append(base2 + noise2)

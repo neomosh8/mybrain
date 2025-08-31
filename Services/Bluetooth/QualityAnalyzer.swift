@@ -17,11 +17,11 @@ class QualityAnalyzer: NSObject, ObservableObject {
     }
     
     // MARK: - Public Quality Analysis Methods
-    func analyzeSignalQuality(channel1: [Int32], channel2: [Int32]) -> (ch1: SignalQualityMetrics?, ch2: SignalQualityMetrics?) {
+    func analyzeSignalQuality(channel1: [Double], channel2: [Double]) -> (ch1: SignalQualityMetrics?, ch2: SignalQualityMetrics?) {
         guard channel1.count >= Int(BtConst.SAMPLE_RATE * 2) else { return (nil, nil) }
         
-        let ch1Data = channel1.suffix(Int(BtConst.SAMPLE_RATE * 5)).map { Double($0) }
-        let ch2Data = channel2.suffix(Int(BtConst.SAMPLE_RATE * 5)).map { Double($0) }
+        let ch1Data = Array(channel1.suffix(Int(BtConst.SAMPLE_RATE * 5)))
+        let ch2Data = Array(channel2.suffix(Int(BtConst.SAMPLE_RATE * 5)))
         
         let ch1Metrics = SignalProcessing.calculateQualityMetrics(for: ch1Data)
         let ch2Metrics = SignalProcessing.calculateQualityMetrics(for: ch2Data)
@@ -29,7 +29,7 @@ class QualityAnalyzer: NSObject, ObservableObject {
         return (ch1Metrics, ch2Metrics)
     }
     
-    func startLeadOffAnalysis(channel1: [Int32], channel2: [Int32]) {
+    func startLeadOffAnalysis(channel1: [Double], channel2: [Double]) {
         leadOffAnalysisTimer?.invalidate()
         leadOffAnalysisTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             self?.performLeadOffAnalysis(ch1Data: channel1, ch2Data: channel2)
@@ -41,7 +41,7 @@ class QualityAnalyzer: NSObject, ObservableObject {
         leadOffAnalysisTimer = nil
     }
     
-    func startQualityAnalysis(channel1: [Int32], channel2: [Int32]) {
+    func startQualityAnalysis(channel1: [Double], channel2: [Double]) {
         qualityAnalysisTimer?.invalidate()
         qualityAnalysisTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
             let (ch1Metrics, ch2Metrics) = self?.analyzeSignalQuality(channel1: channel1, channel2: channel2) ?? (nil, nil)
@@ -61,7 +61,7 @@ class QualityAnalyzer: NSObject, ObservableObject {
     }
     
     // MARK: - Lead-Off Detection (from SignalProcessing)
-    private func performLeadOffAnalysis(ch1Data: [Int32], ch2Data: [Int32]) {
+    private func performLeadOffAnalysis(ch1Data: [Double], ch2Data: [Double]) {
         let (ch1Connected, ch2Connected, ch1Quality, ch2Quality) = SignalProcessing.processLeadoffDetection(
             ch1Data: ch1Data,
             ch2Data: ch2Data

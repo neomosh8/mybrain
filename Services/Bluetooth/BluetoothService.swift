@@ -31,10 +31,8 @@ final class BluetoothService: NSObject, BTServiceProtocol {
     @Published var batteryLevel: Int?
     @Published var serialNumber: String?
     @Published var testSignalData: [Int32] = []
-    @Published var eegChannel1: [Int32] = []
-    @Published var eegChannel2: [Int32] = []
-    @Published var eegChannel1D: [Double] = []
-    @Published var eegChannel2D: [Double] = []
+    @Published var eegChannel1: [Double] = []
+    @Published var eegChannel2: [Double] = []
     
     // Streamer properties
     @Published var isTestSignalEnabled = false
@@ -76,9 +74,6 @@ final class BluetoothService: NSObject, BTServiceProtocol {
         parser.$testSignalData.assign(to: &$testSignalData)
         parser.$eegChannel1.assign(to: &$eegChannel1)
         parser.$eegChannel2.assign(to: &$eegChannel2)
-        
-        parser.$eegChannel1D.assign(to: &$eegChannel1D)
-        parser.$eegChannel2D.assign(to: &$eegChannel2D)
         
         // Bind streamer properties
         streamer.$isTestSignalEnabled.assign(to: &$isTestSignalEnabled)
@@ -143,9 +138,9 @@ final class BluetoothService: NSObject, BTServiceProtocol {
         // Parser callbacks
         parser.onEEGDataReceived = { [weak self] ch1, ch2 in
             // Start quality analysis when EEG data is received
-            if let self = self {
-                self.qualityAnalyzer.startQualityAnalysis(channel1: self.eegChannel1, channel2: self.eegChannel2)
-            }
+            guard let self = self else { return }
+            self.qualityAnalyzer.startQualityAnalysis(channel1: self.eegChannel1,
+                                                      channel2: self.eegChannel2)
         }
     }
     
@@ -305,8 +300,8 @@ final class BluetoothService: NSObject, BTServiceProtocol {
             return 0.0 // Fallback if no data
         }
         
-        let ch1Avg = ch1Samples.isEmpty ? 0 : Double(ch1Samples.reduce(0, +)) / Double(ch1Samples.count)
-        let ch2Avg = ch2Samples.isEmpty ? 0 : Double(ch2Samples.reduce(0, +)) / Double(ch2Samples.count)
+        let ch1Avg = ch1Samples.isEmpty ? 0 : ch1Samples.reduce(0, +) / Double(ch1Samples.count)
+        let ch2Avg = ch2Samples.isEmpty ? 0 : ch2Samples.reduce(0, +) / Double(ch2Samples.count)
         
         let raw = (ch1Avg + ch2Avg) / 2.0
         return raw
