@@ -33,6 +33,8 @@ final class BluetoothService: NSObject, BTServiceProtocol {
     @Published var testSignalData: [Int32] = []
     @Published var eegChannel1: [Int32] = []
     @Published var eegChannel2: [Int32] = []
+    @Published var eegChannel1D: [Double] = []
+    @Published var eegChannel2D: [Double] = []
     
     // Streamer properties
     @Published var isTestSignalEnabled = false
@@ -74,6 +76,9 @@ final class BluetoothService: NSObject, BTServiceProtocol {
         parser.$testSignalData.assign(to: &$testSignalData)
         parser.$eegChannel1.assign(to: &$eegChannel1)
         parser.$eegChannel2.assign(to: &$eegChannel2)
+        
+        parser.$eegChannel1D.assign(to: &$eegChannel1D)
+        parser.$eegChannel2D.assign(to: &$eegChannel2D)
         
         // Bind streamer properties
         streamer.$isTestSignalEnabled.assign(to: &$isTestSignalEnabled)
