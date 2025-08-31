@@ -151,9 +151,7 @@ class ResponseParser: NSObject, ObservableObject {
             return
         }
         
-        let packetType = data[0]
         let payloadLength = Int(data[1])
-        let messageIndex = UInt16(data[2]) | (UInt16(data[3]) << 8)
                 
         // sanity-check length (max 27 samples × 2 channels × 4 bytes = 216)
         guard payloadLength > 0 && payloadLength <= 216 else {
