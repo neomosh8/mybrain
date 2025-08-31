@@ -152,6 +152,8 @@ class ResponseParser: NSObject, ObservableObject {
         }
         
         let payloadLength = Int(data[1])
+        let expected = BtConst.SAMPLES_PER_CHUNK * BtConst.NUM_CHANNELS * 4
+        guard payloadLength == expected else { return } 
                 
         // sanity-check length (max 27 samples × 2 channels × 4 bytes = 216)
         guard payloadLength > 0 && payloadLength <= 216 else {
@@ -213,22 +215,19 @@ class ResponseParser: NSObject, ObservableObject {
     
     // MARK: – Sample Parsing (4-byte Int32 per channel)
     private func parseEEGSamples(from data: Data) -> ([Int32], [Int32]) {
-        var ch1Samples: [Int32] = []
-        var ch2Samples: [Int32] = []
-        
-        // Each sample-pair is 8 bytes: 4 bytes for channel 1 + 4 bytes for channel 2
-        let bytesPerPair = MemoryLayout<Int32>.size * 2
-        
-        for offset in stride(from: 0, to: data.count - bytesPerPair + 1, by: bytesPerPair) {
-            let pair = data.subdata(in: offset..<(offset + bytesPerPair))
-            let ch1Val = pair.subdata(in: 0..<4).withUnsafeBytes { $0.load(as: Int32.self) }
-            let ch2Val = pair.subdata(in: 4..<8).withUnsafeBytes { $0.load(as: Int32.self) }
-            ch1Samples.append(ch1Val)
-            ch2Samples.append(ch2Val)
+        var ch1: [Int32] = []
+        var ch2: [Int32] = []
+        let pairBytes = 8
+        for offset in stride(from: 0, to: data.count - pairBytes + 1, by: pairBytes) {
+            let p = data.subdata(in: offset..<(offset + pairBytes))
+            let w1 = p.subdata(in: 0..<4).withUnsafeBytes { $0.load(as: UInt32.self) }
+            let w2 = p.subdata(in: 4..<8).withUnsafeBytes { $0.load(as: UInt32.self) }
+            ch1.append(Int32(littleEndian: Int32(bitPattern: w1)))
+            ch2.append(Int32(littleEndian: Int32(bitPattern: w2)))
         }
-        
-        return (ch1Samples, ch2Samples)
+        return (ch1, ch2)
     }
+
     
     // MARK: - Characteristic UUID Helpers
     func isTargetService(_ service: CBService) -> Bool {

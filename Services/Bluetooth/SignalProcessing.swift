@@ -8,10 +8,13 @@ private struct SOSSection {
     let a0: Double, a1: Double, a2: Double
     private var v1: Double, v2: Double
     
-    init(coefficients sos: [Double], initialState value: Double) {
+    init(coefficients sos: [Double], initialState x0: Double) {
         b0 = sos[0]; b1 = sos[1]; b2 = sos[2]
         a0 = sos[3]; a1 = sos[4]; a2 = sos[5]
-        v1 = value; v2 = value
+        // Steady state for DF2 w‑states, matches scipy.signal.sosfilt_zi
+        let w = x0 / (1 + a1 + a2)
+        v1 = w
+        v2 = w
     }
     
     mutating func reset(to value: Double) {
@@ -55,16 +58,37 @@ final class OnlineFilter {
     private var notchChainCh2: [SOSSection] = []
     private var isInitialized = false
     
+    
+    // Helper to compute the first output of a cascade for input x0
+    private func firstOutput(_ x0: Double, sos: [[Double]]) -> Double {
+        var y = x0
+        for s in sos {
+            let b0 = s[0], b1 = s[1], b2 = s[2]
+            let a1 = s[4], a2 = s[5]
+            let w = y / (1 + a1 + a2)           // steady‑state w for this section
+            y = (b0 + b1 + b2) * w              // first output sample for this section
+        }
+        return y
+    }
     /// Apply bandpass + notch filters to two channels in place
     func apply(to ch1Data: inout [Double], _ ch2Data: inout [Double]) {
         guard !ch1Data.isEmpty && !ch2Data.isEmpty else { return }
-        
+
         if !isInitialized {
-            let init1 = ch1Data[0], init2 = ch2Data[0]
-            bpChainCh1 = bpSOS.map { SOSSection(coefficients: $0, initialState: init1) }
-            bpChainCh2 = bpSOS.map { SOSSection(coefficients: $0, initialState: init2) }
-            notchChainCh1 = notchSOS.map { SOSSection(coefficients: $0, initialState: init1) }
-            notchChainCh2 = notchSOS.map { SOSSection(coefficients: $0, initialState: init2) }
+            let x1 = ch1Data[0], x2 = ch2Data[0]
+
+            // Seed BP with raw first samples using steady‑state w
+            bpChainCh1 = bpSOS.map { SOSSection(coefficients: $0, initialState: x1) }
+            bpChainCh2 = bpSOS.map { SOSSection(coefficients: $0, initialState: x2) }
+
+            // Compute what the BP would output for the first sample only
+            let bp0_ch1 = firstOutput(x1, sos: bpSOS)
+            let bp0_ch2 = firstOutput(x2, sos: bpSOS)
+
+            // Seed notch with the *BP output* at t0, not the raw input
+            notchChainCh1 = notchSOS.map { SOSSection(coefficients: $0, initialState: bp0_ch1) }
+            notchChainCh2 = notchSOS.map { SOSSection(coefficients: $0, initialState: bp0_ch2) }
+
             isInitialized = true
         }
         
