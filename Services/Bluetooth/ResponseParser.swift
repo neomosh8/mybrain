@@ -216,20 +216,15 @@ class ResponseParser: NSObject, ObservableObject {
         var ch1Samples: [Int32] = []
         var ch2Samples: [Int32] = []
         
-        for offset in stride(from: 0, to: data.count - 7, by: 8) {
-            // Explicitly handle little-endian
-            let ch1Bytes = data.subdata(in: offset..<offset+4)
-            let ch2Bytes = data.subdata(in: offset+4..<offset+8)
-            
-            let ch1Val = ch1Bytes.withUnsafeBytes {
-                $0.bindMemory(to: Int32.self).first!.littleEndian
-            }
-            let ch2Val = ch2Bytes.withUnsafeBytes {
-                $0.bindMemory(to: Int32.self).first!.littleEndian
-            }
-            
-            ch1Samples.append(Int32(littleEndian: ch1Val))
-            ch2Samples.append(Int32(littleEndian: ch2Val))
+        // Each sample-pair is 8 bytes: 4 bytes for channel 1 + 4 bytes for channel 2
+        let bytesPerPair = MemoryLayout<Int32>.size * 2
+        
+        for offset in stride(from: 0, to: data.count - bytesPerPair + 1, by: bytesPerPair) {
+            let pair = data.subdata(in: offset..<(offset + bytesPerPair))
+            let ch1Val = pair.subdata(in: 0..<4).withUnsafeBytes { $0.load(as: Int32.self) }
+            let ch2Val = pair.subdata(in: 4..<8).withUnsafeBytes { $0.load(as: Int32.self) }
+            ch1Samples.append(ch1Val)
+            ch2Samples.append(ch2Val)
         }
         
         return (ch1Samples, ch2Samples)
