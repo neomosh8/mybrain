@@ -180,13 +180,12 @@ class ResponseParser: NSObject, ObservableObject {
         let filteredCh1 = ch1Doubles.map { Int32($0) }
         let filteredCh2 = ch2Doubles.map { Int32($0) }
 
-        // NEW: append whenever recording is on, regardless of mode
         if isRecording {
             DispatchQueue.main.async {
                 self.eegChannel1.append(contentsOf: filteredCh1)
                 self.eegChannel2.append(contentsOf: filteredCh2)
 
-                let maxStoredSamples = 5000
+                let maxStoredSamples = 1500
                 if self.eegChannel1.count > maxStoredSamples {
                     self.eegChannel1.removeFirst(self.eegChannel1.count - maxStoredSamples)
                 }
