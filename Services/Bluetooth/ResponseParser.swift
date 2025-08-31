@@ -9,6 +9,8 @@ class ResponseParser: NSObject, ObservableObject {
     @Published var testSignalData: [Int32] = []
     @Published var eegChannel1: [Int32] = []
     @Published var eegChannel2: [Int32] = []
+    @Published var eegChannel1D: [Double] = []
+    @Published var eegChannel2D: [Double] = []
     @Published var chargerStatus: Bool?
     @Published var lastError: String?
     
@@ -153,8 +155,8 @@ class ResponseParser: NSObject, ObservableObject {
         
         let payloadLength = Int(data[1])
         let expected = BtConst.SAMPLES_PER_CHUNK * BtConst.NUM_CHANNELS * 4
-        guard payloadLength == expected else { return } 
-                
+        guard payloadLength == expected else { return }
+        
         // sanity-check length (max 27 samples × 2 channels × 4 bytes = 216)
         guard payloadLength > 0 && payloadLength <= 216 else {
             print("Invalid payload length: \(payloadLength)")
@@ -177,23 +179,38 @@ class ResponseParser: NSObject, ObservableObject {
         
         onlineFilter.apply(to: &ch1Doubles, &ch2Doubles)
         
-        let filteredCh1 = ch1Doubles.map { Int32($0) }
-        let filteredCh2 = ch2Doubles.map { Int32($0) }
-
         if isRecording {
             DispatchQueue.main.async {
-                self.eegChannel1.append(contentsOf: filteredCh1)
-                self.eegChannel2.append(contentsOf: filteredCh2)
-
-                let maxStoredSamples = 1500
-                if self.eegChannel1.count > maxStoredSamples {
-                    self.eegChannel1.removeFirst(self.eegChannel1.count - maxStoredSamples)
+                self.eegChannel1D.append(contentsOf: ch1Doubles)
+                self.eegChannel2D.append(contentsOf: ch2Doubles)
+                
+                let maxStored = 1500
+                if self.eegChannel1D.count > maxStored {
+                    self.eegChannel1D.removeFirst(self.eegChannel1D.count - maxStored)
                 }
-                if self.eegChannel2.count > maxStoredSamples {
-                    self.eegChannel2.removeFirst(self.eegChannel2.count - maxStoredSamples)
+                if self.eegChannel2D.count > maxStored {
+                    self.eegChannel2D.removeFirst(self.eegChannel2D.count - maxStored)
                 }
             }
         }
+        
+        //        let filteredCh1 = ch1Doubles.map { Int32($0) }
+        //        let filteredCh2 = ch2Doubles.map { Int32($0) }
+        //        
+        //        if isRecording {
+        //            DispatchQueue.main.async {
+        //                self.eegChannel1.append(contentsOf: filteredCh1)
+        //                self.eegChannel2.append(contentsOf: filteredCh2)
+        //                
+        //                let maxStored = 1500
+        //                if self.eegChannel1.count > maxStored {
+        //                    self.eegChannel1.removeFirst(self.eegChannel1.count - maxStored)
+        //                }
+        //                if self.eegChannel2.count > maxStored {
+        //                    self.eegChannel2.removeFirst(self.eegChannel2.count - maxStored)
+        //                }
+        //            }
+        //        }
     }
     
     private func handleChargerStatusResponse(pduType: UInt16, pduId: UInt16, data: Data) {
