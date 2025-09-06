@@ -212,20 +212,37 @@ class ResponseParser: NSObject, ObservableObject {
     }
     
     // MARK: – Sample Parsing (4-byte Int32 per channel)
+//    private func parseEEGSamples(from data: Data) -> ([Int32], [Int32]) {
+//        var ch1: [Int32] = []
+//        var ch2: [Int32] = []
+//        let pairBytes = 8
+//        for offset in stride(from: 0, to: data.count - pairBytes + 1, by: pairBytes) {
+//            let p = data.subdata(in: offset..<(offset + pairBytes))
+//            let w1 = p.subdata(in: 0..<4).withUnsafeBytes { $0.load(as: UInt32.self) }
+//            let w2 = p.subdata(in: 4..<8).withUnsafeBytes { $0.load(as: UInt32.self) }
+//            ch1.append(Int32(littleEndian: Int32(bitPattern: w1)))
+//            ch2.append(Int32(littleEndian: Int32(bitPattern: w2)))
+//        }
+//        return (ch1, ch2)
+//    }
+    
     private func parseEEGSamples(from data: Data) -> ([Int32], [Int32]) {
-        var ch1: [Int32] = []
-        var ch2: [Int32] = []
-        let pairBytes = 8
-        for offset in stride(from: 0, to: data.count - pairBytes + 1, by: pairBytes) {
-            let p = data.subdata(in: offset..<(offset + pairBytes))
-            let w1 = p.subdata(in: 0..<4).withUnsafeBytes { $0.load(as: UInt32.self) }
-            let w2 = p.subdata(in: 4..<8).withUnsafeBytes { $0.load(as: UInt32.self) }
-            ch1.append(Int32(littleEndian: Int32(bitPattern: w1)))
-            ch2.append(Int32(littleEndian: Int32(bitPattern: w2)))
+        var ch1 = [Int32](); ch1.reserveCapacity(BtConst.SAMPLES_PER_CHUNK)
+        var ch2 = [Int32](); ch2.reserveCapacity(BtConst.SAMPLES_PER_CHUNK)
+        data.withUnsafeBytes { rawBuf in
+            let base = rawBuf.bindMemory(to: UInt32.self)
+            let countPairs = base.count / 2
+            ch1.withUnsafeMutableBufferPointer { _ in }
+            ch2.withUnsafeMutableBufferPointer { _ in }
+            for i in 0..<countPairs {
+                let w1 = base[2*i]
+                let w2 = base[2*i + 1]
+                ch1.append(Int32(littleEndian: Int32(bitPattern: w1)))
+                ch2.append(Int32(littleEndian: Int32(bitPattern: w2)))
+            }
         }
         return (ch1, ch2)
     }
-
     
     // MARK: - Characteristic UUID Helpers
     func isTargetService(_ service: CBService) -> Bool {
