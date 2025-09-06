@@ -34,6 +34,14 @@ class QualityAnalyzer: NSObject, ObservableObject {
         leadOffAnalysisTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             self?.performLeadOffAnalysis(ch1Data: channel1, ch2Data: channel2)
         }
+        
+//        let q = DispatchQueue(label: "qa.leadoff", qos: .utility)
+//        let t = DispatchSource.makeTimerSource(queue: q)
+//        t.schedule(deadline: .now() + 1, repeating: 1)
+//        t.setEventHandler { [weak self] in self?.performLeadOffAnalysis(ch1Data: ch1, ch2Data: ch2) }
+//        t.resume()
+//        leadOffAnalysisTimer = t  // store as DispatchSourceTimer
+
     }
     
     func stopLeadOffAnalysis() {
