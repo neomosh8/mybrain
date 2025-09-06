@@ -27,6 +27,9 @@ class ResponseParser: NSObject, ObservableObject {
     
     private var onlineFilter = OnlineFilter()
     
+    private var bufCh1 = RingBuffer<Double>(capacity: 2000)
+    private var bufCh2 = RingBuffer<Double>(capacity: 2000)
+    
     // MARK: - Callbacks
     var onEEGDataReceived: (([Double], [Double]) -> Void)?
     var isReceivingTestData: Bool = false
@@ -178,20 +181,33 @@ class ResponseParser: NSObject, ObservableObject {
         onlineFilter.apply(to: &ch1Doubles, &ch2Doubles)
         
         if isRecording {
+            bufCh1.append(contentsOf: ch1Doubles)
+            bufCh2.append(contentsOf: ch2Doubles)
+            
+            let snap1 = bufCh1.suffixArray(1500)
+            let snap2 = bufCh2.suffixArray(1500)
+            
             DispatchQueue.main.async {
-                self.eegChannel1.append(contentsOf: ch1Doubles)
-                self.eegChannel2.append(contentsOf: ch2Doubles)
-                
-                let maxStored = 1500
-                if self.eegChannel1.count > maxStored {
-                    self.eegChannel1.removeFirst(self.eegChannel1.count - maxStored)
-                }
-                if self.eegChannel2.count > maxStored {
-                    self.eegChannel2.removeFirst(self.eegChannel2.count - maxStored)
-                }
+                // do this on snap1 and snap2: .map { Int32($0) } if i want int32
+                self.eegChannel1 = snap1
+                self.eegChannel2 = snap2
             }
+            
+            //            DispatchQueue.main.async {
+            //                self.eegChannel1.append(contentsOf: ch1Doubles)
+            //                self.eegChannel2.append(contentsOf: ch2Doubles)
+            //                
+            //                let maxStored = 1500
+            //                if self.eegChannel1.count > maxStored {
+            //                    self.eegChannel1.removeFirst(self.eegChannel1.count - maxStored)
+            //                }
+            //                if self.eegChannel2.count > maxStored {
+            //                    self.eegChannel2.removeFirst(self.eegChannel2.count - maxStored)
+            //                }
+            //            }
+            
             // TODO: if listeners want immediate chunks
-//            self.onEEGDataReceived?(ch1Doubles, ch2Doubles)
+            //            self.onEEGDataReceived?(ch1Doubles, ch2Doubles)
         }
     }
     
@@ -279,5 +295,57 @@ class ResponseParser: NSObject, ObservableObject {
 extension Data {
     var hexDescription: String {
         return self.map { String(format: "%02X", $0) }.joined(separator: " ")
+    }
+}
+
+struct RingBuffer<Element> {
+    private var storage: [Element]
+    private var head = 0
+    private(set) var count = 0
+    private let capacity: Int
+
+    init(capacity: Int, initial: Element? = nil) {
+        precondition(capacity > 0)
+        self.capacity = capacity
+        if let v = initial {
+            self.storage = .init(repeating: v, count: capacity)
+            self.count = 0
+        } else {
+            self.storage = .init()
+            self.storage.reserveCapacity(capacity)
+        }
+    }
+
+    mutating func append(_ x: Element) {
+        if storage.count < capacity { storage.append(x); count += 1; return }
+        storage[head] = x
+        head &+= 1
+        if head == capacity { head = 0 }
+        if count < capacity { count += 1 }
+    }
+
+    mutating func append<S: Sequence>(contentsOf seq: S) where S.Element == Element {
+        for x in seq { append(x) }
+    }
+
+    /// Returns a copy of the logical buffer (oldest → newest).
+    func toArray() -> [Element] {
+        guard count > 0 else { return [] }
+        if storage.count < capacity { return Array(storage.prefix(count)) }
+        let tailCount = count < capacity ? count : capacity
+        let start = (head + capacity - tailCount) % capacity
+        if start + tailCount <= capacity {
+            return Array(storage[start..<start+tailCount])
+        } else {
+            let first = Array(storage[start..<capacity])
+            let second = Array(storage[0..<(start+tailCount - capacity)])
+            return first + second
+        }
+    }
+
+    /// Last n elements (or fewer if not available), oldest → newest.
+    func suffixArray(_ n: Int) -> [Element] {
+        let arr = toArray()
+        return arr.suffix(min(n, arr.count))
     }
 }
