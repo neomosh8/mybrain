@@ -92,14 +92,10 @@ final class OnlineFilter {
             isInitialized = true
         }
         
-        // Copy for processing
-        var temp1 = ch1Data, temp2 = ch2Data
         // Bandpass
-        for i in 0..<bpChainCh1.count { bpChainCh1[i].apply(to: &temp1); bpChainCh2[i].apply(to: &temp2) }
+        for i in 0..<bpChainCh1.count { bpChainCh1[i].apply(to: &ch1Data); bpChainCh2[i].apply(to: &ch2Data) }
         // Notch
-        for i in 0..<notchChainCh1.count { notchChainCh1[i].apply(to: &temp1); notchChainCh2[i].apply(to: &temp2) }
-        // Update outputs
-        ch1Data = temp1; ch2Data = temp2
+        for i in 0..<notchChainCh1.count { notchChainCh1[i].apply(to: &ch1Data); notchChainCh2[i].apply(to: &ch2Data) }
     }
 }
 
