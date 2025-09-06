@@ -15,6 +15,7 @@ class BluetoothScanner: NSObject, ObservableObject {
     private var peripheral: CBPeripheral?
     private var cancellables = Set<AnyCancellable>()
     private let savedDeviceKey = "savedBluetoothDeviceID"
+    private let bleQueue = DispatchQueue(label: "ble.transport", qos: .userInitiated)
     
     // MARK: - Callbacks
     var onDeviceConnected: ((CBPeripheral) -> Void)?
@@ -28,7 +29,8 @@ class BluetoothScanner: NSObject, ObservableObject {
     // MARK: - Initialization
     override init() {
         super.init()
-        centralManager = CBCentralManager(delegate: self, queue: nil)
+        // centralManager = CBCentralManager(delegate: self, queue: nil)
+        centralManager = CBCentralManager(delegate: self, queue: bleQueue)
     }
     
     // MARK: - Public Methods for Device Discovery and Connection
@@ -94,22 +96,39 @@ class BluetoothScanner: NSObject, ObservableObject {
         UserDefaults.standard.removeObject(forKey: savedDeviceKey)
     }
     
+    // func checkPermissions() {
+    //     switch centralManager.state {
+    //     case .poweredOn:
+    //         permissionStatus = .authorized
+    //     case .unauthorized:
+    //         permissionStatus = .denied
+    //     case .poweredOff:
+    //         permissionStatus = .poweredOff
+    //     case .resetting:
+    //         permissionStatus = .unknown
+    //     case .unsupported:
+    //         permissionStatus = .unsupported
+    //     case .unknown:
+    //         permissionStatus = .notDetermined
+    //     @unknown default:
+    //         permissionStatus = .unknown
+    //     }
+    // }
+
     func checkPermissions() {
+        let newStatus: PermissionStatus
         switch centralManager.state {
-        case .poweredOn:
-            permissionStatus = .authorized
-        case .unauthorized:
-            permissionStatus = .denied
-        case .poweredOff:
-            permissionStatus = .poweredOff
-        case .resetting:
-            permissionStatus = .unknown
-        case .unsupported:
-            permissionStatus = .unsupported
-        case .unknown:
-            permissionStatus = .notDetermined
-        @unknown default:
-            permissionStatus = .unknown
+        case .poweredOn:    newStatus = .authorized
+        case .unauthorized: newStatus = .denied
+        case .poweredOff:   newStatus = .poweredOff
+        case .resetting:    newStatus = .unknown
+        case .unsupported:  newStatus = .unsupported
+        case .unknown:      newStatus = .notDetermined
+        @unknown default:   newStatus = .unknown
+        }
+        // Ensure @Published is set on main
+        DispatchQueue.main.async { [weak self] in
+            self?.permissionStatus = newStatus
         }
     }
     
